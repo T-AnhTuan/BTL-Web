@@ -11,10 +11,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("597e277c-0b54-4c2e-acb8-66f55d3572b6")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("QuanLyVatTu")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b9f3f067860b50648c3abf00e3c99bc7613e897")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+070bbdcac04de9bb9be3d0d7d313bfe4a2a98296")]
 [assembly: System.Reflection.AssemblyProductAttribute("QuanLyVatTu")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QuanLyVatTu")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
