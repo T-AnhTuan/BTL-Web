@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Models;
+using QuanLyVatTu.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DatabaseConnection");
-builder.Services.AddDbContext<WebDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
