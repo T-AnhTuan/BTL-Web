@@ -1,9 +1,128 @@
-@page
+@* Hứng ViewModel bcNhapXuatVM *@
 @model QuanLyVatTu.ViewModels.BaoCao.bcNhapXuatVM
+
 @{
-    ViewData["Title"] = "Báo Cáo Nhập Xuất";
+    ViewData["Title"] = "Báo Cáo Nhập Xuất Kho";
 }
 
-<h1>@ViewData["Title"]</h1>
-<p>Báo cáo nhập xuất sẽ được hiển thị tại đây</p>
+<!-- CSS Cấu hình định dạng khi In (Giống file Tồn Kho) -->
+<style type="text/css" media="print">
+    .no-print {
+        display: none !important;
+    }
 
+    .only-print {
+        display: block !important;
+    }
+
+    body {
+        color: black !important;
+    }
+</style>
+<style type="text/css" media="screen">
+    .only-print {
+        display: none;
+    }
+</style>
+
+<div class="container mt-4">
+
+    <!-- Tiêu đề in báo cáo -->
+    <div class="only-print text-center mb-4">
+        <h2>CÔNG TY QUẢN LÝ VẬT TƯ XYZ</h2>
+        <h4>BÁO CÁO NHẬP XUẤT KHO</h4>
+        <p>Từ ngày: @Model.TuNgay.ToString("dd/MM/yyyy") - Đến ngày: @Model.DenNgay.ToString("dd/MM/yyyy")</p>
+        <hr />
+    </div>
+
+    <!-- KHU VỰC LỌC DỮ LIỆU (Ẩn khi in) -->
+    <div class="card mb-4 no-print shadow-sm">
+        <div class="card-body">
+            <!-- Form gửi dữ liệu bộ lọc về hàm bcNhapXuat trong BaoCaoController -->
+            <form method="get" action="/BaoCao/bcNhapXuat" class="row align-items-end">
+                <div class="col-md-4">
+                    <label>Từ ngày</label>
+                    <!-- Gắn giá trị cũ vào ô input để giữ nguyên khi load lại trang -->
+                    <input type="date" name="tuNgay" value="@Model.TuNgay.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>Đến ngày</label>
+                    <input type="date" name="denNgay" value="@Model.DenNgay.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Xem báo cáo</button>
+                    <button type="button" onclick="window.print()" class="btn btn-secondary ms-2"><i class="fas fa-print"></i> In</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tổng hợp giá trị -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="alert alert-success">
+                <strong>Tổng giá trị NHẬP:</strong> @Model.TongTienNhap.ToString("N0") VNĐ
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-warning">
+                <strong>Tổng giá trị XUẤT (Giá vốn):</strong> @Model.TongTienXuat.ToString("N0") VNĐ
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng 1: Liệt kê các phiếu Nhập -->
+    <h4 class="text-success mt-4">1. CHI TIẾT NHẬP KHO</h4>
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Mã Phiếu</th>
+                <th>Ngày Nhập</th>
+                <th>Người Lập</th>
+                <th>Trạng Thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            @* Vòng lặp in ra danh sách phiếu nhập lấy từ Model *@
+            @foreach (var nhap in Model.DanhSachNhap)
+            {
+                <tr>
+                    <td>PN-@nhap.Id</td>
+                    <td>@nhap.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@nhap.NguoiLap</td>
+                    <td>@nhap.TrangThai</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Bảng 2: Liệt kê các phiếu Xuất -->
+    <h4 class="text-warning mt-4">2. CHI TIẾT XUẤT KHO</h4>
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Mã Phiếu</th>
+                <th>Ngày Xuất</th>
+                <th>Lý Do</th>
+                <th>Người Duyệt</th>
+            </tr>
+        </thead>
+        <tbody>
+            @* Vòng lặp in ra danh sách phiếu xuất lấy từ Model *@
+            @foreach (var xuat in Model.DanhSachXuat)
+            {
+                <tr>
+                    <td>PX-@xuat.Id</td>
+                    <td>@xuat.NgayXuat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@xuat.LyDoXuat</td>
+                    <td>@xuat.NguoiDuyet</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Chữ ký khi in -->
+    <div class="only-print mt-5 row text-center">
+        <div class="col-12"><strong>Xác nhận của Thủ Kho</strong><br />(Ký, ghi rõ họ tên)</div>
+    </div>
+</div>

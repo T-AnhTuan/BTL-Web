@@ -1,13 +1,94 @@
-﻿<!DOCTYPE html>
+﻿@{
+    // Lấy thông tin Controller và Action hiện tại để xử lý logic hiển thị
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
 
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>@ViewBag.Title</title>
-</head>
-<body>
-    <div>
-        @RenderBody()
+<!-- THÙNG CHỨA HEADER TỔNG (Có màu nền trắng, bóng đổ) -->
+<header class="bg-white shadow-sm">
+
+    <!-- ========================================================= -->
+    <!-- TẦNG 1: THANH CÔNG CỤ TRÊN CÙNG (Tên trang & Đăng xuất) -->
+    <!-- ========================================================= -->
+    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+        <!-- Hiển thị tên màn hình hiện tại (Lấy từ tham số ViewData["Title"] của các View) -->
+        <h5 class="m-0 text-dark fw-bold text-uppercase"><i class="fas fa-angle-right text-primary me-2"></i> @ViewData["Title"]</h5>
+
+        <div>
+            <!-- Nếu đã đăng nhập thì hiện nút Đăng xuất -->
+            @if (User.Identity.IsAuthenticated)
+            {
+                <a href="/NguoiDung/DangXuat" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </a>
+            }
+        </div>
     </div>
-</body>
-</html>
+
+    <!-- ========================================================= -->
+    <!-- TẦNG 2: THANH SUB-MENU (TỰ ĐỘNG THAY ĐỔI THEO TÍNH NĂNG) -->
+    <!-- ========================================================= -->
+    <div class="px-3 py-2 bg-light border-bottom">
+        <ul class="nav nav-pills nav-sm">
+
+            @* KIỂM TRA: NẾU ĐANG Ở NHÁNH BÁO CÁO -> HIỆN MENU CON CỦA BÁO CÁO *@
+            @if (currentController == "BaoCao")
+            {
+                <li class="nav-item">
+                    <!-- So sánh Action để đổi màu nút đang được chọn -->
+                    <a class="nav-link @(currentAction == "Index" ? "active" : "")" href="/BaoCao/Index"><i class="fas fa-home"></i> TT Báo Cáo</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "bcTonKho" ? "active" : "")" href="/BaoCao/bcTonKho"><i class="fas fa-boxes"></i> Tồn Kho</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "bcNhapXuat" ? "active" : "")" href="/BaoCao/bcNhapXuat"><i class="fas fa-file-invoice"></i> Nhập Xuất</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "PhanTichThongKe" ? "active" : "")" href="/BaoCao/PhanTichThongKe"><i class="fas fa-chart-line"></i> Phân tích</a>
+                </li>
+            }
+
+            @* KIỂM TRA: NẾU ĐANG Ở NHÁNH NHẬP XUẤT -> HIỆN MENU CON CỦA NHẬP XUẤT *@
+            else if (currentController == "NhapXuat")
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "DanhSachPhieuNhap" || currentAction == "LapPhieuNhap" ? "active bg-success" : "text-success")" href="/NhapXuat/DanhSachPhieuNhap">
+                        <i class="fas fa-arrow-down"></i> Quản lý Nhập
+                    </a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "DanhSachPhieuXuat" || currentAction == "LapPhieuXuat" ? "active bg-warning text-dark" : "text-warning")" href="/NhapXuat/DanhSachPhieuXuat">
+                        <i class="fas fa-arrow-up"></i> Quản lý Xuất
+                    </a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "KiemKeDinhKy" ? "active bg-secondary" : "text-secondary")" href="/NhapXuat/KiemKeDinhKy">
+                        <i class="fas fa-clipboard-check"></i> Kiểm Kê
+                    </a>
+                </li>
+            }
+
+            @* KIỂM TRA: NẾU ĐANG Ở NHÁNH QUẢN LÝ NGƯỜI DÙNG -> HIỆN THÊM LOG HỆ THỐNG *@
+            else if (currentController == "NguoiDung")
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "DanhSachTaiKhoan" ? "active" : "")" href="/NguoiDung/DanhSachTaiKhoan"><i class="fas fa-users"></i> Danh sách tài khoản</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="nav-link @(currentAction == "LichSuHoatDong" ? "active text-white bg-dark" : "text-dark")" href="/NguoiDung/LichSuHoatDong"><i class="fas fa-history"></i> Nhật ký hệ thống</a>
+                </li>
+            }
+
+            @* MẶC ĐỊNH (Trang chủ): Chỉ hiện ngày giờ hiện tại cho đẹp *@
+            else
+            {
+                <li class="nav-item">
+                    <span class="nav-link text-muted disabled"><i class="far fa-calendar-alt"></i> Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")</span>
+                </li>
+            }
+        </ul>
+    </div>
+</header>
+
+<!-- Header small styles moved to _Header.cshtml.css -->

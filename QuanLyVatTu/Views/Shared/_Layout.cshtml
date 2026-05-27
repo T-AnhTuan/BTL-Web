@@ -1,50 +1,65 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
+<!-- Khai báo ngôn ngữ trang web là tiếng Việt -->
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - QuanLyVatTu</title>
-    <script type="importmap"></script>
+    <!-- Hiển thị Tiêu đề trang động lấy từ ViewData -->
+    <title>@ViewData["Title"] - Phần Mềm Quản Lý Vật Tư</title>
+
+    <!-- 1. Nhúng thư viện Bootstrap 5 (CSS) -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/QuanLyVatTu.styles.css" asp-append-version="true" />
+    <!-- 2. Nhúng thư viện FontAwesome để sử dụng các Icon đẹp mắt -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Layout CSS moved to _Layout.cshtml.css -->
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">QuanLyVatTu</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+    <!-- Bao bọc toàn bộ màn hình -->
+    <div class="wrapper">
+
+        <!-- ========================================== -->
+        <!-- KHU VỰC 1: SIDEBAR BÊN TRÁI -->
+        <!-- ========================================== -->
+        <div class="sidebar-container">
+            <!-- Dùng thẻ partial để nhúng nội dung từ file _Sidebar.cshtml vào đây -->
+            <partial name="_Sidebar" />
+        </div>
+
+        <!-- ========================================== -->
+        <!-- KHU VỰC 2: NỘI DUNG BÊN PHẢI -->
+        <!-- ========================================== -->
+        <div class="main-container">
+
+            <!-- 2.1. HEADER Ở TRÊN CÙNG -->
+            <!-- Dùng thẻ partial để nhúng nội dung từ file _Header.cshtml vào đây -->
+            <partial name="_Header" />
+
+            <!-- 2.2. MAIN CONTENT (Nơi chứa ruột của các trang như Index, bcTonKho...) -->
+            <main class="content-area">
+                <!-- Lệnh quan trọng nhất: Nhúng nội dung của các file View con vào vị trí này -->
+                @RenderBody()
+            </main>
+
+            <!-- 2.3. FOOTER Ở DƯỚI CÙNG -->
+            <footer class="bg-white border-top p-3 text-muted text-center shadow-sm" style="font-size: 0.9rem;">
+                <div class="container-fluid d-flex justify-content-between">
+                    <!-- Thông tin bản quyền -->
+                    <span>&copy; @DateTime.Now.Year - <strong>Hệ Thống Quản Lý Kho Vật Tư</strong>. Bản quyền thuộc về Công ty XYZ.</span>
+                    <!-- Thông tin hỗ trợ -->
+                    <span>
+                        <i class="fas fa-headset text-primary"></i> Hỗ trợ kỹ thuật: <strong>1900 1234</strong> | Email: support@xyz.com
+                    </span>
                 </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+            </footer>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - QuanLyVatTu - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
+    <!-- 4. Nhúng các thư viện Javascript (jQuery, Bootstrap) -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- RenderSection: Cho phép các View con đẩy các đoạn mã JS (như Chart.js) xuống vị trí cuối trang này -->
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

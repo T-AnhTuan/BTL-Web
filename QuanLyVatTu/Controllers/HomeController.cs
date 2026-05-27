@@ -13,7 +13,7 @@ namespace QuanLyVatTu.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly AppDbContext _context; // Thêm DbContext để truy vấn SQL
+        private readonly AppDbContext _context; 
 
         // Tiêm (Inject) cả Logger và WebDbContext vào Controller
         public HomeController(ILogger<HomeController> logger, AppDbContext context)
@@ -78,15 +78,9 @@ namespace QuanLyVatTu.Controllers
             return View();
         }
 
-        // Tùy chọn: Nếu người dùng gõ /Home/Dashboard thì chuyển hướng về Index cho thống nhất
-        public IActionResult Dashboard()
-        {
-            return RedirectToAction(nameof(Index));
-        }
-
-        // Trang chính sách bảo mật (Chỉ Admin mới xem được)
-        [Authorize(Roles = "Admin")]
-        public IActionResult Privacy()
+        // Khi có lỗi
+        [AllowAnonymous]
+        public IActionResult BaoTri()
         {
             return View();
         }

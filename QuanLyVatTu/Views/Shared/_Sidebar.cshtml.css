@@ -1,0 +1,70 @@
+﻿/* Sidebar styles converted from Tailwind/utility classes to CSS3 */
+.sidebar-logo {
+    padding: 12px; /* p-3 */
+    text-align: center; /* text-center */
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* border-bottom border-secondary approximation */
+}
+.sidebar-logo .fa-cubes {
+    color: #17a2b8; /* text-info */
+    margin-bottom: 8px; /* mb-2 */
+}
+.sidebar-title {
+    margin: 0; /* m-0 */
+    font-weight: 700; /* font-weight-bold */
+    color: #f8f9fa; /* text-light */
+}
+
+.sidebar-user {
+    padding: 12px; /* p-3 */
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; /* d-flex */
+    align-items: center; /* align-items-center */
+}
+.sidebar-user img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px; /* me-3 */
+}
+.sidebar-username {
+    margin: 0; /* m-0 */
+    color: #ffffff;
+    font-size: 14px;
+}
+.sidebar-status {
+    color: #28a745; /* text-success */
+    font-size: 12px;
+}
+
+.sidebar-content {
+    flex-grow: 1; /* flex-grow-1 */
+    overflow: auto; /* overflow-auto */
+    margin-top: 8px; /* mt-2 */
+}
+
+.sidebar-menu {
+    list-style: none; /* remove bullets */
+    padding: 0;
+    margin: 0;
+}
+.sidebar-menu li a {
+    display: block;
+    padding: 12px 20px;
+    color: #c2c7d0; /* muted text */
+    text-decoration: none;
+    transition: all 0.3s;
+}
+.sidebar-menu li a:hover,
+.sidebar-menu li a.active {
+    background-color: #007bff;
+    color: #ffffff;
+    border-left: 4px solid #0056b3;
+}
+.sidebar-menu li a i {
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+/* Utility fallback for rounded-circle used inline in markup */
+.rounded-circle { border-radius: 50%; }

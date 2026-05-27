@@ -1,0 +1,67 @@
+﻿@* Tắt Layout mặc định của hệ thống để trang này độc lập, không bị ảnh hưởng nếu web lỗi nặng *@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hệ thống đang bảo trì - Quản Lý Vật Tư</title>
+
+    @* Nhúng Bootstrap từ Internet (CDN) để có giao diện đẹp ngay lập tức mà không cần file css cục bộ *@
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    @* Nhúng FontAwesome để lấy icon cái cờ lê/bánh răng *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    @* CSS viết thêm để làm trang web căn giữa toàn bộ màn hình *@
+    <style>
+            body {
+                background-color: #f8f9fa; /* Màu nền xám nhạt */
+                height: 100vh; /* Chiều cao bằng 100% màn hình hiển thị */
+                display: flex; /* Dùng flexbox để căn giữa */
+                align-items: center; /* Căn giữa theo chiều dọc */
+                justify-content: center; /* Căn giữa theo chiều ngang */
+                text-align: center; /* Chữ căn giữa */
+            }
+            .icon-baotri {
+                font-size: 80px; /* Kích thước icon to lên */
+                color: #dc3545; /* Màu đỏ cảnh báo */
+                margin-bottom: 20px; /* Cách chữ bên dưới một chút */
+                animation: xoay 4s linear infinite; /* Hiệu ứng xoay tròn liên tục */
+            }
+            /* Định nghĩa hiệu ứng xoay cho icon bánh răng */
+            @@keyframes xoay {
+                100% { transform: rotate(360deg); }
+            }
+    </style>
+</head>
+<body>
+    @* Khối thẻ chứa nội dung chính *@
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                @* Icon bánh răng đang xoay *@
+                <i class="fas fa-cog icon-baotri"></i>
+
+                @* Tiêu đề thông báo *@
+                <h1 class="display-5 fw-bold text-dark">Hệ thống đang bảo trì hoặc gặp sự cố</h1>
+
+                @* Lời xin lỗi tới người dùng *@
+                <p class="lead text-muted mt-3">
+                    Xin lỗi vì sự bất tiện này. Chúng tôi đang nỗ lực khắc phục sự cố hoặc nâng cấp hệ thống.<br />
+                    Vui lòng quay lại sau ít phút nhé!
+                </p>
+
+                @* Nút bấm quay lại trang chủ để người dùng thử lại *@
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="fas fa-home me-2"></i> Thử quay lại Trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
