@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using System;
 using System.Collections.Generic;

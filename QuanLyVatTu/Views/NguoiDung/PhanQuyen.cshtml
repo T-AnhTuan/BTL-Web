@@ -1,8 +1,497 @@
-@page
 @{
-    ViewData["Title"] = "Phân Quyền";
+    ViewData["Title"] = "Quản Lý Vai Trò và Phân Quyền";
 }
 
-<h1>@ViewData["Title"]</h1>
-<p>Danh sách phân quyền sẽ được hiển thị tại đây</p>
+<style>
+    /* --- CSS CƠ BẢN --- */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
 
+    .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .btn {
+        padding: 9px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+
+    .btn-dark {
+        background-color: #1e293b;
+        color: #fff;
+    }
+
+        .btn-dark:hover {
+            background-color: #0f172a;
+        }
+
+    .btn-outline {
+        background-color: #fff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+    }
+
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+    /* --- LAYOUT CHIA 2 CỘT --- */
+    .permissions-container {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    /* CỘT TRÁI: DANH SÁCH VAI TRÒ */
+    .roles-sidebar {
+        width: 260px;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        padding: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .role-list {
+        list-style: none;
+        margin-bottom: 20px;
+    }
+
+        .role-list li {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #475569;
+            transition: 0.2s;
+        }
+
+            .role-list li:hover {
+                background-color: #f8fafc;
+            }
+
+            .role-list li.active {
+                background-color: #e2e8f0;
+                font-weight: 600;
+                color: #0f172a;
+            }
+
+    .btn-add-role {
+        width: 100%;
+        justify-content: center;
+        background-color: #1e293b;
+        color: #fff;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+
+        .btn-add-role:hover {
+            background-color: #0f172a;
+        }
+
+    /* CỘT PHẢI: MA TRẬN PHÂN QUYỀN */
+    .matrix-content {
+        flex: 1;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .info-alert {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 12px 15px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+        .data-table th, .data-table td {
+            padding: 12px 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .data-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        /* Căn trái cho cột tên chức năng */
+        .data-table td:nth-child(1), .data-table td:nth-child(2) {
+            text-align: left;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .data-table td[rowspan] {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        /* Checkbox styling */
+        .data-table input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #1e293b;
+        }
+
+    .quick-select-row td {
+        padding: 8px 10px;
+        background-color: #f8fafc;
+    }
+
+    .quick-select-row input[type="text"] {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    /* --- POPUP MODAL THÊM VAI TRÒ --- */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+    }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+    .modal-box {
+        background-color: #fff;
+        width: 400px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @@keyframes slideDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0;
+            color: #1e293b;
+        }
+
+    .close-btn {
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+        border: none;
+        background: none;
+    }
+
+    .modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+        }
+
+            .form-group input:focus {
+                border-color: #3b82f6;
+            }
+
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f8fafc;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .btn-cancel {
+        background-color: #fff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Quản Lý Vai Trò và Phân Quyền</h1>
+    <div style="display: flex; gap: 10px;">
+        <button id="btnSaveConfig" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Phân Quyền</button>
+        <button class="btn btn-outline">Hủy Bỏ</button>
+    </div>
+</div>
+
+<div class="permissions-container">
+
+    <div class="roles-sidebar">
+        <ul class="role-list">
+            <li class="active">Quản trị viên</li>
+            <li>Thủ kho</li>
+            <li>Kế toán</li>
+            <li>Nhân viên</li>
+        </ul>
+        <button id="btnOpenRoleModal" class="btn-add-role"><i class="fa-solid fa-plus"></i> Thêm Vai Trò Mới</button>
+    </div>
+
+    <div class="matrix-content">
+        <div class="info-alert">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Cấu hình phân quyền cho vai trò: <strong>Quản trị viên</strong></span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th colspan="2">Chức Năng</th>
+                    <th style="width: 80px;">Xem</th>
+                    <th style="width: 80px;">Thêm</th>
+                    <th style="width: 80px;">Sửa</th>
+                    <th style="width: 80px;">Xóa</th>
+                    <th style="width: 100px;">Phê Duyệt</th>
+                    <th style="width: 120px;">Toàn Quyền</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="quick-select-row">
+                    <td colspan="2"><input type="text" placeholder="Tìm kiếm nhanh..."></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" title="Chọn tất cả"></td>
+                </tr>
+
+                <tr>
+                    <td>Vật Tư</td>
+                    <td>Vật Tư</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+
+                <tr>
+                    <td>Danh Mục</td>
+                    <td>Danh Mục</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox"></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+
+                <tr>
+                    <td rowspan="3">Nghiệp vụ Kho</td>
+                    <td>Phiếu Nhập</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                    <td>Phiếu Xuất</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                    <td>Thẻ Kho</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox"></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+
+                <tr>
+                    <td>Báo Cáo</td>
+                    <td>Báo Cáo</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+
+                <tr>
+                    <td rowspan="2">Quản Trị</td>
+                    <td>Quản trị Tài khoản</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox"></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                    <td>Phân Quyền</td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox" checked></td>
+                    <td><input type="checkbox"></td>
+                    <td><input type="checkbox" checked></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="addRoleModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-shield-halved" style="color:#1e293b; margin-right:8px;"></i> THÊM VAI TRÒ MỚI</h3>
+            <button id="btnCloseRoleModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Tên Vai Trò (Role Name) <span style="color:red">*</span></label>
+                <input type="text" placeholder="Ví dụ: Giám đốc, Quản lý chi nhánh...">
+            </div>
+            <div class="form-group">
+                <label>Ghi chú / Mô tả</label>
+                <input type="text" placeholder="Nhập mô tả cho vai trò này...">
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button id="btnCancelRole" class="btn btn-cancel">Hủy Bỏ</button>
+            <button id="btnSaveRole" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Vai Trò</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Xử lý đổi tên Vai trò khi click
+    const roleItems = document.querySelectorAll('.role-list li');
+    const roleTitleAlert = document.querySelector('.info-alert strong');
+
+    roleItems.forEach(item => {
+        item.addEventListener('click', function() {
+            roleItems.forEach(li => li.classList.remove('active'));
+            this.classList.add('active');
+            roleTitleAlert.innerText = this.innerText;
+        });
+    });
+
+    // 2. Xử lý nút Lưu Cấu Hình Phân Quyền
+    document.getElementById('btnSaveConfig').addEventListener('click', function() {
+        alert("Đã gửi yêu cầu lưu phân quyền! ");
+    });
+
+    // 3. Xử lý Popup Thêm Vai Trò
+    const roleModal = document.getElementById('addRoleModal');
+    const btnOpenRole = document.getElementById('btnOpenRoleModal');
+    const btnCloseRole = document.getElementById('btnCloseRoleModal');
+    const btnCancelRole = document.getElementById('btnCancelRole');
+    const btnSaveRole = document.getElementById('btnSaveRole');
+
+    // Mở Modal
+    btnOpenRole.onclick = () => roleModal.classList.add('show');
+
+    // Đóng Modal
+    const closeRoleModal = () => roleModal.classList.remove('show');
+    btnCloseRole.onclick = closeRoleModal;
+    btnCancelRole.onclick = closeRoleModal;
+    window.onclick = (e) => { if (e.target == roleModal) closeRoleModal(); }
+
+    // Bấm lưu Vai trò
+    btnSaveRole.onclick = () => {
+
+        closeRoleModal();
+    }
+</script>

@@ -1,65 +1,349 @@
 ﻿<!DOCTYPE html>
 <html lang="vi">
-<!-- Khai báo ngôn ngữ trang web là tiếng Việt -->
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Hiển thị Tiêu đề trang động lấy từ ViewData -->
-    <title>@ViewData["Title"] - Phần Mềm Quản Lý Vật Tư</title>
-
-    <!-- 1. Nhúng thư viện Bootstrap 5 (CSS) -->
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- 2. Nhúng thư viện FontAwesome để sử dụng các Icon đẹp mắt -->
+    <title>@ViewData["Title"] - Quản Lý Vật Tư</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Layout CSS moved to _Layout.cshtml.css -->
+    <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Inter', sans-serif;
+            }
+
+            body {
+                display: flex;
+                height: 100vh;
+                background-color: #f1f5f9;
+                color: #333;
+                overflow: hidden;
+            }
+
+            /* --- SIDEBAR --- */
+            .sidebar {
+                width: 260px;
+                background-color: #1a2d42;
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                flex-shrink: 0;
+            }
+
+            .sidebar-brand {
+                height: 60px;
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                background-color: #152436;
+                font-weight: 700;
+                font-size: 16px;
+                border-bottom: 1px solid #2a3f54;
+                gap: 10px;
+            }
+
+            .sidebar-user {
+                padding: 15px 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border-bottom: 1px solid #2a3f54;
+            }
+
+                .sidebar-user .user-name {
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+
+                .sidebar-user .user-role {
+                    font-size: 12px;
+                    color: #94a3b8;
+                }
+
+            .sidebar-menu {
+                flex: 1;
+                overflow-y: auto;
+                padding: 15px 0;
+            }
+
+                /* ĐÃ THÊM: Ẩn thanh cuộn nhưng vẫn cho phép cuộn bằng chuột */
+                /* Dành cho Chrome, Safari, Edge, Opera */
+                .sidebar-menu::-webkit-scrollbar {
+                    display: none;
+                }
+            /* Dành cho Firefox và IE */
+            .sidebar-menu {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .menu-category {
+                font-size: 11px;
+                color: #94a3b8;
+                font-weight: 600;
+                text-transform: uppercase;
+                margin: 15px 20px 5px 20px;
+                letter-spacing: 0.5px;
+            }
+
+            .sidebar-menu ul {
+                list-style: none;
+            }
+
+            .sidebar-menu li a {
+                display: flex;
+                align-items: center;
+                padding: 10px 20px;
+                color: #cbd5e1;
+                text-decoration: none;
+                transition: 0.2s;
+                font-size: 14px;
+                gap: 12px;
+            }
+
+                .sidebar-menu li a:hover, .sidebar-menu li.active > a {
+                    background-color: #2c4258;
+                    color: #fff;
+                    border-left: 3px solid #3b82f6;
+                }
+
+                .sidebar-menu li a i {
+                    width: 16px;
+                    text-align: center;
+                }
+
+            /* --- MAIN CONTENT WRAPPER --- */
+            .main-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            /* --- TOPBAR --- */
+            .topbar {
+                height: 60px;
+                background-color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 20px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                z-index: 10;
+            }
+
+            .topbar-left {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                flex: 1;
+            }
+
+            .search-box {
+                display: flex;
+                align-items: center;
+                background: #f1f5f9;
+                padding: 8px 15px;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                width: 350px;
+            }
+
+                .search-box input {
+                    border: none;
+                    background: transparent;
+                    outline: none;
+                    margin-left: 10px;
+                    width: 100%;
+                    font-size: 14px;
+                }
+
+            .topbar-right {
+                display: flex;
+                align-items: center;
+                gap: 25px;
+            }
+
+            .notification {
+                position: relative;
+                cursor: pointer;
+                color: #64748b;
+                font-size: 18px;
+            }
+
+                .notification .badge {
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    background: #ef4444;
+                    color: white;
+                    font-size: 10px;
+                    width: 15px;
+                    height: 15px;
+                    border-radius: 50%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    font-weight: bold;
+                }
+
+            /* Dropdown User */
+            .user-dropdown {
+                position: relative;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .user-dropdown-menu {
+                display: none;
+                position: absolute;
+                top: 45px;
+                right: 0;
+                background: #fff;
+                width: 200px;
+                box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+            }
+
+                .user-dropdown-menu.show {
+                    display: block;
+                }
+
+                .user-dropdown-menu a {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 12px 15px;
+                    text-decoration: none;
+                    color: #333;
+                    font-size: 14px;
+                    transition: 0.2s;
+                }
+
+                    .user-dropdown-menu a:hover {
+                        background-color: #f1f5f9;
+                    }
+
+            /* --- CONTENT AREA --- */
+            .content-area {
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+            }
+
+            /* --- FOOTER --- */
+            .footer {
+                background: #fff;
+                padding: 15px 20px;
+                text-align: center;
+                font-size: 13px;
+                color: #64748b;
+                border-top: 1px solid #e2e8f0;
+            }
+    </style>
 </head>
 <body>
-    <!-- Bao bọc toàn bộ màn hình -->
-    <div class="wrapper">
-
-        <!-- ========================================== -->
-        <!-- KHU VỰC 1: SIDEBAR BÊN TRÁI -->
-        <!-- ========================================== -->
-        <div class="sidebar-container">
-            <!-- Dùng thẻ partial để nhúng nội dung từ file _Sidebar.cshtml vào đây -->
-            <partial name="_Sidebar" />
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-warehouse"></i> VẬT TƯ & TỒN KHO
         </div>
+        <div class="sidebar-user">
+            <i class="fa-solid fa-circle-user" style="font-size: 38px; color: #cbd5e1;"></i>
+            <div>
+                <div class="user-name">[Tên Tài Khoản]</div>
+                <div class="user-role">[Vai Trò]</div>
+            </div>
+        </div>
+        <div class="sidebar-menu">
+            <ul>
+                <li><a href="/Home/Index"><i class="fa-solid fa-gauge"></i> Bảng Điều Khiển</a></li>
 
-        <!-- ========================================== -->
-        <!-- KHU VỰC 2: NỘI DUNG BÊN PHẢI -->
-        <!-- ========================================== -->
-        <div class="main-container">
+                <div class="menu-category">Quản lý danh mục</div>
+                <li><a href="/VatTu/Index"><i class="fa-solid fa-box"></i> Vật Tư</a></li>
+                <li><a href="/DanhMuc/Index"><i class="fa-solid fa-list"></i> Danh Mục</a></li>
+                <li><a href="/NhaCungCap/Index"><i class="fa-solid fa-industry"></i> Nhà Cung Cấp</a></li>
 
-            <!-- 2.1. HEADER Ở TRÊN CÙNG -->
-            <!-- Dùng thẻ partial để nhúng nội dung từ file _Header.cshtml vào đây -->
-            <partial name="_Header" />
+                <div class="menu-category">Nghiệp vụ kho</div>
+                <li><a href="/PhieuNhap/Index"><i class="fa-solid fa-file-import"></i> Phiếu Nhập</a></li>
+                <li><a href="/PhieuXuat/Index"><i class="fa-solid fa-file-export"></i> Phiếu Xuất</a></li>
 
-            <!-- 2.2. MAIN CONTENT (Nơi chứa ruột của các trang như Index, bcTonKho...) -->
-            <main class="content-area">
-                <!-- Lệnh quan trọng nhất: Nhúng nội dung của các file View con vào vị trí này -->
-                @RenderBody()
-            </main>
+                <li><a href="/TheKho/Index"><i class="fa-solid fa-clipboard-list"></i> Thẻ Kho</a></li>
 
-            <!-- 2.3. FOOTER Ở DƯỚI CÙNG -->
-            <footer class="bg-white border-top p-3 text-muted text-center shadow-sm" style="font-size: 0.9rem;">
-                <div class="container-fluid d-flex justify-content-between">
-                    <!-- Thông tin bản quyền -->
-                    <span>&copy; @DateTime.Now.Year - <strong>Hệ Thống Quản Lý Kho Vật Tư</strong>. Bản quyền thuộc về Công ty XYZ.</span>
-                    <!-- Thông tin hỗ trợ -->
-                    <span>
-                        <i class="fas fa-headset text-primary"></i> Hỗ trợ kỹ thuật: <strong>1900 1234</strong> | Email: support@xyz.com
-                    </span>
+                <div class="menu-category">Báo cáo</div>
+                <li><a href="/XuatNhapTon/Index"><i class="fa-solid fa-chart-line"></i> Xuất-Nhập-Tồn</a></li>
+
+                <div class="menu-category">Quản trị (Admin Only)</div>
+                <li><a href="/TaiKhoan/Index"><i class="fa-solid fa-user-shield"></i> Tài Khoản <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
+                <li><a href="/PhanQuyen/Index"><i class="fa-solid fa-key"></i> Phân Quyền <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="topbar">
+            <div class="topbar-left">
+                <i class="fa-solid fa-bars" style="cursor: pointer; color: #64748b; font-size: 18px;"></i>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass" style="color: #94a3b8;"></i>
+                    <input type="text" placeholder="Tìm kiếm nhanh (ví dụ: tên vật tư)...">
                 </div>
-            </footer>
-        </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="notification">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge">1</span>
+                </div>
+
+                <div class="user-dropdown" onclick="toggleDropdown()">
+                    <i class="fa-solid fa-circle-user" style="font-size: 28px; color: #94a3b8;"></i>
+                    <span style="font-size: 14px; font-weight: 500;">[Tên Tài Khoản]</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 12px; color: #64748b;"></i>
+
+                    <div class="user-dropdown-menu" id="profileMenu">
+                        <a href="/HoSo/Index"><i class="fa-regular fa-user"></i> Hồ Sơ Cá Nhân</a>
+                        <a href="/HoSo/Index"><i class="fa-solid fa-lock"></i> Đổi Mật Khẩu</a>
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
+                        <a href="/TaiKhoan/DangNhap" style="color: #ef4444;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng Xuất</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-area">
+            @RenderBody()
+        </main>
+
+        <footer class="footer">
+            &copy; 2026 Quản Lý Vật Tư. Phiên bản v1.0.0
+        </footer>
     </div>
 
-    <!-- 4. Nhúng các thư viện Javascript (jQuery, Bootstrap) -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+            function toggleDropdown() {
+                var menu = document.getElementById("profileMenu");
+                menu.classList.toggle("show");
+            }
 
-    <!-- RenderSection: Cho phép các View con đẩy các đoạn mã JS (như Chart.js) xuống vị trí cuối trang này -->
+            window.onclick = function(event) {
+                if (!event.target.closest('.user-dropdown')) {
+                    var dropdowns = document.getElementsByClassName("user-dropdown-menu");
+                    for (var i = 0; i < dropdowns.length; i++) {
+                        var openDropdown = dropdowns[i];
+                        if (openDropdown.classList.contains('show')) {
+                            openDropdown.classList.remove('show');
+                        }
+                    }
+                }
+            }
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

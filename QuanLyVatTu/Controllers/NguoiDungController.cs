@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data; // Nơi chứa WebDbContext
 using QuanLyVatTu.Models; // Nơi chứa model NguoiDung, NhatKyHeThong
-using QuanLyVatTu.ViewModels.DangNhap;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +15,10 @@ namespace QuanLyVatTu.Controllers
 {
     public class NguoiDungController : Controller
     {
-        private readonly WebDbContext _context;
+        private readonly AppDbContext _context;
 
         // Tiêm DbContext vào để tương tác với cơ sở dữ liệu
-        public NguoiDungController(WebDbContext context)
+        public NguoiDungController(AppDbContext context)
         {
             _context = context;
         }

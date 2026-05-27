@@ -3,20 +3,18 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using QuanLyVatTu.Models;
+using QuanLyVatTu.Data;
+
 
 #nullable disable
 
 namespace QuanLyVatTu.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260527180050_InitialCreate")]
-    partial class InitialCreate
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -150,7 +148,7 @@ namespace QuanLyVatTu.Migrations
                             Id = 1,
                             HoTen = "Quản trị viên",
                             IsKhóa = false,
-                            MatKhau = "$2a$11$S7JvBp5S2RRB5itz7lN/n.PZeMc5.vYSueBB8e6eo/qkR/I.lSRUG",
+                            MatKhau = "Admin@123",
                             PhanQuyenId = 1,
                             TenDangNhap = "admin"
                         });

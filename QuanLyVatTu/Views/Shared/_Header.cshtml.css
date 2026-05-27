@@ -1,7 +1,0 @@
-﻿/* Small header/nav adjustments moved from _Header.cshtml */
-.nav-sm .nav-link {
-    padding: 5px 15px;
-    font-size: 0.9rem;
-    border-radius: 20px;
-    transition: 0.2s;
-}

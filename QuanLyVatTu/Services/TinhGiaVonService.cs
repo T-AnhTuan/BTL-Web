@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Models; // Thư mục chứa các class CSDL (VatTu, PhieuNhap...)
+using QuanLyVatTu.Data;
 
 namespace QuanLyVatTu.Services
 {

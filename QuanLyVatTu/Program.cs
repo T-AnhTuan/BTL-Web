@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Models;
+using QuanLyVatTu.Data;
 using QuanLyVatTu.Services;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -5,15 +5,16 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using QuanLyVatTu.Models;
+using QuanLyVatTu.Data;
+
 
 #nullable disable
 
 namespace QuanLyVatTu.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260527181123_V2")]
-    partial class V2
+    [Migration("20260527180050_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -150,7 +151,7 @@ namespace QuanLyVatTu.Migrations
                             Id = 1,
                             HoTen = "Quản trị viên",
                             IsKhóa = false,
-                            MatKhau = "Admin@123",
+                            MatKhau = "$2a$11$S7JvBp5S2RRB5itz7lN/n.PZeMc5.vYSueBB8e6eo/qkR/I.lSRUG",
                             PhanQuyenId = 1,
                             TenDangNhap = "admin"
                         });

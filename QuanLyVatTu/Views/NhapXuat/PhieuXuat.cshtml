@@ -1,20 +1,15 @@
-﻿@{
-    ViewData["Title"] = "Quản Lý Nhà Cung Cấp";
+@{
+    ViewData["Title"] = "Quản Lý Phiếu Xuất Kho";
 }
 
 <style>
     /* --- CSS CƠ BẢN --- */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
     .page-title {
         font-size: 24px;
         font-weight: 700;
         color: #1e293b;
+        margin-bottom: 20px;
+        text-transform: uppercase;
     }
 
     .btn {
@@ -31,48 +26,47 @@
     }
 
     .btn-primary {
-        background-color: #2563eb;
+        background-color: #1d4ed8;
         color: #fff;
     }
 
         .btn-primary:hover {
-            background-color: #1d4ed8;
+            background-color: #1e40af;
         }
 
-    /* --- BỘ LỌC TÌM KIẾM --- */
-    .filter-section {
+    /* --- THANH CÔNG CỤ (TÌM KIẾM & NÚT THÊM) --- */
+    .toolbar-section {
         display: flex;
         justify-content: space-between;
-        gap: 15px;
-        margin-bottom: 20px;
         align-items: center;
+        margin-bottom: 20px;
     }
 
-    .search-input-wrapper {
+    .search-box-container {
         position: relative;
         width: 400px;
     }
 
-        .search-input-wrapper i {
+        .search-box-container i {
             position: absolute;
-            left: 12px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
         }
 
-    .search-input {
-        width: 100%;
-        padding: 10px 15px 10px 35px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-    }
-
-        .search-input:focus {
-            border-color: #2563eb;
+        .search-box-container input {
+            width: 100%;
+            padding: 10px 35px 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
         }
+
+            .search-box-container input:focus {
+                border-color: #2563eb;
+            }
 
     /* --- BẢNG DỮ LIỆU --- */
     .table-container {
@@ -110,49 +104,49 @@
         text-align: center;
     }
 
+    .text-right {
+        text-align: right;
+    }
+
     /* Status Badges */
     .badge {
-        padding: 4px 10px;
-        border-radius: 4px;
+        padding: 5px 12px;
+        border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
         display: inline-block;
     }
 
-    .badge-active {
-        background-color: #dcfce7;
-        color: #166534;
+    .badge-success {
+        background-color: #10b981;
+        color: #fff;
     }
-
-    .badge-inactive {
-        background-color: #fee2e2;
-        color: #991b1b;
+    /* Đã xuất - Xanh lá */
+    .badge-warning {
+        background-color: #f59e0b;
+        color: #fff;
     }
+    /* Chờ xuất - Cam */
+    .badge-danger {
+        background-color: #ef4444;
+        color: #fff;
+    }
+    /* Đã hủy - Đỏ */
 
+    /* Thao tác (Icon) */
     .action-icons i {
         cursor: pointer;
         margin: 0 6px;
         font-size: 16px;
         transition: 0.2s;
-    }
-
-    .icon-edit {
         color: #475569;
     }
 
-        .icon-edit:hover {
-            color: #1e293b;
+        .action-icons i:hover {
+            color: #1d4ed8;
         }
 
-    .icon-delete {
-        color: #ef4444;
-    }
-
-        .icon-delete:hover {
-            color: #b91c1c;
-        }
-
-    /* --- POPUP MODAL --- */
+    /* --- POPUP MODAL TẠO PHIẾU XUẤT --- */
     .modal-overlay {
         display: none;
         position: fixed;
@@ -172,7 +166,7 @@
 
     .modal-box {
         background-color: #fff;
-        width: 600px;
+        width: 700px;
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         animation: slideDown 0.3s ease-out;
@@ -196,6 +190,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: #f8fafc;
     }
 
         .modal-header h3 {
@@ -212,10 +207,6 @@
         border: none;
         background: none;
     }
-
-        .close-btn:hover {
-            color: #ef4444;
-        }
 
     .modal-body {
         padding: 20px;
@@ -269,35 +260,28 @@
         border: 1px solid #e2e8f0;
         color: #475569;
     }
-
-        .btn-cancel:hover {
-            background-color: #f1f5f9;
-        }
 </style>
 
-<div class="page-header">
-    <h1 class="page-title">Quản Lý Nhà Cung Cấp</h1>
-</div>
+<h1 class="page-title">Quản Lý Phiếu Xuất Kho</h1>
 
-<div class="filter-section">
-    <div class="search-input-wrapper">
+<div class="toolbar-section">
+    <div class="search-box-container">
+        <input type="text" placeholder="Tìm kiếm nhanh (ví dụ: mã phiếu...)">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm nhà cung cấp...">
     </div>
-
-    <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm Mới Nhà Cung Cấp</button>
+    <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tạo Phiếu Xuất Mới</button>
 </div>
 
 <div class="table-container">
     <table class="data-table">
         <thead>
             <tr>
-                <th>STT</th>
-                <th>Mã NCC</th>
-                <th>Tên Nhà Cung Cấp</th>
-                <th>Địa Chỉ</th>
-                <th>Số Điện Thoại</th>
-                <th>Email</th>
+                <th>Mã Phiếu</th>
+                <th>Ngày Xuất</th>
+                <th>Khách Hàng / Công Trình</th>
+                <th>Người Xuất</th>
+                <th>Lý Do Xuất</th>
+                <th class="text-right">Tổng Tiền (VNĐ)</th>
                 <th class="text-center">Trạng Thái</th>
                 <th class="text-center">Thao Tác</th>
             </tr>
@@ -307,10 +291,10 @@
     </table>
 </div>
 
-<div id="addSupplierModal" class="modal-overlay">
+<div id="addExportModal" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-industry" style="color:#2563eb; margin-right:8px;"></i> Thêm Mới Nhà Cung Cấp</h3>
+            <h3><i class="fa-solid fa-file-export" style="color:#2563eb; margin-right:8px;"></i> TẠO PHIẾU XUẤT MỚI</h3>
             <button id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
@@ -319,66 +303,64 @@
 
             <div class="input-row">
                 <div class="form-group">
-                    <label>Mã NCC <span style="color:red">*</span></label>
-                    <input type="text" placeholder="VD: NCC001...">
+                    <label>Mã Phiếu Xuất (Hệ thống tự sinh nếu để trống)</label>
+                    <input type="text" placeholder="VD: PX-2026-001">
                 </div>
                 <div class="form-group">
-                    <label>Trạng Thái</label>
-                    <select>
-                        <option value="active">Hoạt động</option>
-                        <option value="inactive">Tạm ngừng</option>
-                    </select>
+                    <label>Ngày Xuất <span style="color:red">*</span></label>
+                    <input type="date">
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label>Tên Nhà Cung Cấp <span style="color:red">*</span></label>
-                <input type="text" placeholder="Nhập tên công ty / cá nhân...">
-            </div>
-
-            <div class="form-group">
-                <label>Địa Chỉ</label>
-                <input type="text" placeholder="Nhập địa chỉ chi tiết...">
             </div>
 
             <div class="input-row">
                 <div class="form-group">
-                    <label>Số Điện Thoại</label>
-                    <input type="text" placeholder="VD: 0905 123 456">
+                    <label>Khách Hàng / Công Trình <span style="color:red">*</span></label>
+                    <input type="text" placeholder="Nhập tên khách hàng hoặc công trình...">
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" placeholder="VD: contact@company.com">
+                    <label>Người Xuất</label>
+                    <input type="text" placeholder="Tên người phụ trách xuất kho..." value="">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>Lý Do Xuất</label>
+                <textarea rows="2" placeholder="Nhập lý do xuất kho (ví dụ: xuất thi công công trình A, xuất bán...)"></textarea>
+            </div>
+
+            <div style="background: #eff6ff; padding: 10px; border-radius: 6px; color: #1e40af; font-size: 13px;">
+                <i class="fa-solid fa-circle-info"></i> Sau khi lưu thông tin chung, hệ thống sẽ chuyển sang giao diện để bạn chọn vật tư cần xuất.
             </div>
         </div>
 
         <div class="modal-footer">
             <button id="btnCancel" class="btn btn-cancel">Hủy Bỏ</button>
-            <button id="btnSave" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi</button>
+            <button id="btnSave" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Tiếp Tục Chọn Vật Tư</button>
         </div>
     </div>
 </div>
 
 <script>
-    const supModal = document.getElementById('addSupplierModal');
-    const btnOpenSup = document.getElementById('btnOpenModal');
-    const btnCloseSup = document.getElementById('btnCloseModal');
-    const btnCancelSup = document.getElementById('btnCancel');
-    const btnSaveSup = document.getElementById('btnSave');
+    const exportModal = document.getElementById('addExportModal');
+    const btnOpenExport = document.getElementById('btnOpenModal');
+    const btnCloseExport = document.getElementById('btnCloseModal');
+    const btnCancelExport = document.getElementById('btnCancel');
+    const btnSaveExport = document.getElementById('btnSave');
 
     // Mở Modal
-    btnOpenSup.onclick = () => supModal.classList.add('show');
+    btnOpenExport.onclick = () => exportModal.classList.add('show');
 
     // Đóng Modal
-    const closeSupModal = () => supModal.classList.remove('show');
-    btnCloseSup.onclick = closeSupModal;
-    btnCancelSup.onclick = closeSupModal;
-    window.onclick = (e) => { if (e.target == supModal) closeSupModal(); }
+    const closeExportModal = () => exportModal.classList.remove('show');
+    btnCloseExport.onclick = closeExportModal;
+    btnCancelExport.onclick = closeExportModal;
 
-    // Xử lý nút lưu (tạm thời)
-    btnSaveSup.onclick = () => {
-        alert("Form giao diện đã hoàn tất! Chờ team Back-end kết nối Database nhé.");
-        closeSupModal();
+    // Bấm ra ngoài khoảng đen để đóng
+    window.onclick = (e) => { if (e.target == exportModal) closeExportModal(); }
+
+    // Xử lý nút Tiếp Tục (Lưu)
+    btnSaveExport.onclick = () => {
+        alert("Khung giao diện tạo Phiếu Xuất đã sẵn sàng! Chờ Dev Back-end nối Database.");
+        closeExportModal();
     }
 </script>
