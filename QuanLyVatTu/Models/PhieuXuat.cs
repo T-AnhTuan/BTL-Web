@@ -45,6 +45,8 @@ namespace QuanLyVatTu.Models
 
         public string? NguoiNhanHang { get; set; }
 
+        public string? TrangThai { get; set; }
+        public string? NguoiDuyet { get; set; }
         public ICollection<ChiTietPhieuXuat> ChiTietPhieuXuats { get; set; }
             = new List<ChiTietPhieuXuat>();
     }

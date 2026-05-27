@@ -42,7 +42,7 @@ namespace QuanLyVatTu.Services
                 // Lấy ra danh sách các chi tiết vật tư nằm trong Phiếu Nhập này
                 // Model: ChiTietPhieuNhap (chứa Id_VatTu, SoLuongNhap, DonGiaNhap)
                 var chiTietNhaps = await _context.ChiTietPhieuNhaps
-                    .Where(ct => ct.PhieuNhapId == phieuNhapId)
+                    .Where(ct => ct.Id_PhieuNhap == phieuNhapId)
                     .ToListAsync();
 
                 if (!chiTietNhaps.Any())
@@ -55,7 +55,7 @@ namespace QuanLyVatTu.Services
                 {
                     // Lấy thông tin Vật Tư hiện tại từ Database
                     // Model: VatTu (chứa Id, TenVatTu, SoLuongTon, GiaVonTB)
-                    var vatTu = await _context.VatTus.FindAsync(chiTiet.Id);
+                    var vatTu = await _context.VatTus.FindAsync(chiTiet.Id_VatTu);
 
                     if (vatTu != null)
                     {
@@ -67,10 +67,10 @@ namespace QuanLyVatTu.Services
 
                         // 2. Tính TỔNG GIÁ TRỊ LÔ HÀNG VỪA NHẬP MỚI
                         // (Lấy Số lượng thực nhập * Đơn giá nhập của nhà cung cấp trên bill)
-                        decimal tongGiaTriNhapMoi = chiTiet.SoLuongThucNhap * chiTiet.DonGia;
+                        decimal tongGiaTriNhapMoi = chiTiet.SoLuong * chiTiet.DonGiaNhap;
 
                         // 3. Tính TỔNG SỐ LƯỢNG MỚI (Sau khi cộng dồn hàng mới vào kho)
-                        int tongSoLuongMoi = vatTu.SoLuongTon + chiTiet.SoLuongThucNhap;
+                        int tongSoLuongMoi = vatTu.SoLuongTon + chiTiet.SoLuong;
 
                         // 4. CHIA BÌNH QUÂN ĐỂ RA GIÁ VỐN MỚI
                         decimal giaVonMoi = 0;

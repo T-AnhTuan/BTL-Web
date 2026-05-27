@@ -101,8 +101,8 @@ namespace QuanLyVatTu.Services
             {
                 DanhSachNhap = phieuNhaps,
                 DanhSachXuat = phieuXuats,
-                TongTienNhap = phieuNhaps.Sum(p => p.ChiTietPhieuNhaps.Sum(ct => ct.SoLuongThucNhap * ct.DonGia)),
-                TongTienXuat = phieuXuats.Sum(p => p.ChiTietPhieuXuats.Sum(ct => ct.SoLuongThucXuat * ct.DonGia)),
+                TongTienNhap = phieuNhaps.Sum(p => p.ChiTietPhieuNhaps.Sum(ct => ct.SoLuong * ct.DonGiaNhap)),
+                TongTienXuat = phieuXuats.Sum(p => p.ChiTietPhieuXuats.Sum(ct => ct.SoLuongXuat * ct.DonGiaXuat)),
                 TuNgay = startDate,
                 DenNgay = endDate
             };
@@ -129,7 +129,7 @@ namespace QuanLyVatTu.Services
             var tongXuatNamNay = await _context.PhieuXuats
                 .Include(p => p.ChiTietPhieuXuats)
                 .Where(p => p.NgayXuat.Year == DateTime.Now.Year && p.TrangThai == "Đã duyệt")
-                .SumAsync(p => p.ChiTietPhieuXuats.Sum(ct => ct.SoLuongThucXuat * ct.DonGia));
+                .SumAsync(p => p.ChiTietPhieuXuats.Sum(ct => ct.SoLuongXuat * ct.DonGiaXuat));
 
             decimal tyLe = tongGiaTriTon > 0 ? (tongXuatNamNay / tongGiaTriTon) : 0;
 

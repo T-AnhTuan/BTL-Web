@@ -21,6 +21,7 @@ namespace QuanLyVatTu.Models
 
         [StringLength(200)]
         public string? NhaCungCap { get; set; }
+        public double? GiaVonTB { get; set; }
         // --- LIÊN KẾT N-1 ---
         // Một vật tư có thể xuất hiện trong nhiều dòng chi tiết phiếu nhập
         public virtual ICollection<ChiTietPhieuNhap> ChiTietPhieuNhaps { get; set; }

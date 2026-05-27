@@ -108,17 +108,17 @@ namespace QuanLyVatTu.Services
             // Tiến hành trừ Tồn Kho thực tế
             foreach (var chiTiet in phieu.ChiTietPhieuXuats)
             {
-                var vatTu = await _context.VatTus.FindAsync(chiTiet.VatTuId);
+                var vatTu = await _context.VatTus.FindAsync(chiTiet.Id_VatTu);
                 if (vatTu != null)
                 {
                     // Kiểm tra tồn kho trước khi duyệt
-                    if (vatTu.SoLuongTon < chiTiet.SoLuongYeuCau)
+                    if (vatTu.SoLuongTon < chiTiet.SoLuongXuat)
                     {
                         return (false, $"Lỗi: Vật tư {vatTu.TenVatTu} không đủ tồn kho để xuất!");
                     }
 
                     // Trừ tồn kho và cập nhật
-                    vatTu.SoLuongTon -= chiTiet.SoLuongYeuCau;
+                    vatTu.SoLuongTon -= chiTiet.SoLuongXuat;
                     _context.VatTus.Update(vatTu);
                 }
             }

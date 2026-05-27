@@ -1,13 +1,21 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddScoped<INhapXuatService, NhapXuatService>();
-builder.Services.AddScoped<ITongHopBaoCaoService, TongHopBaoCaoService>();
-builder.Services.AddScoped<ITinhGiaVonService, TinhGiaVonService>();
+
+// Register AppDbContext với connection string
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer("Server=tcp:tattech.database.windows.net,1433;Initial Catalog=ExWeb;Persist Security Info=False;User ID=ASPNet_App;Password=Admin@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"));
+
+ builder.Services.AddScoped<INhapXuatService, NhapXuatService>();
+ builder.Services.AddScoped<ITongHopBaoCaoService, TongHopBaoCaoService>();
+ builder.Services.AddScoped<ITinhGiaVonService, TinhGiaVonService>();
+
 // Đăng ký dịch vụ xác thực bằng Cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

@@ -23,15 +23,15 @@ namespace QuanLyVatTu.Models
         public string? NhaCungCap { get; set; }   // Tên nhà cung cấp
         public string? NhapTaiKho { get; set; }    // Tên kho: Nhập hàng
         public string? DiaDiemKho { get; set; }       // Địa điểm kho
-
-        //Thông tin kỹ nhận, tổng kết
+      
+        //Thông tin ký nhận, tổng kết
         public int NguoiLapId { get; set; }
         [ForeignKey("NguoiLapId")]
         public NguoiDung NguoiLap { get; set; } = null!; 
         public string? NguoiGiaoHang { get; set; }    
         public string? ThuKho { get; set; }           
         public string? KeToanTruong { get; set; }
-
+        public string? TrangThai { get; set; }
         // Mối quan hệ 1 - Nhiều với Chi tiết phiếu nhập
         public ICollection<ChiTietPhieuNhap> ChiTietPhieuNhaps { get; set; }
             = new List<ChiTietPhieuNhap>();
