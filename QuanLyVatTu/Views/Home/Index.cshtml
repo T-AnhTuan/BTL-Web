@@ -1,8 +1,27 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- 1. KHU VỰC TỔNG QUAN -->
+<div class="row">
+    <div class="col-md-4">Tổng số vật tư: @ViewBag.TongLoaiVatTu</div>
+    <div class="col-md-4">Tổng giá trị: @ViewBag.TongGiaTriKho.ToString("N0") VNĐ</div>
+    <div class="col-md-4">Phiếu chờ duyệt: @ViewBag.PhieuXuatChoDuyet</div>
 </div>
+
+<!-- 2. KHU VỰC CẢNH BÁO KHO -->
+<h3>Cảnh báo tồn kho</h3>
+<ul>
+    @foreach (var item in ViewBag.CanhBaoKho)
+    {
+        <li class="text-danger">@item.TenVatTu - Chỉ còn: @item.SoLuongTon</li>
+    }
+</ul>
+
+<!-- 3. KHU VỰC HOẠT ĐỘNG GẦN ĐÂY -->
+<h3>Hoạt động hệ thống</h3>
+<ul>
+    @foreach (var log in ViewBag.HoatDongGanDay)
+    {
+        <li>[@log.ThoiGian.ToString("dd/MM/yyyy HH:mm")] @log.TenNguoiDung: @log.ChiTiet</li>
+    }
+</ul>
