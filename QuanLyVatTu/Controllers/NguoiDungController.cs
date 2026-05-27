@@ -16,10 +16,7 @@ namespace QuanLyVatTu.Controllers
         }
         // Xử lý khi bấm nút Đăng nhập (POST)
         [HttpPost]
-        public async Task<IActionResult> DangNhap(DangNhapVM model)
-        {
-            
-        }
+       // public async Task<IActionResult> DangNhap(DangNhapVM model)    {       }
         // Xử lý Đăng xuất
         public async Task<IActionResult> DangXuat()
         {
