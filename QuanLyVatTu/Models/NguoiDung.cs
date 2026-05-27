@@ -22,5 +22,13 @@ namespace QuanLyVatTu.Models
 
         [ForeignKey("PhanQuyenId")]
         public PhanQuyen PhanQuyen { get; set; } = null!;
+        // Nhật ký hệ thống
+        public ICollection<NhatKyHeThong> NhatKyHeThongs { get; set; }
+            = new List<NhatKyHeThong>();
+
+        // Thông báo
+        public ICollection<ThongBao> ThongBaos { get; set; }
+            = new List<ThongBao>();
+
     }
 }
