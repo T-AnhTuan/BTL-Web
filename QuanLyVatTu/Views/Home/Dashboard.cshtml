@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Trang Chủ";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">Trang Chủ - Quản Lý Kho Vật Tư</h1>
+            <p class="lead">Chào mừng bạn đến với hệ thống quản lý kho vật tư</p>
+
+            @if (Model is Dictionary<string, object> stats)
+            {
+                <div class="row mt-5">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Tổng Vật Tư</h5>
+                                <p class="card-text display-4">@stats["TotalMaterials"]</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Tổng Tồn Kho</h5>
+                                <p class="card-text display-4">@stats["TotalQuantity"]</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Trung Bình</h5>
+                                <p class="card-text display-4">@Math.Round((double)stats["AverageQuantity"], 2)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

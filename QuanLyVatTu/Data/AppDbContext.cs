@@ -9,15 +9,15 @@ namespace QuanLyVatTu.Data
         {
         }
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Role> Roles { get; set; }
+        public DbSet<NguoiDung> Users { get; set; }
+        public DbSet<PhanQuyen> Roles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // Configure Role entity
-            modelBuilder.Entity<Role>(entity =>
+            modelBuilder.Entity<PhanQuyen>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.RoleName).IsRequired().HasMaxLength(100);
@@ -25,7 +25,7 @@ namespace QuanLyVatTu.Data
             });
 
             // Configure User entity
-            modelBuilder.Entity<User>(entity =>
+            modelBuilder.Entity<NguoiDung>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
@@ -36,15 +36,15 @@ namespace QuanLyVatTu.Data
             });
 
             // Seed default roles
-            modelBuilder.Entity<Role>().HasData(
-                new Role { Id = 1, RoleName = "Admin", Description = "Quản trị viên hệ thống" },
-                new Role { Id = 2, RoleName = "Manager", Description = "Quản lý kho" },
-                new Role { Id = 3, RoleName = "Staff", Description = "Nhân viên" }
+            modelBuilder.Entity<PhanQuyen>().HasData(
+                new PhanQuyen { Id = 1, RoleName = "Admin", Description = "Quản trị viên hệ thống" },
+                new PhanQuyen { Id = 2, RoleName = "Manager", Description = "Quản lý kho" },
+                new PhanQuyen { Id = 3, RoleName = "Staff", Description = "Nhân viên" }
             );
 
             // Seed default admin user (password: Admin@123)
-            modelBuilder.Entity<User>().HasData(
-                new User
+            modelBuilder.Entity<NguoiDung>().HasData(
+                new NguoiDung
                 {
                     Id = 1,
                     Username = "admin",
