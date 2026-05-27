@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Data; // Thư mục chứa ApplicationDbContext / WebDbContext
 using QuanLyVatTu.Models; // Thư mục chứa các class CSDL (VatTu, PhieuNhap...)
 
 namespace QuanLyVatTu.Services

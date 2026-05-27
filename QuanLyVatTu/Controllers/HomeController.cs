@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Data; // Nơi chứa WebDbContext
 using QuanLyVatTu.Models; // Nơi chứa các class Models
 using System.Linq;
 using System.Threading.Tasks;

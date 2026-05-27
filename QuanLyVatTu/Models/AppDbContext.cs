@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Models;
 
-namespace QuanLyVatTu.Data
+namespace QuanLyVatTu.Models
 {
     public class AppDbContext : DbContext
     {

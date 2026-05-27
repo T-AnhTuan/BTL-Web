@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Data; // Nơi chứa WebDbContext
 using QuanLyVatTu.Models; // Nơi chứa model NguoiDung, NhatKyHeThong
 using QuanLyVatTu.ViewModels.DangNhap;
 using System;
