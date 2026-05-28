@@ -2,10 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
-using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -22,19 +20,30 @@ namespace QuanLyVatTu.Controllers
         }
 
         // ================================================================
-        // 1. DANH SÁCH PHIẾU XUẤT
+        // 1. DANH SÁCH NHẬP - XUẤT
         // ================================================================
-        public async Task<IActionResult> DanhSachPhieuXuat()
+        [HttpGet]
+        public async Task<IActionResult> PhieuXuat()
         {
             // Lấy danh sách phiếu xuất đổ ra giao diện
             var danhSach = await _context.PhieuXuats
-                .Include(p => p.KhoId)
+                .Include(p => p.Kho)
                 .OrderByDescending(p => p.NgayXuat)
                 .ToListAsync();
 
             return View(danhSach);
         }
+        [HttpGet]
+        public async Task<IActionResult> PhieuNhap()
+        {
+            // Lấy danh sách phiếu xuất đổ ra giao diện
+            var danhSach = await _context.PhieuNhaps
+                .Include(p => p.Kho)
+                .OrderByDescending(p => p.NgayNhap)
+                .ToListAsync();
 
+            return View(danhSach);
+        }
         // ================================================================
         // 2. CHỨC NĂNG DUYỆT PHIẾU XUẤT (Chỉ Quản lý mới được phép)
         // ================================================================
@@ -48,7 +57,7 @@ namespace QuanLyVatTu.Controllers
             if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
             {
                 TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
-                return RedirectToAction(nameof(DanhSachPhieuXuat));
+                return RedirectToAction(nameof(PhieuXuat));
             }
 
             // GỌI SERVICE: Xử lý nghiệp vụ duyệt, trừ tồn kho và tạo cảnh báo
@@ -64,7 +73,7 @@ namespace QuanLyVatTu.Controllers
                 TempData["ErrorMsg"] = result.Message;
             }
 
-            return RedirectToAction(nameof(DanhSachPhieuXuat));
+            return RedirectToAction(nameof(PhieuXuat));
         }
 
         // ================================================================

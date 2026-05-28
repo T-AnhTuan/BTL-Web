@@ -1,3 +1,4 @@
+@model QuanLyVatTu.ViewModels.PhanQuyenVM
 @{
     ViewData["Title"] = "Quản Lý Vai Trò và Phân Quyền";
 }
@@ -7,157 +8,116 @@
 
 <div class="page-header">
     <h1 class="page-title">Quản lý vai trò và Phân quyền</h1>
+    <!-- Bấm nút này sẽ submit form bên dưới -->
     <div style="display: flex; gap: 10px;">
-        <button id="btnSaveConfig" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Phân Quyền</button>
-        <button class="btn btn-outline">Hủy bỏ</button>
+        <button type="submit" form="frmPhanQuyen" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Phân Quyền</button>
+        <a href="@Url.Action("PhanQuyen")" class="btn btn-outline">Hủy bỏ</a>
     </div>
 </div>
 
-<div class="permissions-container">
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
 
+<div class="permissions-container">
+    <!-- CỘT TRÁI: Danh sách Vai Trò động từ DB -->
     <div class="roles-sidebar">
         <ul class="role-list">
-            <li class="active">Quản trị viên</li>
-            <li>Thủ kho</li>
-            <li>Kế toán</li>
-            <li>Nhân viên</li>
+            @foreach (var role in Model.DanhSachVaiTro)
+            {
+                // Thêm class active nếu vai trò này đang được chọn
+                var activeClass = (role.Id == Model.VaiTroDangChon.Id) ? "active" : "";
+                <li class="@activeClass">
+                    <a href="@Url.Action("PhanQuyen", "NguoiDung", new { vaiTroId = role.Id })" style="text-decoration:none; color:inherit; display:block;">
+                        @role.TenVaiTro
+                    </a>
+                </li>
+            }
         </ul>
         <button id="btnOpenRoleModal" class="btn-add-role"><i class="fa-solid fa-plus"></i> Thêm Vai Trò Mới</button>
     </div>
 
+    <!-- CỘT PHẢI: Ma trận quyền động -->
     <div class="matrix-content">
         <div class="info-alert">
             <i class="fa-solid fa-circle-info"></i>
-            <span>Cấu hình phân quyền cho vai trò: <strong>Quản trị viên</strong></span>
+            <span>Cấu hình phân quyền cho vai trò: <strong>@Model.VaiTroDangChon.TenVaiTro</strong></span>
         </div>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th colspan="2">Chức Năng</th>
-                    <th style="width: 80px;">Xem</th>
-                    <th style="width: 80px;">Thêm</th>
-                    <th style="width: 80px;">Sửa</th>
-                    <th style="width: 80px;">Xóa</th>
-                    <th style="width: 100px;">Phê Duyệt</th>
-                    <th style="width: 120px;">Toàn Quyền</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="quick-select-row">
-                    <td colspan="2"><input type="text" placeholder="Tìm kiếm nhanh..."></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><input type="checkbox" title="Chọn tất cả"></td>
-                </tr>
+        <form id="frmPhanQuyen" asp-action="LuuCauHinhPhanQuyen" method="post">
+            <input type="hidden" name="VaiTroId" value="@Model.VaiTroDangChon.Id" />
 
-                <tr>
-                    <td>Vật Tư</td>
-                    <td>Vật Tư</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-
-                <tr>
-                    <td>Danh Mục</td>
-                    <td>Danh Mục</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-
-                <tr>
-                    <td rowspan="3">Nghiệp vụ Kho</td>
-                    <td>Phiếu Nhập</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-                <tr>
-                    <td>Phiếu Xuất</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-                <tr>
-                    <td>Thẻ Kho</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-
-                <tr>
-                    <td>Báo Cáo</td>
-                    <td>Báo Cáo</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-
-                <tr>
-                    <td rowspan="2">Quản Trị</td>
-                    <td>Quản trị Tài khoản</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-                <tr>
-                    <td>Phân Quyền</td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox" checked></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox" checked></td>
-                </tr>
-            </tbody>
-        </table>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">Mã Module</th>
+                        <th>Tên Chức Năng</th>
+                        <th style="width: 80px; text-align:center;">Xem</th>
+                        <th style="width: 80px; text-align:center;">Thêm</th>
+                        <th style="width: 80px; text-align:center;">Sửa</th>
+                        <th style="width: 80px; text-align:center;">Xóa</th>
+                        <th style="width: 100px; text-align:center;">Toàn Quyền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.VaiTroDangChon.PhanQuyens != null && Model.VaiTroDangChon.PhanQuyens.Any())
+                    {
+                        var phanQuyensList = Model.VaiTroDangChon.PhanQuyens.ToList();
+                        for (int i = 0; i < phanQuyensList.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    <!-- Các trường hidden để Controller biết đang cập nhật dòng nào -->
+                                    <input type="hidden" name="PhanQuyens[@i].Id" value="@phanQuyensList[i].Id" />
+                                    <input type="hidden" name="PhanQuyens[@i].VaiTroId" value="@phanQuyensList[i].VaiTroId" />
+                                    <input type="hidden" name="PhanQuyens[@i].MaChucNang" value="@phanQuyensList[i].MaChucNang" />
+                                    <input type="hidden" name="PhanQuyens[@i].TenChucNang" value="@phanQuyensList[i].TenChucNang" />
+                                    
+                                    <span class="badge bg-light text-dark">@phanQuyensList[i].MaChucNang</span>
+                                </td>
+                                <td><strong>@phanQuyensList[i].TenChucNang</strong></td>
+                                <td style="text-align:center;"><input type="checkbox" name="PhanQuyens[@i].CoQuyenXem" value="true" @(phanQuyensList[i].CoQuyenXem ? "checked" : "") /></td>
+                                <td style="text-align:center;"><input type="checkbox" name="PhanQuyens[@i].CoQuyenThem" value="true" @(phanQuyensList[i].CoQuyenThem ? "checked" : "") /></td>
+                                <td style="text-align:center;"><input type="checkbox" name="PhanQuyens[@i].CoQuyenSua" value="true" @(phanQuyensList[i].CoQuyenSua ? "checked" : "") /></td>
+                                <td style="text-align:center;"><input type="checkbox" name="PhanQuyens[@i].CoQuyenXoa" value="true" @(phanQuyensList[i].CoQuyenXoa ? "checked" : "") /></td>
+                                <td style="text-align:center;"><input type="checkbox" class="chk-toan-quyen" title="Chọn tất cả"></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center">Vai trò này chưa được khởi tạo danh sách chức năng.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
     </div>
 </div>
 
-<div id="addRoleModal" class="modal-overlay">
+<!-- Modal Thêm Vai Trò (Giữ nguyên giao diện của bạn) -->
+<div id="addRoleModal" class="modal-overlay" style="display:none;">
     <div class="modal-box">
         <div class="modal-header">
             <h3><i class="fa-solid fa-shield-halved" style="color:#1e293b; margin-right:8px;"></i> THÊM VAI TRÒ MỚI</h3>
             <button id="btnCloseRoleModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
         <div class="modal-body">
             <div class="form-group">
-                <label>Tên Vai Trò (Role Name) <span style="color:red">*</span></label>
-                <input type="text" placeholder="Ví dụ: Giám đốc, Quản lý chi nhánh...">
+                <label>Tên Vai Trò <span style="color:red">*</span></label>
+                <input type="text" id="newRoleName" placeholder="Ví dụ: Giám đốc...">
             </div>
             <div class="form-group">
-                <label>Ghi chú / Mô tả</label>
-                <input type="text" placeholder="Nhập mô tả cho vai trò này...">
+                <label>Mô tả</label>
+                <input type="text" id="newRoleDesc" placeholder="Nhập mô tả...">
             </div>
         </div>
-
         <div class="modal-footer">
             <button id="btnCancelRole" class="btn btn-cancel">Hủy Bỏ</button>
             <button id="btnSaveRole" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Vai Trò</button>
@@ -165,6 +125,14 @@
     </div>
 </div>
 
-<script src="~/js/phanquyen.js" asp-append-version="true">
-  
+<script src="~/js/phanquyen.js" asp-append-version="true"></script>
+<script>
+    // JS Nhỏ hỗ trợ tick nút "Toàn quyền"
+    document.querySelectorAll('.chk-toan-quyen').forEach(chk => {
+        chk.addEventListener('change', function() {
+            let row = this.closest('tr');
+            let checkboxes = row.querySelectorAll('input[type="checkbox"]:not(.chk-toan-quyen)');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    });
 </script>

@@ -23,10 +23,11 @@
             {
                 foreach (var dm in ViewBag.DanhMucs)
                 {
-                    <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                    <!-- SỬA Ở ĐÂY: Đổi value từ dm.MaDanhMuc sang dm.Id -->
+                    <option value="@dm.Id">@dm.TenDanhMuc</option>
                 }
             }
-            </select>
+        </select>
     </div>
     <div class="filter-group" style="flex: 2;">
         <label>Tìm kiếm</label>
@@ -56,7 +57,10 @@
                     <tr>
                         <td>@item.MaVatTu</td>
                         <td style="font-weight: 500;">@item.TenVatTu</td>
-                        <td>@item.DanhMucId</td>
+
+                        <!-- SỬA Ở ĐÂY: Lấy Tên Danh Mục thông qua Khóa Ngoại -->
+                        <td>@(item.DanhMuc != null ? item.DanhMuc.TenDanhMuc : "Không xác định")</td>
+
                         <td>@item.DonViTinh</td>
                         <td>@item.TonKhoHienTai</td>
                         <td>@item.GiaVonBinhQuan.ToString("N0") VNĐ</td>
@@ -99,7 +103,8 @@
                         {
                             foreach (var dm in ViewBag.DanhMucs)
                             {
-                                <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                                <!-- SỬA Ở ĐÂY: Đổi value từ dm.MaDanhMuc sang dm.Id -->
+                                <option value="@dm.Id">@dm.TenDanhMuc</option>
                             }
                         }
                     </select>
@@ -123,7 +128,7 @@
             </div>
 
             <div class="filter-group">
-                <label>Giá vốn bình quân)</label>
+                <label>Giá vốn bình quân</label>
                 <input type="number" id="inputGiaVonBinhQuan" value="0" placeholder="VNĐ">
             </div>
         </div>
@@ -135,6 +140,4 @@
     </div>
 </div>
 
-<script src="~/js/dsvattu.js" asp-append-version="true">
-    
-</script>
+<script src="~/js/dsvattu.js" asp-append-version="true"></script>

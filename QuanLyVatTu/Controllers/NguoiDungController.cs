@@ -5,10 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using System;
-using System.Collections.Generic;
+using QuanLyVatTu.ViewModels;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -34,13 +32,16 @@ namespace QuanLyVatTu.Controllers
 
             return View();
         }
-
+        [Authorize]
+        public IActionResult TaiKhoanCaNhan()
+        {
+            return View();
+        }
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DangNhap(string username, string password)
         {
-            // Bọc toàn bộ luồng đăng nhập vào Try-Catch để bắt lỗi hiển thị ra màn hình
             try
             {
                 if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
@@ -48,8 +49,6 @@ namespace QuanLyVatTu.Controllers
                     ModelState.AddModelError("", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
                     return View();
                 }
-
-                // 1. Truy vấn bảng TaiKhoans (kèm thông tin Nhân viên và Vai trò)
                 var account = await _context.TaiKhoans
                     .Include(t => t.VaiTro)
                     .Include(t => t.NhanVien)
@@ -60,8 +59,6 @@ namespace QuanLyVatTu.Controllers
                     ModelState.AddModelError("", "Tên đăng nhập không tồn tại trong hệ thống.");
                     return View();
                 }
-
-                // 2. Kiểm tra mật khẩu an toàn (Fix lỗi sập BCrypt)
                 bool isPasswordValid = false;
                 try
                 {
@@ -126,7 +123,94 @@ namespace QuanLyVatTu.Controllers
                 return View();
             }
         }
+        // QUẢN LÝ TÀI KHOẢN VÀ PHÂN QUYỀN
+        [Authorize(Roles = "Admin, Quản trị viên")]
+        public async Task<IActionResult> QuanLyTaiKhoan()
+        {
+            var taiKhoans = await _context.TaiKhoans
+                .Include(t => t.NhanVien)
+                .Include(t => t.VaiTro)
+                .ToListAsync();
+            return View(taiKhoans);
+        }
+        // Thêm các hàm này vào trong NguoiDungController của bạn
+        // Thay thế hàm PhanQuyen(int id) cũ bằng 2 hàm dưới đây:
 
+        [Authorize(Roles = "Admin, Quản trị viên")]
+        public async Task<IActionResult> PhanQuyen(int? vaiTroId)
+        {
+            var danhSachVaiTro = await _context.VaiTros.ToListAsync();
+
+            if (!danhSachVaiTro.Any())
+            {
+                return NotFound("Chưa có vai trò nào trong hệ thống.");
+            }
+
+            // Nếu không truyền ID, mặc định chọn vai trò đầu tiên trong danh sách
+            int selectedId = vaiTroId ?? danhSachVaiTro.First().Id;
+
+            var vaiTroDangChon = await _context.VaiTros
+                .Include(v => v.PhanQuyens)
+                .FirstOrDefaultAsync(v => v.Id == selectedId);
+
+            if (vaiTroDangChon == null)
+            {
+                return NotFound();
+            }
+
+            var viewModel = new PhanQuyenVM
+            {
+                DanhSachVaiTro = danhSachVaiTro,
+                VaiTroDangChon = vaiTroDangChon
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin, Quản trị viên")]
+        public async Task<IActionResult> LuuCauHinhPhanQuyen(int VaiTroId, List<PhanQuyen> PhanQuyens)
+        {
+            try
+            {
+                var vaiTro = await _context.VaiTros
+                    .Include(v => v.PhanQuyens)
+                    .FirstOrDefaultAsync(v => v.Id == VaiTroId);
+
+                if (vaiTro == null) return NotFound();
+
+                // Cập nhật từng quyền
+                foreach (var quyenMoi in PhanQuyens)
+                {
+                    var quyenCu = vaiTro.PhanQuyens.FirstOrDefault(q => q.Id == quyenMoi.Id);
+                    if (quyenCu != null)
+                    {
+                        quyenCu.CoQuyenXem = quyenMoi.CoQuyenXem;
+                        quyenCu.CoQuyenThem = quyenMoi.CoQuyenThem;
+                        quyenCu.CoQuyenSua = quyenMoi.CoQuyenSua;
+                        quyenCu.CoQuyenXoa = quyenMoi.CoQuyenXoa;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Ghi log
+                var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdString, out int userId))
+                {
+                    await LogActionAsync(userId, $"Đã cập nhật phân quyền cho vai trò: {vaiTro.TenVaiTro}");
+                }
+
+                TempData["SuccessMessage"] = "Lưu cấu hình phân quyền thành công!";
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi lưu cấu hình: " + ex.Message;
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
+            }
+        }
         // ================================================================
         // ĐĂNG XUẤT
         // ================================================================
@@ -164,7 +248,6 @@ namespace QuanLyVatTu.Controllers
             }
             catch
             {
-                // Bỏ qua nếu lỗi ghi log để không làm gián đoạn luồng chính
             }
         }
     }

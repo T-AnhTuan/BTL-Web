@@ -6,8 +6,8 @@
 
 <link rel="stylesheet" href="~/css/kho.css" asp-append-version="true" />
 
-<h1 class="page-title">Báo Cáo Chi Tiết Thẻ Kho</h1>
-<form method="get" asp-controller="VatTu" asp-action="Kho" class="filter-toolbar">
+<h1 class="page-title">BÁO CÁO HÀNG TỒN KHO</h1>
+<form method="get" asp-controller="BaoCao" asp-action="Kho" class="filter-toolbar">
     <div class="filter-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <select class="select-vattu">
@@ -24,8 +24,8 @@
         </select>
     </div>
 
-    <input type="date" class="input-date" title="Từ ngày">
-    <input type="date" class="input-date" title="Đến ngày">
+    <input type="date" name="tuNgay" class="input-date" title="Từ ngày" value="@ViewBag.TuNgay">
+    <input type="date" name="denNgay" class="input-date" title="Đến ngày" value="@ViewBag.DenNgay">
 
     <button class="btn btn-primary">Xem báo cáo</button>
 </form>

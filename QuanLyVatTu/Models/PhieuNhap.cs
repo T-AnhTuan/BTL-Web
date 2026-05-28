@@ -33,7 +33,8 @@ namespace QuanLyVatTu.Models
         [StringLength(100)]
         [Display(Name = "Kho Nhập")]
         public int KhoId { get; set; }
-
+        [ForeignKey("KhoId")]
+        public DanhMucKho Kho { get; set; }
         [StringLength(500)]
         [Display(Name = "Ghi Chú")]
         public string GhiChu { get; set; }

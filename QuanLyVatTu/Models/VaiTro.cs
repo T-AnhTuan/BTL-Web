@@ -18,6 +18,6 @@ namespace QuanLyVatTu.Models
 
         // Navigation Properties
         public ICollection<TaiKhoan> TaiKhoans { get; set; }
-        public ICollection<VaiTro> PhanQuyens { get; set; }
+        public ICollection<PhanQuyen> PhanQuyens { get; set; }
     }
 }

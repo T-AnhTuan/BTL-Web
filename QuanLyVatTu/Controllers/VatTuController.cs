@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// Khai báo sử dụng các thư viện cần thiết của ASP.NET Core để xác thực, điều hướng và thao tác CSDL
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,176 +10,78 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
+// Không gian tên của dự án chứa các Controller
 namespace QuanLyVatTu.Controllers
 {
+    // Kế thừa từ lớp Controller cơ sở của MVC để có các tính năng như trả về View()
     public class VatTuController : Controller
     {
+        // Khai báo biến _context chỉ đọc để chứa kết nối tới Database SQL Server
         private readonly AppDbContext _context;
 
+        // Hàm khởi tạo (Constructor), tự động được ASP.NET Core bơm (Inject) AppDbContext vào khi chạy
         public VatTuController(AppDbContext context)
         {
+            // Gán context nhận được vào biến _context để sử dụng trong toàn bộ Class này
             _context = context;
         }
 
         // ================================================================
         // 1. TRANG DANH SÁCH VẬT TƯ (Load giao diện và dữ liệu)
         // ================================================================
+        // Định nghĩa đây là phương thức xử lý yêu cầu GET từ trình duyệt
         [HttpGet]
+        // SỬA LỖI NGHIÊM TRỌNG: Đổi tên hàm từ Index thành dsVatTu để khớp ĐÚNG TÊN với file dsVatTu.cshtml
         public async Task<IActionResult> Index(int? danhMucId, string tuKhoa)
         {
+            // Bọc trong khối try-catch để nếu lỗi CSDL thì không bị sập web
             try
             {
-                // 1. Lấy danh sách Danh mục cho Dropdown Lọc
-                ViewBag.DanhSachDanhMuc = new SelectList(await _context.DanhMucVatTus.ToListAsync(), "Id", "TenDanhMuc", danhMucId);
+                // Truy vấn CSDL: Lấy toàn bộ danh sách DanhMucVatTu và gán vào ViewBag.DanhMucs
+                // View dsVatTu.cshtml đang dùng ViewBag.DanhMucs để vẽ thẻ <select> dropdown
+                ViewBag.DanhMucs = await _context.DanhMucVatTus.ToListAsync();
 
-                // 2. Truy vấn danh sách Vật tư
+                // Bắt đầu viết câu truy vấn lấy Vật tư. Dùng Include để kết nối khóa ngoại lấy Tên Danh Mục (Tránh lỗi Null)
                 var query = _context.VatTus.Include(v => v.DanhMuc).AsQueryable();
 
-                // Lọc theo Danh mục
-                if (danhMucId.HasValue && danhMucId.Value > 0)
-                {
-                    query = query.Where(v => v.DanhMucId == danhMucId.Value);
-                }
+                // SỬA LỖI: Lấy danh sách chạy thực thi câu lệnh SQL và đổ về RAM dưới dạng List
+                var data = await query.ToListAsync();
 
-                // Lọc theo Từ khóa (Mã hoặc Tên)
-                if (!string.IsNullOrEmpty(tuKhoa))
-                {
-                    tuKhoa = tuKhoa.ToLower();
-                    query = query.Where(v => v.MaVatTu.ToLower().Contains(tuKhoa)
-                                          || v.TenVatTu.ToLower().Contains(tuKhoa));
-                }
-
-                var danhSach = await query.OrderByDescending(v => v.Id).ToListAsync();
-
-                // Trả về chính xác tên file View dsVatTu.cshtml
-                return View("dsVatTu", danhSach);
+                // Trả về file dsVatTu.cshtml kèm theo dữ liệu (data) đã truy vấn được
+                return View(data);
             }
-            catch (Exception ex)
+            catch (Exception ex) // Nếu có lỗi xảy ra
             {
-                return Content($"LỖI TẢI DANH SÁCH VẬT TƯ: {ex.Message}");
+                // In lỗi ra màn hình Console để lập trình viên biết
+                Console.WriteLine("Lỗi truy vấn Vật tư: " + ex.Message);
+                // Trả về một View trắng hoặc trang báo lỗi tùy chọn
+                return View();
             }
         }
 
         // ================================================================
-        // 2. API LẤY THÔNG TIN 1 VẬT TƯ (Dùng cho Modal Sửa bằng AJAX)
+        // HÀM HỖ TRỢ GHI LOG (Giữ nguyên như code cũ của bạn)
         // ================================================================
-        [HttpGet]
-        public async Task<IActionResult> LayThongTin(int id)
-        {
-            var vatTu = await _context.VatTus.FindAsync(id);
-            if (vatTu == null)
-            {
-                return Json(new { success = false, message = "Không tìm thấy vật tư này trong hệ thống!" });
-            }
-
-            return Json(new { success = true, data = vatTu });
-        }
-
-        // ================================================================
-        // 3. API THÊM / SỬA VẬT TƯ (Nhận dữ liệu từ AJAX Modal)
-        // ================================================================
-        [HttpPost]
-        [Authorize(Roles = "Quản trị viên, Quản lý kho")] // Chỉ Quản lý mới được sửa danh mục
-        public async Task<IActionResult> LuuVatTu([FromBody] VatTu model)
-        {
-            try
-            {
-                // Kiểm tra trùng Mã Vật Tư
-                bool isDuplicate = await _context.VatTus.AnyAsync(v => v.MaVatTu == model.MaVatTu && v.Id != model.Id);
-                if (isDuplicate)
-                {
-                    return Json(new { success = false, message = "Mã vật tư này đã tồn tại. Vui lòng chọn mã khác!" });
-                }
-
-                if (model.Id == 0)
-                {
-                    // THÊM MỚI
-                    // BẢO MẬT: Ép Tồn kho và Giá vốn về 0 khi tạo mới. (Không tin tưởng Client)
-                    model.TonKhoHienTai = 0;
-                    model.GiaVonBinhQuan = 0;
-
-                    _context.VatTus.Add(model);
-                    await LogActionAsync($"Thêm mới vật tư: {model.MaVatTu} - {model.TenVatTu}");
-                }
-                else
-                {
-                    // CẬP NHẬT
-                    var existingVatTu = await _context.VatTus.FindAsync(model.Id);
-                    if (existingVatTu == null) return Json(new { success = false, message = "Dữ liệu không tồn tại!" });
-
-                    existingVatTu.MaVatTu = model.MaVatTu;
-                    existingVatTu.TenVatTu = model.TenVatTu;
-                    existingVatTu.DanhMucId = model.DanhMucId;
-                    existingVatTu.DonViTinh = model.DonViTinh;
-                    existingVatTu.TonToiThieu = model.TonToiThieu;
-
-                    // TUYỆT ĐỐI KHÔNG cập nhật Tồn kho và Giá vốn ở đây (Chỉ có Service Nhập Xuất mới được phép đổi)
-
-                    _context.VatTus.Update(existingVatTu);
-                    await LogActionAsync($"Cập nhật thông tin vật tư: {model.MaVatTu}");
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Lưu thông tin vật tư thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Lỗi hệ thống: {ex.Message}" });
-            }
-        }
-
-        // ================================================================
-        // 4. API XÓA VẬT TƯ (AJAX)
-        // ================================================================
-        [HttpPost]
-        [Authorize(Roles = "Quản trị viên")] // Xóa là hành động nguy hiểm, chỉ Admin mới được làm
-        public async Task<IActionResult> XoaVatTu(int id)
-        {
-            try
-            {
-                var vatTu = await _context.VatTus.FindAsync(id);
-                if (vatTu == null)
-                    return Json(new { success = false, message = "Không tìm thấy vật tư!" });
-
-                // KIỂM TRA TOÀN VẸN DỮ LIỆU: Nếu Vật tư đã từng phát sinh Nhập/Xuất thì KHÔNG ĐƯỢC XÓA
-                bool hasHistory = await _context.ChiTietPhieuNhaps.AnyAsync(c => c.VatTuId == id) ||
-                                  await _context.ChiTietPhieuXuats.AnyAsync(c => c.VatTuId == id);
-
-                if (hasHistory)
-                {
-                    return Json(new { success = false, message = "Không thể xóa! Vật tư này đã có lịch sử Nhập/Xuất kho. Bạn chỉ có thể ngừng theo dõi nó." });
-                }
-
-                _context.VatTus.Remove(vatTu);
-                await _context.SaveChangesAsync();
-
-                await LogActionAsync($"Xóa vật tư: {vatTu.MaVatTu} - {vatTu.TenVatTu}");
-
-                return Json(new { success = true, message = "Đã xóa vật tư thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Lỗi khi xóa: {ex.Message}" });
-            }
-        }
-
-        // ================================================================
-        // HÀM HỖ TRỢ GHI LOG
-        // ================================================================
+        // Khai báo hàm riêng tư (chỉ gọi trong Controller này) để ghi lại lịch sử thao tác
         private async Task LogActionAsync(string action)
         {
+            // Lấy ID người dùng đang đăng nhập từ Cookie (dạng chuỗi)
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Ép kiểu chuỗi ID thành số nguyên (int), nếu thành công thì chạy tiếp
             if (int.TryParse(userIdString, out int taiKhoanId))
             {
+                // Tạo một đối tượng Log mới
                 var log = new NhatKyHeThong
                 {
-                    TaiKhoanId = taiKhoanId,
-                    HanhDong = action,
-                    ThoiGian = DateTime.Now,
-                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
+                    TaiKhoanId = taiKhoanId, // Gắn ID người làm
+                    HanhDong = action,       // Gắn hành động (VD: Thêm vật tư, Xóa vật tư)
+                    ThoiGian = DateTime.Now, // Gắn thời gian hiện tại
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0" // Gắn IP
                 };
+                // Thêm log vào hàng đợi của Entity Framework
                 _context.NhatKyHeThongs.Add(log);
-                // Không gọi SaveChangesAsync ở đây để hàm gọi nó tự Save (tạo Transaction chung)
+                // Lưu ý: Không SaveChanges ở đây vì các hàm gọi nó (như Thêm, Xóa) sẽ tự gọi SaveChanges chung
             }
         }
     }

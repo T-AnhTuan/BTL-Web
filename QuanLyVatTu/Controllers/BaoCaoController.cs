@@ -58,5 +58,42 @@ namespace QuanLyVatTu.Controllers
             // Trả về View để Frontend dùng Chart.js vẽ biểu đồ
             return View();
         }
+        [HttpGet]
+        public async Task<IActionResult> Kho(int? vatTuId, DateTime? tuNgay, DateTime? denNgay)
+        {
+            try
+            {
+                // SỬA LỖI 1: Bắt buộc phải đổ dữ liệu Vật Tư vào ViewBag để View vẽ cái Dropdown
+                ViewBag.VatTus = await _context.VatTus.ToListAsync();
+
+                // Giữ lại giá trị ngày tháng người dùng vừa chọn để in lại ra Form
+                ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
+                ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
+
+                // SỬA LỖI 2: Khởi tạo ĐÚNG đối tượng KhoVM mà file Kho.cshtml đang chờ đợi
+                KhoVM model = new KhoVM();
+                model.ChiTietGiaoDich = new List<ChiTietGiaoDichViewModel>(); // Khởi tạo list rỗng để không bị Null
+
+                // Nếu người dùng đã chọn 1 vật tư (vatTuId có số)
+                if (vatTuId.HasValue && vatTuId.Value > 0)
+                {
+                    // Lấy thông tin vật tư đó từ Database
+                    var vt = await _context.VatTus.FindAsync(vatTuId.Value);
+                    if (vt != null)
+                    {
+                        // Nhét dữ liệu vào KhoVM
+                        model.VatTuId = vt.Id;
+                        model.TenVatTu = vt.TenVatTu;
+                        model.TenKho = "Kho Tổng"; // Tạm fix cứng tên kho
+                    }
+                }
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi load danh mục: " + ex.Message);
+                return View(new KhoVM());
+            }
+        }
     }
 }
