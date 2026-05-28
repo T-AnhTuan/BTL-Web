@@ -1,5 +1,5 @@
-﻿@using QuanLyVatTu.Models
-@model IEnumerable<ChiTietKho>
+﻿@using QuanLyVatTu.ViewModels
+@model KhoVM
 @{
     ViewData["Title"] = "Báo Cáo Chi Tiết Thẻ Kho";
 }
@@ -7,17 +7,18 @@
 <link rel="stylesheet" href="~/css/kho.css" asp-append-version="true" />
 
 <h1 class="page-title">Báo Cáo Chi Tiết Thẻ Kho</h1>
-
-<div class="filter-toolbar">
+<form method="get" asp-controller="VatTu" asp-action="Kho" class="filter-toolbar">
     <div class="filter-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <select class="select-vattu">
-            <option value="">Chọn Vật Tư...</option>
+            <option value="">Chọn vật tư...</option>
             @if (ViewBag.VatTus != null)
             {
                 foreach (var vt in ViewBag.VatTus)
                 {
-                    <option value="@vt.MaVatTu" selected="@(Model?.VatTuId == vt.Id ? "selected":null)">@vt.TenVatTu</option>
+                    <option value="@vt.Id" selected="@(Model?.VatTuId == vt.Id ? "selected" : null)">
+                        @vt.TenVatTu
+                    </option>
                 }
             }
         </select>
@@ -27,8 +28,7 @@
     <input type="date" class="input-date" title="Đến ngày">
 
     <button class="btn btn-primary">Xem báo cáo</button>
-</div>
-
+</form>
 <div class="table-container">
     <div class="table-header-title">
         Kho Vật Tư: @(Model?.TenVatTu ?? "[Chưa chọn vật tư]") - Kho: @(Model?.TenKho ?? "Kho Tổng")

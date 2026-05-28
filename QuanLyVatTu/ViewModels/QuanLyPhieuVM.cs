@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace QuanLyVatTu.ViewModels.NhapXuat
+namespace QuanLyVatTu.ViewModels
 {
     /// <summary>
     /// ViewModel cho trang Quản lý Phiếu Nhập (PhieuNhap.cshtml)

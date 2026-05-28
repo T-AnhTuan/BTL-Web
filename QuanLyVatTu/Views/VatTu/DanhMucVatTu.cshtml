@@ -17,8 +17,8 @@
         <span style="font-size:14px; color:#475569; font-weight:500;">Trạng thái</span>
         <select class="status-select">
             <option value="">Tất cả</option>
-            <option value="active">Hoạt động</option>
-            <option value="inactive">Tạm ngừng</option>
+            <option value="1">Hoạt động</option>
+            <option value="0">Tạm ngừng</option>
         </select>
     </div>
 
@@ -55,13 +55,13 @@
                         <td>@item.NguoiTao</td>
                         <td>@item.NgayTao.ToString("dd/MM/yyyy")</td>
                         <td class="text-center">
-                            @if (item.TrangThai.Actice)
+                            @if ((int)item.TrangThai==1)
                             {
-                                <span class="status-badge active">Hoạt động</span>
+                                <span>Hoạt động</span>
                             }
                             else
                             {
-                                <span class="status-badge inactive">Tạm ngừng</span>
+                                <span>Tạm ngừng</span>
                             }
                         </td>
                         <td class="text-center">

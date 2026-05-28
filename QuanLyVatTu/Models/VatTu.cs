@@ -2,13 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace QuanLyVatTu.Models
 {
-    public enum TrangThaiHoatDong
-    {
-        [Display(Name = "Hoạt động")]
-        Active = 1,
-        [Display(Name = "Tạm ngừng")]
-        Inactive = 0
-    }
     public class VatTu
     {
         [Key]
@@ -43,7 +36,5 @@ namespace QuanLyVatTu.Models
         [Display(Name = "Giá Vốn Bình Quân")]
         [Column(TypeName = "decimal(18,2)")]
         public decimal GiaVonBinhQuan { get; set; } = 0;
-
-        public TrangThaiHoatDong TrangThai { get; set; } = TrangThaiHoatDong.Active;
     }
 }

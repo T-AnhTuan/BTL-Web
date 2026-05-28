@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace QuanLyVatTu.ViewModels.NguoiDung
+namespace QuanLyVatTu.ViewModels
 {
     /// <summary>
     /// ViewModel cho trang Quản lý Vai trò và Phân quyền (PhanQuyen.cshtml)
