@@ -6,12 +6,12 @@ using QuanLyVatTu.Data;
 using QuanLyVatTu.Services;
 using QuanLyVatTu.ViewModels;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {
-    // Chỉ Admin và Quản lý kho mới được xem báo cáo kế toán
-    [Authorize(Roles = "Quản trị viên, Quản lý kho")]
+    [Authorize(Roles = "Quản trị viên, Quản lý kho, Admin")]
     public class BaoCaoController : Controller
     {
         private readonly IBaoCaoService _baoCaoService;
@@ -24,22 +24,28 @@ namespace QuanLyVatTu.Controllers
         }
 
         // =========================================================================
-        // TRANG CHỦ BÁO CÁO: TỔNG HỢP XUẤT - NHẬP - TỒN (Map với Views/BaoCao/Index.cshtml)
+        // TRANG CHỦ BÁO CÁO: TỔNG HỢP XUẤT - NHẬP - TỒN
         // =========================================================================
         [HttpGet]
-        public async Task<IActionResult> Index(int? khoId, DateTime? tuNgay, DateTime? denNgay, string tuKhoa)
+        // SỬA LỖI 3: Dùng thẳng BaoCaoVM làm parameter để map tự động với Form
+        public async Task<IActionResult> Index(BaoCaoVM filter)
         {
             try
             {
-                // 1. Chuẩn bị dữ liệu cho Dropdown chọn Kho
-                ViewBag.DanhSachKho = new SelectList(await _context.DanhMucKhos.ToListAsync(), "Id", "TenKho", khoId);
+                ViewBag.DanhSachKho = new SelectList(await _context.DanhMucKhos.ToListAsync(), "Id", "TenKho", filter.KhoId);
 
-                // 2. Thiết lập thời gian mặc định (Từ đầu tháng đến ngày hiện tại)
-                if (!tuNgay.HasValue) tuNgay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                if (!denNgay.HasValue) denNgay = DateTime.Now;
+                // Thiết lập ngày mặc định nếu người dùng chưa chọn
+                DateTime fromDate = filter.TuNgay ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                DateTime toDate = filter.DenNgay ?? DateTime.Now.Date;
 
-                // 3. Gọi Service xử lý thuật toán cộng trừ Tồn đầu - Nhập - Xuất - Tồn cuối
-                var viewModel = await _baoCaoService.LayBaoCaoNhapXuatTonAsync(khoId, tuNgay.Value, denNgay.Value, tuKhoa);
+                // Gọi Service lấy dữ liệu
+                var viewModel = await _baoCaoService.LayBaoCaoNhapXuatTonAsync(filter.KhoId, fromDate, toDate, filter.TuKhoa);
+
+                // Quan trọng: Gắn lại các giá trị lọc vào ViewModel để giao diện không bị mất giá trị khi load lại
+                viewModel.KhoId = filter.KhoId;
+                viewModel.TuNgay = fromDate;
+                viewModel.DenNgay = toDate;
+                viewModel.TuKhoa = filter.TuKhoa;
 
                 return View(viewModel);
             }
@@ -49,49 +55,101 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
-        // =========================================================================
-        // TRANG BIỂU ĐỒ PHÂN TÍCH THỐNG KÊ
-        // =========================================================================
         [HttpGet]
         public async Task<IActionResult> PhanTichThongKe()
         {
-            // Trả về View để Frontend dùng Chart.js vẽ biểu đồ
             return View();
         }
+
+        // =========================================================================
+        // TRANG THẺ KHO: Lấy dữ liệu chi tiết Nhập - Xuất
+        // =========================================================================
         [HttpGet]
         public async Task<IActionResult> Kho(int? vatTuId, DateTime? tuNgay, DateTime? denNgay)
         {
+            // Code hàm Kho giữ nguyên như bạn đã viết
             try
             {
-                // SỬA LỖI 1: Bắt buộc phải đổ dữ liệu Vật Tư vào ViewBag để View vẽ cái Dropdown
                 ViewBag.VatTus = await _context.VatTus.ToListAsync();
-
-                // Giữ lại giá trị ngày tháng người dùng vừa chọn để in lại ra Form
                 ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
                 ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
 
-                // SỬA LỖI 2: Khởi tạo ĐÚNG đối tượng KhoVM mà file Kho.cshtml đang chờ đợi
                 KhoVM model = new KhoVM();
-                model.ChiTietGiaoDich = new List<ChiTietGiaoDichViewModel>(); // Khởi tạo list rỗng để không bị Null
 
-                // Nếu người dùng đã chọn 1 vật tư (vatTuId có số)
-                if (vatTuId.HasValue && vatTuId.Value > 0)
+                if (!vatTuId.HasValue || vatTuId.Value <= 0)
                 {
-                    // Lấy thông tin vật tư đó từ Database
-                    var vt = await _context.VatTus.FindAsync(vatTuId.Value);
-                    if (vt != null)
-                    {
-                        // Nhét dữ liệu vào KhoVM
-                        model.VatTuId = vt.Id;
-                        model.TenVatTu = vt.TenVatTu;
-                        model.TenKho = "Kho Tổng"; // Tạm fix cứng tên kho
-                    }
+                    return View(model);
                 }
+
+                var vt = await _context.VatTus.FindAsync(vatTuId.Value);
+                if (vt != null)
+                {
+                    model.VatTuId = vt.Id;
+                    model.TenVatTu = vt.TenVatTu;
+                    model.TenKho = "Kho Tổng";
+                }
+
+                var dsNhap = await _context.ChiTietPhieuNhaps
+                    .Include(c => c.PhieuNhap)
+                    .Where(c => c.VatTuId == vatTuId.Value
+                                && (!tuNgay.HasValue || c.PhieuNhap.NgayNhap >= tuNgay.Value)
+                                && (!denNgay.HasValue || c.PhieuNhap.NgayNhap <= denNgay.Value))
+                    .Select(c => new ChiTietGiaoDichViewModel
+                    {
+                        NgayGiaoDich = c.PhieuNhap.NgayNhap,
+                        SoChungTu = "PN-" + c.PhieuNhap.MaPhieu,
+                        DienGiai = "Nhập kho",
+                        LoaiGiaoDich = "Nhập",
+                        SoLuong = c.SoLuong,
+                        GhiChu = c.PhieuNhap.GhiChu
+                    }).ToListAsync();
+
+                var dsXuat = await _context.ChiTietPhieuXuats
+                    .Include(c => c.PhieuXuat)
+                    .Where(c => c.VatTuId == vatTuId.Value
+                                && (!tuNgay.HasValue || c.PhieuXuat.NgayXuat >= tuNgay.Value)
+                                && (!denNgay.HasValue || c.PhieuXuat.NgayXuat <= denNgay.Value))
+                    .Select(c => new ChiTietGiaoDichViewModel
+                    {
+                        NgayGiaoDich = c.PhieuXuat.NgayXuat,
+                        SoChungTu = "PX-" + c.PhieuXuat.MaPhieu,
+                        DienGiai = "Xuất kho",
+                        LoaiGiaoDich = "Xuất",
+                        SoLuong = c.SoLuong,
+                        GhiChu = c.PhieuXuat.LyDoXuat
+                    }).ToListAsync();
+
+                var tatCaGiaoDich = dsNhap.Concat(dsXuat).OrderBy(x => x.NgayGiaoDich).ToList();
+
+                int tonDauKy = 0;
+                if (tuNgay.HasValue)
+                {
+                    var nhapTruocDo = await _context.ChiTietPhieuNhaps.Include(c => c.PhieuNhap)
+                        .Where(c => c.VatTuId == vatTuId.Value && c.PhieuNhap.NgayNhap < tuNgay.Value)
+                        .SumAsync(c => c.SoLuong);
+
+                    var xuatTruocDo = await _context.ChiTietPhieuXuats.Include(c => c.PhieuXuat)
+                        .Where(c => c.VatTuId == vatTuId.Value && c.PhieuXuat.NgayXuat < tuNgay.Value)
+                        .SumAsync(c => c.SoLuong);
+
+                    tonDauKy = nhapTruocDo - xuatTruocDo;
+                }
+
+                int tonHienTai = tonDauKy;
+                foreach (var giaoDich in tatCaGiaoDich)
+                {
+                    if (giaoDich.LoaiGiaoDich == "Nhập") tonHienTai += giaoDich.SoLuong;
+                    else tonHienTai -= giaoDich.SoLuong;
+
+                    giaoDich.TonKhoSauGiaoDich = tonHienTai;
+                }
+
+                model.ChiTietGiaoDich = tatCaGiaoDich;
                 return View(model);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Lỗi load danh mục: " + ex.Message);
+                Console.WriteLine("Lỗi load thẻ kho: " + ex.Message);
                 return View(new KhoVM());
             }
         }

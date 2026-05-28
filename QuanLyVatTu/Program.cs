@@ -12,6 +12,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=tcp:tattech.database.windows.net,1433;Initial Catalog=ExWeb;Persist Security Info=False;User ID=ASPNet_App;Password=Admin@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"));
 
+builder.Services.AddScoped<IThongBaoService, ThongBaoService>();
 builder.Services.AddScoped<INhapXuatService, NhapXuatService>();
 builder.Services.AddScoped<IBaoCaoService, BaoCaoService>();
 builder.Services.AddScoped<ITinhGiaVonService, TinhGiaVonService>();
@@ -25,11 +26,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8); // Tự đăng xuất sau 8 tiếng
     });
 var app = builder.Build();
-
-
-// =========================================================================================
-// CODE SỬA LỖI: ÉP ĐỒNG BỘ MẬT KHẨU XUỐNG DATABASE AZURE MỖI KHI CHẠY WEB
-// =========================================================================================
 
 // Lệnh 1: Tạo ra một không gian dịch vụ (scope) tạm thời vì AppDbContext không thể gọi trực tiếp ở ngoài rìa Program.cs
 using (var scope = app.Services.CreateScope())

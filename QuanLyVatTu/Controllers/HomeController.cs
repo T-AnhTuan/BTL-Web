@@ -16,11 +16,12 @@ namespace QuanLyVatTu.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IBaoCaoService _baoCaoService;
-
-        public HomeController(AppDbContext context, IBaoCaoService baoCaoService)
+        private readonly IThongBaoService _thongBaoService;
+        public HomeController(AppDbContext context, IBaoCaoService baoCaoService, IThongBaoService thongBaoService)
         {
             _context = context;
             _baoCaoService = baoCaoService;
+            _thongBaoService = thongBaoService;
         }
 
         public async Task<IActionResult> Index()
@@ -50,10 +51,10 @@ namespace QuanLyVatTu.Controllers
 
                 // 4. LẤY DỮ LIỆU TỪ SERVICE CHO DASHBOARD
                 // Danh sách thông báo chưa xem của User này
-                ViewBag.ThongBaoMoi = await _baoCaoService.LayThongBaoChuaXemAsync(taiKhoanId);
+                ViewBag.ThongBaoMoi = await _thongBaoService.LayThongBaoChuaXemAsync(taiKhoanId);
 
                 // 10 Lịch sử giao dịch/hoạt động mới nhất của toàn hệ thống
-                ViewBag.HoatDongGanDay = await _baoCaoService.LayNhatKyGiaoDichMoiNhatAsync(10);
+                ViewBag.HoatDongGanDay = await _thongBaoService.LayNhatKyGiaoDichMoiNhatAsync(10);
 
                 // Danh sách vật tư đang cạn kiệt cần nhập gấp
                 ViewBag.VatTuDuoiMucToiThieu = await _context.VatTus

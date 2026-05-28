@@ -1,4 +1,5 @@
-﻿@model QuanLyVatTu.ViewModels.BaoCaoVM
+﻿@using QuanLyVatTu.Models
+@model QuanLyVatTu.ViewModels.BaoCaoVM
 @{
     ViewData["Title"] = "Báo Cáo Xuất-Nhập-Tồn Vật Tư";
 }
@@ -10,14 +11,14 @@
     <div class="filter-group-wrapper">
         <div class="filter-box">
             <label>Kho</label>
-            <select class="input-control">
-                <option value="">Tất cả các kho</option>
+            <select class="input-control" asp-for="KhoId" asp-items="@(ViewBag.DanhSachKho ?? ViewBag.DanhMucKhos)">
+                <option value="">-- Tất cả các kho --</option>
             </select>
         </div>
 
         <div class="filter-box">
             <label>Từ Ngày</label>
-            <input type="date" class="input-control">
+            <input type="date" asp-for="TuNgay" class="input-control">
         </div>
 
         <div class="filter-box" style="justify-content: center; padding-top: 25px;">
@@ -26,7 +27,7 @@
 
         <div class="filter-box">
             <label>Đến Ngày</label>
-            <input type="date" asp-for="TuNgay" class="input-control">
+            <input type="date" asp-for="DenNgay" class="input-control">
         </div>
 
         <div class="filter-box">
@@ -35,13 +36,13 @@
         </div>
 
         <div class="filter-box" style="justify-content: flex-end;">
-            <button class="btn btn-primary">Xem Báo Cáo</button>
+            <button type="submit" class="btn btn-primary">Xem báo cáo</button>
         </div>
     </div>
 
     <div class="action-group">
-        <button class="btn btn-outline"><i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Xuất Excel</button>
-        <button class="btn btn-outline"><i class="fa-solid fa-print"></i> In</button>
+        <button href="/Home/BaoTri" class="btn btn-outline"><i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Xuất Excel</button>
+        <button href="/Home/BaoTri" class="btn btn-outline"><i class="fa-solid fa-print"></i> In</button>
     </div>
 </div>
 
@@ -71,30 +72,60 @@
         </thead>
 
         <tbody>
-            @foreach (var item in Model.DanhSachChiTiet)
+            @if (Model != null && Model.DanhSachChiTiet != null && Model.DanhSachChiTiet.Any())
+            {
+                foreach (var item in Model.DanhSachChiTiet)
+                {
+                    <tr>
+                        <td>@item.VatTuId</td>
+                        <td class="text-center fw-bold text-secondary">@item.MaVatTu</td>
+                        <td>@item.TenVatTu</td>
+                        <td class="text-center">@item.DonViTinh</td>
+
+                        <!-- Tồn đầu -->
+                        <td class="text-end">@item.TonDauSoLuong.ToString("N0")</td>
+                        <td class="text-end">@item.TonDauGiaTri.ToString("N0")</td>
+
+                        <!-- Nhập -->
+                        <td class="text-end text-success fw-semibold">@item.NhapSoLuong.ToString("N0")</td>
+                        <td class="text-end text-success">@item.NhapGiaTri.ToString("N0")</td>
+
+                        <!-- Xuất -->
+                        <td class="text-end text-danger fw-semibold">@item.XuatSoLuong.ToString("N0")</td>
+                        <td class="text-end text-danger">@item.XuatGiaTri.ToString("N0")</td>
+
+                        <!-- Tồn cuối -->
+                        <td class="text-end fw-bold text-primary">@item.TonCuoiSoLuong.ToString("N0")</td>
+                        <td class="text-end fw-bold text-primary">@item.TonCuoiGiaTri.ToString("N0")</td>
+                    </tr>
+                }
+            }
+            else
             {
                 <tr>
-                    <td>@item.MaVatTu</td>
-                    <td>@item.TenVatTu</td>
-                    <!-- Các cột Tồn đầu, Nhập, Xuất, Tồn cuối... -->
-                    <td class="text-right">@item.TonDauSoLuong</td>
-                    <td class="text-right">@item.TonDauGiaTri.ToString("N0")</td>
+                    <td colspan="11" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-box-open fs-1 mb-3 text-light"></i><br />
+                        Không tìm thấy dữ liệu báo cáo trong khoảng thời gian này.
+                    </td>
                 </tr>
             }
         </tbody>
 
-        <tfoot>
-            <tr>
-                <td colspan="4" class="text-center">Tổng Cộng</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-                <td class="text-right">0</td>
-            </tr>
-        </tfoot>
+        @if (Model != null && Model.DanhSachChiTiet != null && Model.DanhSachChiTiet.Any())
+        {
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="4" class="text-center text-uppercase">Tổng Cộng</td>
+                    <td class="text-end">@Model.TongTonDauSoLuong.ToString("N0")</td>
+                    <td class="text-end">@Model.TongTonDauGiaTri.ToString("N0")</td>
+                    <td class="text-end text-success">@Model.TongNhapSoLuong.ToString("N0")</td>
+                    <td class="text-end text-success">@Model.TongNhapGiaTri.ToString("N0")</td>
+                    <td class="text-end text-danger">@Model.TongXuatSoLuong.ToString("N0")</td>
+                    <td class="text-end text-danger">@Model.TongXuatGiaTri.ToString("N0")</td>
+                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiSoLuong.ToString("N0")</td>
+                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiGiaTri.ToString("N0")</td>
+                </tr>
+            </tfoot>
+        }
     </table>
 </div>

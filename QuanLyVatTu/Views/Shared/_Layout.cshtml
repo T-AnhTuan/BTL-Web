@@ -31,7 +31,8 @@
 
                 <div class="menu-category">Quản lý danh mục</div>
                 <li><a asp-controller="VatTu" asp-action="Index"><i class="fa-solid fa-box"></i> Vật tư</a></li>
-                <li><a asp-controller="DanhMuc" asp-action="VatTu"><i class="fa-solid fa-list"></i> Danh mục</a></li>
+                <li><a asp-controller="DanhMuc" asp-action="VatTu"><i class="fa-solid fa-list"></i> Danh mục vật tư</a></li>
+                <li><a href="/Home/BaoTri"><i class="fa-solid fa-list"></i> Danh mục kho</a></li>
                 <li><a asp-controller="DanhMuc" asp-action="NhaCungCap"><i class="fa-solid fa-industry"></i> Nhà cung cấp</a></li>
 
                 <div class="menu-category">Nghiệp vụ kho</div>
@@ -43,12 +44,12 @@
                 <li><a asp-controller="BaoCao" asp-action="Index"><i class="fa-solid fa-chart-line"></i> Xuất-Nhập-Tồn</a></li>
                 
                 <div class="menu-category">Phê duyệt</div>
-                <li><a asp-controller="PheDuyet" asp-action="DuyetNhap"><i class="fa-solid fa-clipboard-list"></i> Duyệt phiếu nhập</a></li>
-                <li><a asp-controller="PheDuyet" asp-action="DuyetXuat"><i class="fa-solid fa-chart-line"></i> Duyệt phiếu xuất</a></li>
+                <li><a href="/Home/BaoTri"><i class="fa-solid fa-clipboard-list"></i> Duyệt phiếu nhập</a></li>
+                <li><a href="/Home/BaoTri"><i class="fa-solid fa-chart-line"></i> Duyệt phiếu xuất</a></li>
                 
                 <div class="menu-category">Quản trị</div>
-                <li><a asp-controller="NguoiDung" asp-action="QuanLyTaiKhoan"><i class="fa-solid fa-user-shield"></i> Tài khoản <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
-                <li><a asp-controller="NguoiDung" asp-action="PhanQuyen"><i class="fa-solid fa-key"></i> Phân quyền <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
+                <li><a asp-controller="QuanTri" asp-action="QuanLyTaiKhoan"><i class="fa-solid fa-user-shield"></i> Tài khoản <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
+                <li><a asp-controller="QuanTri" asp-action="PhanQuyen"><i class="fa-solid fa-key"></i> Phân quyền <i class="fa-solid fa-lock" style="margin-left:auto; font-size: 10px;"></i></a></li>
             </ul>
         </div>
     </aside>

@@ -1,32 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace QuanLyVatTu.ViewModels
 {
-    // Đây là "Cái mâm" bưng toàn bộ dữ liệu ra trang Thẻ Kho
+    // Lớp này dùng để chứa toàn bộ dữ liệu gửi ra trang Kho.cshtml
     public class KhoVM
     {
-        public int VatTuId { get; set; }
+        public int? VatTuId { get; set; }
         public string TenVatTu { get; set; }
         public string TenKho { get; set; }
 
-        // Chứa danh sách các dòng giao dịch (vừa Nhập vừa Xuất)
-        public List<ChiTietGiaoDichViewModel> ChiTietGiaoDich { get; set; }
-            = new List<ChiTietGiaoDichViewModel>();
+        // Danh sách chi tiết các dòng giao dịch nhập/xuất để in ra bảng
+        public List<ChiTietGiaoDichViewModel> ChiTietGiaoDich { get; set; } = new List<ChiTietGiaoDichViewModel>();
     }
 
-    // Đây là từng dòng <tr> trong cái bảng Thẻ Kho
+    // Lớp này đại diện cho 1 dòng (1 <tr>) trong bảng báo cáo
     public class ChiTietGiaoDichViewModel
     {
         public DateTime NgayGiaoDich { get; set; }
-        public string SoChungTu { get; set; } // Ví dụ: PN001, PX005
+        public string SoChungTu { get; set; }
         public string DienGiai { get; set; }
 
-        public string LoaiGiaoDich { get; set; } // Chỉ nhận 2 giá trị: "Nhập" hoặc "Xuất"
+        public string LoaiGiaoDich { get; set; } // "Nhập" hoặc "Xuất"
+
         public int SoLuong { get; set; }
 
-        // Số tồn này được tính toán động (Running Total) bằng C# lúc xuất báo cáo
+        // Cột Tồn kho sau mỗi lần giao dịch (Được tính toán bằng C#)
         public int TonKhoSauGiaoDich { get; set; }
+
         public string GhiChu { get; set; }
     }
 }

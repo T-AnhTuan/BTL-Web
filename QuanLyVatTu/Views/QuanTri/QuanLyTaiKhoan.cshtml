@@ -1,0 +1,140 @@
+﻿@{
+    ViewData["Title"] = "Quản Lý Tài Khoản Người Dùng";
+    var vaiTros = ViewBag.VaiTros as IEnumerable<QuanLyVatTu.Models.VaiTro> ?? Enumerable.Empty<QuanLyVatTu.Models.VaiTro>();
+    var taiKhoans = ViewData.Model as IEnumerable<QuanLyVatTu.Models.TaiKhoan> ?? Enumerable.Empty<QuanLyVatTu.Models.TaiKhoan>();
+}
+
+<link rel="stylesheet" href="~/css/QLtaikhoan.css" asp-append-version="true">
+
+<div class="page-header">
+    <h1 class="page-title">Quản lý tài khoản người dùng</h1>
+    <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm Tài Khoản Mới</button>
+</div>
+
+<div class="filter-section">
+    <select class="filter-select">
+        <option value="">Vai trò</option>
+        @foreach (var vaiTro in vaiTros)
+        {
+            <option value="@vaiTro.Id">@vaiTro.TenVaiTro</option>
+        }
+    </select>
+
+    <select class="filter-select">
+        <option value="">Trạng Thái</option>
+        <option value="1">Hoạt động</option>
+        <option value="0">Bị khóa</option>
+    </select>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 60px;">STT</th>
+                <th>Tên đăng nhập</th>
+                <th>Họ và tên</th>
+                <th>Vai trò</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center">Đăng nhập lần cuối <i class="fa-solid fa-sort" style="color: #cbd5e1; margin-left:5px;"></i></th>
+                <th class="text-center">Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (taiKhoans.Any())
+            {
+                var stt = 1;
+                foreach (var item in taiKhoans)
+                {
+                    <tr data-id="@item.Id">
+                        <td class="text-center">@(stt++)</td>
+                        <td class="font-medium">@item.TenDangNhap</td>
+                        <td>@(item.NhanVien?.HoTen ?? "Chưa có hồ sơ")</td>
+                        <td>@(item.VaiTro?.TenVaiTro ?? "Chưa phân quyền")</td>
+                        <td class="text-center">
+                            @if (item.TrangThai == QuanLyVatTu.Models.TrangThaiTaiKhoan.Active)
+                            {
+                                <span class="text-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">Bị khóa</span>
+                            }
+                        </td>
+                       
+                        <td class="text-center">@(item.LanDangNhapCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</td>
+                        <td class="text-center">
+                            <button class="action-btn btn-edit" data-id="@item.Id" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                            <button class="action-btn btn-delete" data-id="@item.Id" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                            <button class="action-btn btn-lock" data-id="@item.Id" title="Khóa/Mở khóa tài khoản"><i class="fa-solid fa-lock"></i></button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center">Chưa có tài khoản nào để hiển thị.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div id="addUserModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-plus" style="color:#3b82f6; margin-right:8px;"></i> THÊM TÀI KHOẢN MỚI</h3>
+            <button id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="modal-body">
+            <input type="hidden" id="inputId" value="0">
+
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Tên Đăng Nhập (Username) <span style="color:red">*</span></label>
+                    <input type="text" id="txtUsername" placeholder="VD: nguyenvan_a">
+                </div>
+                <div class="form-group">
+                    <label>Mật Khẩu <span style="color:red">*</span></label>
+                    <input type="password" id="txtPassword" placeholder="Nhập mật khẩu khởi tạo">
+                    <small id="pwHint" style="color: #94a3b8; font-size: 11px; display: none;">Để trống nếu không muốn đổi</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Họ và Tên <span style="color:red">*</span></label>
+                <input type="text" id="txtFullname" placeholder="VD: Nguyễn Văn A">
+            </div>
+
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Vai trò</label>
+                    <select id="cbRole">
+                        @foreach (var vaiTro in vaiTros)
+                        {
+                            <option value="@vaiTro.Id">@vaiTro.TenVaiTro</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Trạng thái</label>
+                    <select id="cbStatus">
+                        <option value="1">Hoạt động</option>
+                        <option value="0">Khóa</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button id="btnCancel" class="btn btn-cancel">Hủy bỏ</button>
+            <button type="submit" id="btnSave" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu Tài Khoản</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/QLtaikhoan.js" asp-append-version="true">
+    
+</script>
