@@ -26,7 +26,7 @@ namespace QuanLyVatTu.Models
 
         [StringLength(500)]
         [Display(Name = "Địa Chỉ Kho")]
-        public string DiaChi { get; set; }
+        public string? DiaChi { get; set; }
 
         public TrangThaiKho TrangThai { get; set; } = TrangThaiKho.Active;
     }

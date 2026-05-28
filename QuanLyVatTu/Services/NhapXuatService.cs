@@ -38,7 +38,8 @@ namespace QuanLyVatTu.Services
                 {
                     TaiKhoanId = taiKhoanId,
                     HanhDong = $"Đã lập Phiếu nhập mới: {phieuNhap.MaPhieu}",
-                    ThoiGian = DateTime.Now
+                    ThoiGian = DateTime.Now,
+                    DiaChiIP = "0.0.0.0"
                 });
 
                 await _context.SaveChangesAsync();
@@ -62,6 +63,9 @@ namespace QuanLyVatTu.Services
             if (phieu == null || phieu.TrangThai == TrangThaiPhieuXuat.DaDuyet)
                 return (false, "Phiếu không tồn tại hoặc đã được duyệt rồi.");
 
+            if (phieu.ChiTietPhieuXuats == null || !phieu.ChiTietPhieuXuats.Any())
+                return (false, "Phiếu xuất chưa có vật tư, không thể duyệt.");
+
             foreach (var chiTiet in phieu.ChiTietPhieuXuats)
             {
                 var vatTu = await _context.VatTus.FindAsync(chiTiet.VatTuId);
@@ -73,6 +77,16 @@ namespace QuanLyVatTu.Services
                     // Trừ tồn kho thực tế
                     vatTu.TonKhoHienTai -= chiTiet.SoLuong;
                     _context.VatTus.Update(vatTu);
+
+                    var tonKhoTheoKho = await _context.ChiTietKhos
+                        .FirstOrDefaultAsync(c => c.KhoId == phieu.KhoId && c.VatTuId == chiTiet.VatTuId);
+                    if (tonKhoTheoKho != null)
+                    {
+                        if (tonKhoTheoKho.SoLuong < chiTiet.SoLuong)
+                            return (false, $"Lỗi: Vật tư {vatTu.TenVatTu} không đủ tồn trong kho xuất!");
+
+                        tonKhoTheoKho.SoLuong -= chiTiet.SoLuong;
+                    }
 
                     // [MỚI] - TẠO THÔNG BÁO NẾU TỒN KHO RỚT XUỐNG MỨC THẤP (< 10)
                     if (vatTu.TonKhoHienTai <= 10)
@@ -98,7 +112,8 @@ namespace QuanLyVatTu.Services
             {
                 TaiKhoanId = taiKhoanId,
                 HanhDong = $"Phê duyệt Phiếu xuất kho: {phieu.MaPhieu}",
-                ThoiGian = DateTime.Now
+                ThoiGian = DateTime.Now,
+                DiaChiIP = "0.0.0.0"
             });
 
             await _context.SaveChangesAsync();

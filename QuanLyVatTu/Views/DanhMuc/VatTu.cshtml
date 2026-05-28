@@ -1,7 +1,7 @@
 ﻿@using QuanLyVatTu.Models
 @model IEnumerable<DanhMucVatTu>
 @{
-    ViewData["Title"] = "Danh Sách Danh Mục Vật Tư";
+    ViewData["Title"] = "Danh mục vật tư";
 }
 
 <link rel="stylesheet" href="~/css/danhmucvattu.css" asp-append-version="true">
@@ -11,11 +11,11 @@
 </div>
 
 <div class="filter-section">
-    <input type="text" class="search-input" placeholder="Tìm kiếm theo tên hoặc mã danh mục...">
+    <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm theo tên hoặc mã danh mục...">
 
     <div style="display:flex; align-items: center; gap: 10px;">
         <span style="font-size:14px; color:#475569; font-weight:500;">Trạng thái</span>
-        <select class="status-select">
+        <select id="statusSelect" class="status-select">
             <option value="">Tất cả</option>
             <option value="1">Hoạt động</option>
             <option value="0">Tạm ngừng</option>
@@ -29,7 +29,7 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 40px;"><input type="checkbox"></th>
+                <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
                 <th>STT</th>
                 <th>Mã Danh Mục</th>
                 <th>Tên Danh Mục</th>
@@ -40,14 +40,14 @@
                 <th class="text-center">Hành Động</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="tableBody">
             @if (Model != null && Model.Any())
             {
                 int stt = 1;
                 foreach (var item in Model)
                 {
-                    <tr>
-                        <td><input type="checkbox"></td>
+                    <tr data-id="@item.Id">
+                        <td><input type="checkbox" class="rowCheckbox"></td>
                         <td>@(stt++)</td>
                         <td>@item.MaDanhMuc</td>
                         <td style="font-weight: 500;">@item.TenDanhMuc</td>
@@ -65,8 +65,8 @@
                             }
                         </td>
                         <td class="text-center">
-                            <button class="action-btn edit-btn"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
+                            <button class="action-btn edit-btn" data-id="@item.Id"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="action-btn delete-btn" data-id="@item.Id"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 }
@@ -92,20 +92,25 @@
             <input type="hidden" id="inputId" value="0">
 
             <div class="form-group">
+                <label>Mã Danh Mục <span style="color:red">*</span></label>
+                <input type="text" id="inputMa" name="MaDanhMuc" placeholder="VD: DM001, VTXD...">
+            </div>
+
+            <div class="form-group">
                 <label>Tên Danh Mục <span style="color:red">*</span></label>
-                <input type="text" placeholder="VD: Vật tư xây dựng, Công cụ dụng cụ...">
+                <input type="text" id="inputTen" name="TenDanhMuc" placeholder="VD: Vật tư xây dựng, Công cụ dụng cụ...">
             </div>
 
             <div class="form-group">
                 <label>Mô tả</label>
-                <textarea rows="3" placeholder="Ghi chú thêm về danh mục này..."></textarea>
+                <textarea id="inputMoTa" name="MoTa" rows="3" placeholder="Ghi chú thêm về danh mục này..."></textarea>
             </div>
 
             <div class="form-group">
                 <label>Trạng thái</label>
-                <select>
-                    <option value="active">Hoạt động</option>
-                    <option value="inactive">Tạm ngừng</option>
+                <select id="selectTrangThai" name="TrangThai">
+                    <option value="1">Hoạt động</option>
+                    <option value="0">Tạm ngừng</option>
                 </select>
             </div>
         </div>
@@ -117,23 +122,4 @@
     </div>
 </div>
 
-<script>
-    const catModal = document.getElementById('addCategoryModal');
-    const btnOpenCat = document.getElementById('btnOpenModal');
-    const btnCloseCat = document.getElementById('btnCloseModal');
-    const btnCancelCat = document.getElementById('btnCancel');
-    const btnSaveCat = document.getElementById('btnSave');
-
-    btnOpenCat.onclick = () => catModal.classList.add('show');
-
-    const closeCatModal = () => catModal.classList.remove('show');
-    btnCloseCat.onclick = closeCatModal;
-    btnCancelCat.onclick = closeCatModal;
-
-    window.onclick = (e) => { if (e.target == catModal) closeCatModal(); }
-
-    btnSaveCat.onclick = () => {
-        alert("Giao diện form đã hoàn tất! Chờ Back-end xử lý submit dữ liệu.");
-        closeCatModal();
-    }
-</script>
+<script src="~/js/dmVatTu.js" asp-append-version="true"></script>

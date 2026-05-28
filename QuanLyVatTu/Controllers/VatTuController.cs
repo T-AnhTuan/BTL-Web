@@ -1,88 +1,254 @@
-﻿// Khai báo sử dụng các thư viện cần thiết của ASP.NET Core để xác thực, điều hướng và thao tác CSDL
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
-// Không gian tên của dự án chứa các Controller
 namespace QuanLyVatTu.Controllers
 {
-    // Kế thừa từ lớp Controller cơ sở của MVC để có các tính năng như trả về View()
+    [Authorize]
     public class VatTuController : Controller
     {
-        // Khai báo biến _context chỉ đọc để chứa kết nối tới Database SQL Server
         private readonly AppDbContext _context;
 
-        // Hàm khởi tạo (Constructor), tự động được ASP.NET Core bơm (Inject) AppDbContext vào khi chạy
         public VatTuController(AppDbContext context)
         {
-            // Gán context nhận được vào biến _context để sử dụng trong toàn bộ Class này
             _context = context;
         }
 
-        // ================================================================
-        // 1. TRANG DANH SÁCH VẬT TƯ (Load giao diện và dữ liệu)
-        // ================================================================
-        // Định nghĩa đây là phương thức xử lý yêu cầu GET từ trình duyệt
         [HttpGet]
-        // SỬA LỖI NGHIÊM TRỌNG: Đổi tên hàm từ Index thành dsVatTu để khớp ĐÚNG TÊN với file dsVatTu.cshtml
-        public async Task<IActionResult> Index(int? danhMucId, string tuKhoa)
+        public async Task<IActionResult> Index(int? danhMucId, string? tuKhoa)
         {
-            // Bọc trong khối try-catch để nếu lỗi CSDL thì không bị sập web
             try
             {
-                // Truy vấn CSDL: Lấy toàn bộ danh sách DanhMucVatTu và gán vào ViewBag.DanhMucs
-                // View dsVatTu.cshtml đang dùng ViewBag.DanhMucs để vẽ thẻ <select> dropdown
-                ViewBag.DanhMucs = await _context.DanhMucVatTus.ToListAsync();
+                ViewBag.DanhMucs = await _context.DanhMucVatTus
+                    .AsNoTracking()
+                    .OrderBy(d => d.TenDanhMuc)
+                    .ToListAsync();
+                ViewBag.DanhMucId = danhMucId;
+                ViewBag.TuKhoa = tuKhoa;
 
-                // Bắt đầu viết câu truy vấn lấy Vật tư. Dùng Include để kết nối khóa ngoại lấy Tên Danh Mục (Tránh lỗi Null)
-                var query = _context.VatTus.Include(v => v.DanhMuc).AsQueryable();
+                var query = _context.VatTus
+                    .AsNoTracking()
+                    .Include(v => v.DanhMuc)
+                    .AsQueryable();
 
-                // SỬA LỖI: Lấy danh sách chạy thực thi câu lệnh SQL và đổ về RAM dưới dạng List
-                var data = await query.ToListAsync();
+                if (danhMucId.HasValue && danhMucId.Value > 0)
+                {
+                    query = query.Where(v => v.DanhMucId == danhMucId.Value);
+                }
 
-                // Trả về file dsVatTu.cshtml kèm theo dữ liệu (data) đã truy vấn được
+                if (!string.IsNullOrWhiteSpace(tuKhoa))
+                {
+                    var keyword = tuKhoa.Trim();
+                    query = query.Where(v => v.MaVatTu.Contains(keyword) || v.TenVatTu.Contains(keyword));
+                }
+
+                var data = await query
+                    .OrderBy(v => v.TenVatTu)
+                    .ToListAsync();
+
                 return View(data);
             }
-            catch (Exception ex) // Nếu có lỗi xảy ra
+            catch (Exception ex)
             {
-                // In lỗi ra màn hình Console để lập trình viên biết
                 Console.WriteLine("Lỗi truy vấn Vật tư: " + ex.Message);
-                // Trả về một View trắng hoặc trang báo lỗi tùy chọn
-                return View();
+                ViewBag.DanhMucs = new List<DanhMucVatTu>();
+                return View(new List<VatTu>());
             }
         }
 
-        // ================================================================
-        // HÀM HỖ TRỢ GHI LOG (Giữ nguyên như code cũ của bạn)
-        // ================================================================
-        // Khai báo hàm riêng tư (chỉ gọi trong Controller này) để ghi lại lịch sử thao tác
-        private async Task LogActionAsync(string action)
+        [HttpGet]
+        public async Task<IActionResult> GetById(int id)
         {
-            // Lấy ID người dùng đang đăng nhập từ Cookie (dạng chuỗi)
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var vatTu = await _context.VatTus
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == id);
 
-            // Ép kiểu chuỗi ID thành số nguyên (int), nếu thành công thì chạy tiếp
-            if (int.TryParse(userIdString, out int taiKhoanId))
+            if (vatTu == null)
             {
-                // Tạo một đối tượng Log mới
-                var log = new NhatKyHeThong
-                {
-                    TaiKhoanId = taiKhoanId, // Gắn ID người làm
-                    HanhDong = action,       // Gắn hành động (VD: Thêm vật tư, Xóa vật tư)
-                    ThoiGian = DateTime.Now, // Gắn thời gian hiện tại
-                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0" // Gắn IP
-                };
-                // Thêm log vào hàng đợi của Entity Framework
-                _context.NhatKyHeThongs.Add(log);
-                // Lưu ý: Không SaveChanges ở đây vì các hàm gọi nó (như Thêm, Xóa) sẽ tự gọi SaveChanges chung
+                return Json(new { success = false, message = "Không tìm thấy dữ liệu!" });
             }
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    id = vatTu.Id,
+                    maVatTu = vatTu.MaVatTu,
+                    tenVatTu = vatTu.TenVatTu,
+                    danhMucId = vatTu.DanhMucId,
+                    donViTinh = vatTu.DonViTinh,
+                    tonKhoHienTai = vatTu.TonKhoHienTai,
+                    tonToiThieu = vatTu.TonToiThieu,
+                    giaVonBinhQuan = vatTu.GiaVonBinhQuan
+                }
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] VatTu model)
+        {
+            try
+            {
+                var validationMessage = await ValidateVatTuAsync(model);
+                if (validationMessage != null)
+                {
+                    return Json(new { success = false, message = validationMessage });
+                }
+
+                var isExist = await _context.VatTus.AnyAsync(v => v.MaVatTu == model.MaVatTu);
+                if (isExist)
+                {
+                    return Json(new { success = false, message = "Mã vật tư này đã tồn tại trong hệ thống!" });
+                }
+
+                _context.VatTus.Add(model);
+                AddLog($"Thêm mới vật tư: {model.TenVatTu} (Mã: {model.MaVatTu})");
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit([FromBody] VatTu model)
+        {
+            try
+            {
+                var validationMessage = await ValidateVatTuAsync(model);
+                if (validationMessage != null)
+                {
+                    return Json(new { success = false, message = validationMessage });
+                }
+
+                var existingVatTu = await _context.VatTus.FindAsync(model.Id);
+                if (existingVatTu == null)
+                {
+                    return Json(new { success = false, message = "Vật tư không tồn tại hoặc đã bị xóa!" });
+                }
+
+                var isExist = await _context.VatTus
+                    .AnyAsync(v => v.Id != model.Id && v.MaVatTu == model.MaVatTu);
+                if (isExist)
+                {
+                    return Json(new { success = false, message = "Mã vật tư mới đã bị trùng!" });
+                }
+
+                existingVatTu.MaVatTu = model.MaVatTu;
+                existingVatTu.TenVatTu = model.TenVatTu;
+                existingVatTu.DanhMucId = model.DanhMucId;
+                existingVatTu.DonViTinh = model.DonViTinh;
+                existingVatTu.TonKhoHienTai = model.TonKhoHienTai;
+                existingVatTu.GiaVonBinhQuan = model.GiaVonBinhQuan;
+
+                AddLog($"Cập nhật vật tư: {model.TenVatTu} (Mã: {model.MaVatTu})");
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var vatTu = await _context.VatTus.FindAsync(id);
+                if (vatTu == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy vật tư để xóa!" });
+                }
+
+                var hasGiaoDich = await _context.ChiTietPhieuNhaps.AnyAsync(c => c.VatTuId == id)
+                    || await _context.ChiTietPhieuXuats.AnyAsync(c => c.VatTuId == id)
+                    || await _context.ChiTietKhos.AnyAsync(c => c.VatTuId == id);
+                if (hasGiaoDich)
+                {
+                    return Json(new { success = false, message = "Không thể xóa vật tư đã có phát sinh giao dịch!" });
+                }
+
+                AddLog($"Xóa vật tư: {vatTu.TenVatTu} (Mã: {vatTu.MaVatTu})");
+                _context.VatTus.Remove(vatTu);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống khi xóa: " + ex.Message });
+            }
+        }
+
+        private async Task<string?> ValidateVatTuAsync(VatTu? model)
+        {
+            if (model == null)
+            {
+                return "Dữ liệu gửi lên không hợp lệ.";
+            }
+
+            model.MaVatTu = model.MaVatTu?.Trim() ?? string.Empty;
+            model.TenVatTu = model.TenVatTu?.Trim() ?? string.Empty;
+            model.DonViTinh = model.DonViTinh?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(model.MaVatTu))
+            {
+                return "Vui lòng nhập mã vật tư.";
+            }
+
+            if (string.IsNullOrWhiteSpace(model.TenVatTu))
+            {
+                return "Vui lòng nhập tên vật tư.";
+            }
+
+            if (model.DanhMucId <= 0 || !await _context.DanhMucVatTus.AnyAsync(d => d.Id == model.DanhMucId))
+            {
+                return "Danh mục vật tư không hợp lệ.";
+            }
+
+            if (model.TonKhoHienTai < 0)
+            {
+                return "Tồn kho hiện tại không được nhỏ hơn 0.";
+            }
+
+            if (model.TonToiThieu < 0)
+            {
+                return "Tồn tối thiểu không được nhỏ hơn 0.";
+            }
+
+            if (model.GiaVonBinhQuan < 0)
+            {
+                return "Giá vốn bình quân không được nhỏ hơn 0.";
+            }
+
+            return null;
+        }
+
+        private void AddLog(string action)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var taiKhoanId))
+            {
+                return;
+            }
+
+            _context.NhatKyHeThongs.Add(new NhatKyHeThong
+            {
+                TaiKhoanId = taiKhoanId,
+                HanhDong = action,
+                ThoiGian = DateTime.Now,
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
+            });
         }
     }
 }

@@ -37,11 +37,11 @@ namespace QuanLyVatTu.Models
         public DanhMucKho Kho { get; set; }
         [StringLength(500)]
         [Display(Name = "Ghi Chú")]
-        public string GhiChu { get; set; }
+        public string? GhiChu { get; set; }
 
         [Display(Name = "Tổng Giá Trị")]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal TongGiaTri { get; set; } // Thường được tự động tính: Sum(ThanhTien) của ChiTiet
+        public decimal TongGiaTri { get; set; } 
 
         // TRẠNG THÁI DUYỆT (Quan trọng)
         public TrangThaiPhieuNhap TrangThai { get; set; } = TrangThaiPhieuNhap.ChoDuyet;

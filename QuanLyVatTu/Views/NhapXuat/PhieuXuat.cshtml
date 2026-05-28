@@ -1,3 +1,5 @@
+@using QuanLyVatTu.Models
+@model IEnumerable<QuanLyVatTu.Models.PhieuXuat>
 @{
     ViewData["Title"] = "Quản Lý Phiếu Xuất Kho";
 }
@@ -6,82 +8,154 @@
 
 <h1 class="page-title">Quản lý xuất kho</h1>
 
-<div class="toolbar-section">
+<!-- Hiển thị thông báo -->
+@if (TempData["SuccessMsg"] != null)
+{
+    <div style="padding:15px; margin-bottom: 20px; background-color: #dcfce3; color: #166534; border-radius: 8px;">
+        <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMsg"]
+    </div>
+}
+@if (TempData["ErrorMsg"] != null)
+{
+    <div style="padding:15px; margin-bottom: 20px; background-color: #fee2e2; color: #991b1b; border-radius: 8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMsg"]
+    </div>
+}
+
+<div class="toolbar-section" style="display:flex; justify-content: space-between; align-items:center; margin-bottom:20px;">
     <div class="search-box-container">
-        <input type="text" placeholder="Tìm kiếm nhanh (ví dụ: mã phiếu...)">
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Tìm kiếm nhanh (ví dụ: mã phiếu...)" style="padding:8px; border:1px solid #ccc; border-radius:4px; width:300px;">
+        <button class="btn btn-secondary" style="padding:8px 12px; margin-left:5px;"><i class="fa-solid fa-magnifying-glass"></i></button>
     </div>
     <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tạo Phiếu Xuất Mới</button>
 </div>
 
 <div class="table-container">
-    <table class="data-table">
+    <table class="data-table" style="width:100%; border-collapse: collapse;">
         <thead>
-            <tr>
-                <th>Mã Phiếu</th>
+            <tr style="background:#f1f5f9; text-align:left;">
+                <th style="padding:12px;">Mã Phiếu</th>
                 <th>Ngày Xuất</th>
                 <th>Khách Hàng / Công Trình</th>
+                <th>Kho Xuất</th>
                 <th>Người Xuất</th>
-                <th>Lý Do Xuất</th>
                 <th class="text-right">Tổng Tiền (VNĐ)</th>
                 <th class="text-center">Trạng Thái</th>
                 <th class="text-center">Thao Tác</th>
             </tr>
         </thead>
         <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding:12px; font-weight: 600; color: #2563eb;">@item.MaPhieu</td>
+                        <td>@item.NgayXuat.ToString("dd/MM/yyyy")</td>
+                        <td>@item.KhachHang</td>
+                        <td>@(item.Kho != null ? item.Kho.TenKho : "N/A")</td>
+                        <td>@item.NguoiXuat</td>
+                        <td class="text-right" style="font-weight: 600; color: #dc2626;">@item.TongTien.ToString("N0")</td>
+                        <td class="text-center">
+                            @if (item.TrangThai == TrangThaiPhieuXuat.DaDuyet)
+                            {
+                                <span style="background: #dcfce3; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Đã Duyệt</span>
+                            }
+                            else if (item.TrangThai == TrangThaiPhieuXuat.ChoDuyet)
+                            {
+                                <span style="background: #fef08a; color: #854d0e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Chờ Duyệt</span>
+                            }
+                            else
+                            {
+                                <span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Từ Chối</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm" style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Chi tiết"><i class="fa-solid fa-eye"></i></button>
+
+                            @if (item.TrangThai == TrangThaiPhieuXuat.ChoDuyet)
+                            {
+                                <!-- Nút duyệt (Form POST để gọi Action Duyệt an toàn) -->
+                                <form asp-action="DuyetPhieuXuat" asp-controller="NhapXuat" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background: #dcfce3; color: #166534; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Duyệt phiếu xuất & Trừ kho" onclick="return confirm('Bạn có chắc chắn muốn duyệt phiếu này? Hệ thống sẽ trừ kho thực tế ngay lập tức.');">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 30px; color: #64748b;">Chưa có dữ liệu phiếu xuất kho.</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
 
+<!-- Modal Bọc bằng Form -->
 <div id="addExportModal" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-header">
-            <h3><i class="fa-solid fa-file-export" style="color:#2563eb; margin-right:8px;"></i> TẠO PHIẾU XUẤT MỚI</h3>
-            <button id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
-        </div>
+        <form asp-action="TaoPhieuXuat" asp-controller="NhapXuat" method="post">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-export" style="color:#2563eb; margin-right:8px;"></i> TẠO PHIẾU XUẤT MỚI</h3>
+                <button type="button" id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
 
-        <div class="modal-body">
-            <input type="hidden" id="inputId" value="0">
+            <div class="modal-body">
+                <input type="hidden" id="inputId" value="0">
 
-            <div class="input-row">
-                <div class="form-group">
-                    <label>Mã Phiếu Xuất (Hệ thống tự sinh nếu để trống)</label>
-                    <input type="text" placeholder="VD: PX-2026-001">
+                <div class="input-row">
+                    <div class="form-group" style="width: 48%;">
+                        <label>Mã Phiếu Xuất</label>
+                        <input type="text" name="MaPhieu" placeholder="VD: PX-2026-001" style="width: 100%; padding: 8px; border-radius:4px; border:1px solid #ccc;">
+                    </div>
+                    <div class="form-group" style="width: 48%;">
+                        <label>Ngày Xuất <span style="color:red">*</span></label>
+                        <input type="date" name="NgayXuat" required value="@DateTime.Now.ToString("yyyy-MM-dd")" style="width: 100%; padding: 8px; border-radius:4px; border:1px solid #ccc;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Ngày Xuất <span style="color:red">*</span></label>
-                    <input type="date">
+
+                <div class="input-row" style="display:flex; justify-content:space-between; margin-top:15px;">
+                    <div class="form-group" style="width: 48%;">
+                        <label>Khách Hàng / Công Trình <span style="color:red">*</span></label>
+                        <input type="text" name="KhachHang" required placeholder="Tên khách hàng..." style="width: 100%; padding: 8px; border-radius:4px; border:1px solid #ccc;">
+                    </div>
+                    <div class="form-group" style="width: 48%;">
+                        <label>Kho Xuất <span style="color:red">*</span></label>
+                        <select name="KhoId" required style="width: 100%; padding: 8px; border-radius:4px; border:1px solid #ccc;">
+                            <option value="">-- Chọn kho --</option>
+                            @if (ViewBag.Khos != null)
+                            {
+                                foreach (var kho in ViewBag.Khos)
+                                {
+                                    <option value="@kho.Id">@kho.TenKho</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
+                    <label>Lý Do Xuất</label>
+                    <textarea name="LyDoXuat" rows="2" style="width: 100%; padding: 8px; border-radius:4px; border:1px solid #ccc;" placeholder="Nhập lý do xuất kho..."></textarea>
+                </div>
+
+                <div style="background: #eff6ff; padding: 10px; border-radius: 6px; color: #1e40af; font-size: 13px; margin-top:15px;">
+                    <i class="fa-solid fa-circle-info"></i> Sau khi lưu thông tin chung, hệ thống sẽ chuyển sang giao diện để bạn chọn vật tư cần xuất.
                 </div>
             </div>
 
-            <div class="input-row">
-                <div class="form-group">
-                    <label>Khách Hàng / Công Trình <span style="color:red">*</span></label>
-                    <input type="text" placeholder="Nhập tên khách hàng hoặc công trình...">
-                </div>
-                <div class="form-group">
-                    <label>Người Xuất</label>
-                    <input type="text" placeholder="Tên người phụ trách xuất kho..." value="">
-                </div>
+            <div class="modal-footer">
+                <button type="button" id="btnCancel" class="btn btn-cancel">Hủy Bỏ</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Tiếp Tục Chọn Vật Tư</button>
             </div>
-
-            <div class="form-group">
-                <label>Lý Do Xuất</label>
-                <textarea rows="2" placeholder="Nhập lý do xuất kho (ví dụ: xuất thi công công trình A, xuất bán...)"></textarea>
-            </div>
-
-            <div style="background: #eff6ff; padding: 10px; border-radius: 6px; color: #1e40af; font-size: 13px;">
-                <i class="fa-solid fa-circle-info"></i> Sau khi lưu thông tin chung, hệ thống sẽ chuyển sang giao diện để bạn chọn vật tư cần xuất.
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button id="btnCancel" class="btn btn-cancel">Hủy Bỏ</button>
-            <button id="btnSave" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Tiếp Tục Chọn Vật Tư</button>
-        </div>
+        </form>
     </div>
 </div>
 
-<script src="~/js/xuat.js" asp-append-version="true">
-    
-</script>
+<script src="~/js/xuat.js" asp-append-version="true"></script>

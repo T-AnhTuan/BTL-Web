@@ -35,6 +35,6 @@ namespace QuanLyVatTu.Models
         public string? AvatarUrl { get; set; } // Đường dẫn lưu ảnh đại diện
 
         // Navigation Property: 1 Nhân viên có 1 Tài khoản (One-to-One)
-        public TaiKhoan TaiKhoan { get; set; }
+        public TaiKhoan? TaiKhoan { get; set; }
     }
 }

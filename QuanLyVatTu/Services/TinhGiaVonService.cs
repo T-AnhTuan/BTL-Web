@@ -51,6 +51,22 @@ namespace QuanLyVatTu.Services
                         vatTu.GiaVonBinhQuan = Math.Round(giaVonMoi, 2);
                         vatTu.TonKhoHienTai = tongSoLuongMoi;
                         _context.VatTus.Update(vatTu);
+
+                        var tonKhoTheoKho = await _context.ChiTietKhos
+                            .FirstOrDefaultAsync(c => c.KhoId == phieuNhap.KhoId && c.VatTuId == chiTiet.VatTuId);
+                        if (tonKhoTheoKho == null)
+                        {
+                            _context.ChiTietKhos.Add(new ChiTietKho
+                            {
+                                KhoId = phieuNhap.KhoId,
+                                VatTuId = chiTiet.VatTuId,
+                                SoLuong = chiTiet.SoLuong
+                            });
+                        }
+                        else
+                        {
+                            tonKhoTheoKho.SoLuong += chiTiet.SoLuong;
+                        }
                     }
                 }
 
@@ -59,7 +75,8 @@ namespace QuanLyVatTu.Services
                 {
                     TaiKhoanId = taiKhoanId,
                     HanhDong = $"Hệ thống tự động chạy lại Giá Vốn Bình Quân sau khi nhập phiếu {phieuNhap.MaPhieu}",
-                    ThoiGian = DateTime.Now
+                    ThoiGian = DateTime.Now,
+                    DiaChiIP = "0.0.0.0"
                 });
 
                 await _context.SaveChangesAsync();
@@ -72,7 +89,8 @@ namespace QuanLyVatTu.Services
                 {
                     TaiKhoanId = taiKhoanId,
                     HanhDong = $"[LỖI] Tính giá vốn thất bại cho phiếu {phieuNhapId}: {ex.Message}",
-                    ThoiGian = DateTime.Now
+                    ThoiGian = DateTime.Now,
+                    DiaChiIP = "0.0.0.0"
                 });
                 await _context.SaveChangesAsync();
                 return false;

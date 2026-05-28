@@ -368,6 +368,8 @@ namespace QuanLyVatTu.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("KhoId");
+
                     b.HasIndex("NhaCungCapId");
 
                     b.ToTable("PhieuNhaps");
@@ -415,6 +417,8 @@ namespace QuanLyVatTu.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KhoId");
 
                     b.ToTable("PhieuXuats");
                 });
@@ -521,12 +525,7 @@ namespace QuanLyVatTu.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("VaiTroId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("VaiTroId");
 
                     b.ToTable("VaiTros");
 
@@ -664,7 +663,7 @@ namespace QuanLyVatTu.Migrations
             modelBuilder.Entity("QuanLyVatTu.Models.PhanQuyen", b =>
                 {
                     b.HasOne("QuanLyVatTu.Models.VaiTro", "VaiTro")
-                        .WithMany()
+                        .WithMany("PhanQuyens")
                         .HasForeignKey("VaiTroId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -674,13 +673,32 @@ namespace QuanLyVatTu.Migrations
 
             modelBuilder.Entity("QuanLyVatTu.Models.PhieuNhap", b =>
                 {
+                    b.HasOne("QuanLyVatTu.Models.DanhMucKho", "Kho")
+                        .WithMany()
+                        .HasForeignKey("KhoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("QuanLyVatTu.Models.NhaCungCap", "NhaCungCap")
                         .WithMany("PhieuNhaps")
                         .HasForeignKey("NhaCungCapId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Kho");
+
                     b.Navigation("NhaCungCap");
+                });
+
+            modelBuilder.Entity("QuanLyVatTu.Models.PhieuXuat", b =>
+                {
+                    b.HasOne("QuanLyVatTu.Models.DanhMucKho", "Kho")
+                        .WithMany()
+                        .HasForeignKey("KhoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Kho");
                 });
 
             modelBuilder.Entity("QuanLyVatTu.Models.TaiKhoan", b =>
@@ -711,13 +729,6 @@ namespace QuanLyVatTu.Migrations
                         .IsRequired();
 
                     b.Navigation("TaiKhoan");
-                });
-
-            modelBuilder.Entity("QuanLyVatTu.Models.VaiTro", b =>
-                {
-                    b.HasOne("QuanLyVatTu.Models.VaiTro", null)
-                        .WithMany("PhanQuyens")
-                        .HasForeignKey("VaiTroId");
                 });
 
             modelBuilder.Entity("QuanLyVatTu.Models.VatTu", b =>

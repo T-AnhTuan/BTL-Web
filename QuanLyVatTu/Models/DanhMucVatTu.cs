@@ -24,14 +24,14 @@ namespace QuanLyVatTu.Models
 
         [StringLength(500)]
         [Display(Name = "Mô Tả")]
-        public string MoTa { get; set; }
+        public string? MoTa { get; set; }
 
         [Display(Name = "Ngày Tạo")]
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
         [StringLength(100)]
         [Display(Name = "Người Tạo")]
-        public string NguoiTao { get; set; }
+        public string? NguoiTao { get; set; }
 
         public TrangThaiHoatDong TrangThai { get; set; } = TrangThaiHoatDong.Active;
 

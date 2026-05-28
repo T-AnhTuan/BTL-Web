@@ -1,57 +1,178 @@
-﻿const modal = document.getElementById('addModal');
+﻿// Lấy các phần tử DOM (giao diện) cần thiết bằng ID
+const modal = document.getElementById('addModal');
 const btnOpen = document.getElementById('btnOpenAddModal');
 const btnClose = document.getElementById('btnCloseModal');
 const btnCancel = document.getElementById('btnCancel');
 const btnSave = document.getElementById('btnSave');
 const tableBody = document.getElementById('vattuTableBody');
+const inputId = document.getElementById('inputId'); // Trường ẩn lưu ID (0: Thêm mới, >0: Sửa)
 
-// Mở Modal
-btnOpen.onclick = () => modal.classList.add('show');
+// Hàm Mở Modal
+btnOpen.addEventListener('click', () => {
+    resetForm(); // Gọi hàm xóa sạch dữ liệu cũ trên form trước khi mở
+    modal.classList.add('show'); // Thêm class 'show' để hiển thị modal
+    document.querySelector('.modal-header h3').innerHTML = '<i class="fa-solid fa-box-open" style="color:#1a2d42; margin-right:8px;"></i> THÊM VẬT TƯ MỚI'; // Đổi tiêu đề
+});
 
-// Đóng Modal
-const closeModal = () => modal.classList.remove('show');
-btnClose.onclick = closeModal;
-btnCancel.onclick = closeModal;
-window.onclick = (e) => { if (e.target == modal) closeModal(); }
+// Hàm Đóng Modal
+const closeModal = () => modal.classList.remove('show'); // Xóa class 'show' để ẩn modal
+btnClose.addEventListener('click', closeModal); // Gán sự kiện đóng cho nút X
+btnCancel.addEventListener('click', closeModal); // Gán sự kiện đóng cho nút Hủy Bỏ
 
-// Xử lý nút Lưu và chèn dữ liệu động vào bảng
-btnSave.onclick = function () {
-    const maVatTu = document.getElementById('inputMaVatTu').value;
-    const tenVatTu = document.getElementById('inputTenVatTu').value;
-    const danhMucId = document.getElementById('inputDanhMucId').value;
-    const donViTinh = document.getElementById('inputDonViTinh').value;
-    const tonKhoHienTai = document.getElementById('inputTonKhoHienTai').value;
-    const giaVonBinhQuan = document.getElementById('inputGiaVonBinhQuan').value;
+// Bấm ra ngoài vùng xám cũng đóng modal
+window.addEventListener('click', (e) => {
+    if (e.target == modal) closeModal();
+});
 
+// Hàm làm sạch Form (Dùng khi bấm Thêm mới)
+function resetForm() {
+    inputId.value = '0'; // Đặt ID về 0 để hệ thống hiểu là Thêm mới
+    document.getElementById('inputMaVatTu').value = ''; // Làm rỗng mã
+    document.getElementById('inputTenVatTu').value = ''; // Làm rỗng tên
+    document.getElementById('inputDonViTinh').value = ''; // Làm rỗng đơn vị tính
+    document.getElementById('inputTonKhoHienTai').value = '0'; // Trả về 0
+    document.getElementById('inputGiaVonBinhQuan').value = '0'; // Trả về 0
+    const danhMucSelect = document.getElementById('inputDanhMucId');
+    if (danhMucSelect.options.length > 0) {
+        danhMucSelect.selectedIndex = 0;
+    }
+}
+
+// ================================================================
+// 1. XỬ LÝ NÚT LƯU (CREATE & UPDATE)
+// ================================================================
+btnSave.addEventListener('click', async function () {
+    // Lấy dữ liệu từ các ô input
+    const id = inputId.value; // Lấy ID để biết là Thêm hay Sửa
+    const maVatTu = document.getElementById('inputMaVatTu').value.trim();
+    const tenVatTu = document.getElementById('inputTenVatTu').value.trim();
+    const danhMucId = parseInt(document.getElementById('inputDanhMucId').value, 10);
+    const donViTinh = document.getElementById('inputDonViTinh').value.trim();
+    const tonKhoHienTai = parseInt(document.getElementById('inputTonKhoHienTai').value || '0', 10);
+    const giaVonBinhQuan = parseFloat(document.getElementById('inputGiaVonBinhQuan').value || '0');
+
+    // Kiểm tra tính hợp lệ cơ bản
     if (!maVatTu || !tenVatTu) {
         alert("Vui lòng nhập Mã và Tên vật tư!");
+        return; // Dừng hàm lại nếu thiếu dữ liệu
+    }
+
+    if (!danhMucId) {
+        alert("Vui lòng chọn danh mục vật tư!");
         return;
     }
 
-    // Định dạng tiền tệ cho Giá Vốn
-    const formattedGiaVon = new Intl.NumberFormat('vi-VN').format(giaVonBinhQuan) + " đ";
+    if (Number.isNaN(tonKhoHienTai) || tonKhoHienTai < 0) {
+        alert("Tồn kho phải là số không âm!");
+        return;
+    }
 
-    // Chèn dòng HTML mới
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-            <td>${maVatTu}</td>
-            <td style="font-weight: 500;">${tenVatTu}</td>
-            <td>${danhMucId}</td>
-            <td>${donViTinh}</td>
-            <td>${tonKhoHienTai}</td>
-            <td class="rbac-note">${formattedGiaVon}</td>
-            <td class="action-icons text-center">
-                <i class="fa-solid fa-pen icon-edit"></i>
-                <i class="fa-solid fa-trash icon-delete"></i>
-            </td>
-        `;
-    tableBody.insertBefore(newRow, tableBody.firstChild);
+    if (Number.isNaN(giaVonBinhQuan) || giaVonBinhQuan < 0) {
+        alert("Giá vốn bình quân phải là số không âm!");
+        return;
+    }
 
-    // Xóa form và đóng
-    document.getElementById('inputMaVatTu').value = '';
-    document.getElementById('inputTenVatTu').value = '';
-    document.getElementById('inputDonViTinh').value = '';
-    document.getElementById('inputTonKhoHienTai').value = '0';
-    document.getElementById('inputGiaVonBinhQuan').value = '0';
-    closeModal();
-}
+    // Đóng gói dữ liệu thành một đối tượng (Object) giống cấu trúc Model C#
+    const vatTuData = {
+        Id: parseInt(id, 10),
+        MaVatTu: maVatTu,
+        TenVatTu: tenVatTu,
+        DanhMucId: danhMucId,
+        DonViTinh: donViTinh,
+        TonKhoHienTai: tonKhoHienTai,
+        GiaVonBinhQuan: giaVonBinhQuan
+    };
+
+    // Xác định Đường dẫn (URL) gọi về Controller C#
+    // Nếu ID là 0 thì gọi hàm Create, ngược lại gọi hàm Edit
+    const url = id === '0' ? '/VatTu/Create' : '/VatTu/Edit';
+
+    try {
+        // Gửi yêu cầu (Request) lên Server bằng Fetch API
+        const response = await fetch(url, {
+            method: 'POST', // Phương thức POST để gửi dữ liệu
+            headers: {
+                'Content-Type': 'application/json', // Báo cho Server biết dữ liệu gửi lên là định dạng JSON
+            },
+            body: JSON.stringify(vatTuData) // Biến Object JS thành chuỗi JSON để gửi
+        });
+
+        const result = await response.json(); // Đọc kết quả Server trả về
+
+        if (result.success) {
+            alert(id === '0' ? "Thêm vật tư thành công!" : "Cập nhật thành công!");
+            closeModal(); // Đóng form
+            window.location.reload(); // Tải lại trang để bảng hiển thị dữ liệu mới nhất từ Database
+        } else {
+            alert("Lỗi: " + result.message); // Hiển thị thông báo lỗi từ Server
+        }
+    } catch (error) {
+        alert("Lỗi kết nối đến máy chủ: " + error.message);
+    }
+});
+
+// ================================================================
+// 2. XỬ LÝ NÚT SỬA VÀ XÓA (READ & DELETE)
+// ================================================================
+// Gắn sự kiện click cho toàn bộ tài liệu (Event Delegation) để bắt được nút của các dòng mới thêm
+document.addEventListener('click', async function (e) {
+
+    // NẾU BẤM VÀO NÚT SỬA (Chứa class btn-edit)
+    if (e.target.closest('.btn-edit')) {
+        const btn = e.target.closest('.btn-edit');
+        const id = btn.getAttribute('data-id'); // Lấy ID vật tư được gắn ở thẻ HTML
+
+        try {
+            // Gửi yêu cầu lên Server lấy chi tiết vật tư theo ID
+            const response = await fetch(`/VatTu/GetById?id=${encodeURIComponent(id)}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const data = result.data;
+                // Đổ dữ liệu lấy được vào các ô input trên Modal
+                inputId.value = data.id;
+                document.getElementById('inputMaVatTu').value = data.maVatTu;
+                document.getElementById('inputTenVatTu').value = data.tenVatTu;
+                document.getElementById('inputDanhMucId').value = data.danhMucId;
+                document.getElementById('inputDonViTinh').value = data.donViTinh || '';
+                document.getElementById('inputTonKhoHienTai').value = data.tonKhoHienTai ?? 0;
+                document.getElementById('inputGiaVonBinhQuan').value = data.giaVonBinhQuan ?? 0;
+
+                // Đổi tiêu đề Modal
+                document.querySelector('.modal-header h3').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:#1a2d42; margin-right:8px;"></i> CẬP NHẬT VẬT TƯ';
+                modal.classList.add('show'); // Hiển thị Modal
+            } else {
+                alert("Không tìm thấy dữ liệu vật tư!");
+            }
+        } catch (error) {
+            alert("Lỗi kết nối khi lấy dữ liệu: " + error.message);
+        }
+    }
+
+    // NẾU BẤM VÀO NÚT XÓA (Chứa class btn-delete)
+    if (e.target.closest('.btn-delete')) {
+        const btn = e.target.closest('.btn-delete');
+        const id = btn.getAttribute('data-id'); // Lấy ID cần xóa
+
+        // Hiển thị hộp thoại xác nhận
+        if (confirm("Bạn có chắc chắn muốn xóa vật tư này không? Dữ liệu không thể khôi phục!")) {
+            try {
+                // Gửi yêu cầu Xóa lên Server
+                const response = await fetch(`/VatTu/Delete?id=${encodeURIComponent(id)}`, {
+                    method: 'POST' // Các thao tác thay đổi dữ liệu luôn nên dùng POST
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert("Đã xóa thành công!");
+                    window.location.reload(); // Tải lại trang để mất dòng đã xóa
+                } else {
+                    alert("Lỗi khi xóa: " + result.message);
+                }
+            } catch (error) {
+                alert("Lỗi kết nối khi xóa: " + error.message);
+            }
+        }
+    }
+});

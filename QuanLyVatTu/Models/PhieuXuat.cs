@@ -33,11 +33,11 @@ namespace QuanLyVatTu.Models
         public DanhMucKho Kho { get; set; }
         [StringLength(100)]
         [Display(Name = "Người Xuất")]
-        public string NguoiXuat { get; set; }
+        public string? NguoiXuat { get; set; }
 
         [StringLength(500)]
         [Display(Name = "Lý Do Xuất")]
-        public string LyDoXuat { get; set; }
+        public string? LyDoXuat { get; set; }
 
         [Display(Name = "Tổng Tiền")]
         [Column(TypeName = "decimal(18,2)")]

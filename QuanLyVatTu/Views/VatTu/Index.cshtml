@@ -2,6 +2,8 @@
 @model IEnumerable<VatTu>
 @{
     ViewData["Title"] = "Danh Sách Hàng Hóa & Vật Tư";
+    int? selectedDanhMucId = ViewBag.DanhMucId as int?;
+    string tuKhoa = ViewBag.TuKhoa as string ?? string.Empty;
 }
 
 <link rel="stylesheet" href="~/css/dsvattu.css" asp-append-version="true" />
@@ -14,27 +16,27 @@
     </div>
 </div>
 
-<div class="filter-section">
+<form class="filter-section" asp-controller="VatTu" asp-action="Index" method="get">
     <div class="filter-group">
         <label>Danh Mục</label>
-        <select>
+        <select name="danhMucId">
             <option value="">Tất cả</option>
             @if (ViewBag.DanhMucs != null)
             {
                 foreach (var dm in ViewBag.DanhMucs)
                 {
                     <!-- SỬA Ở ĐÂY: Đổi value từ dm.MaDanhMuc sang dm.Id -->
-                    <option value="@dm.Id">@dm.TenDanhMuc</option>
+                    <option value="@dm.Id" selected="@(selectedDanhMucId == dm.Id ? "selected" : null)">@dm.TenDanhMuc</option>
                 }
             }
         </select>
     </div>
     <div class="filter-group" style="flex: 2;">
         <label>Tìm kiếm</label>
-        <input type="text" placeholder="Tìm theo mã hoặc tên vật tư...">
+        <input type="text" name="tuKhoa" value="@tuKhoa" placeholder="Tìm theo mã hoặc tên vật tư...">
     </div>
-    <button class="btn-filter"><i class="fa-solid fa-filter"></i> Lọc</button>
-</div>
+    <button type="submit" class="btn-filter"><i class="fa-solid fa-filter"></i> Lọc</button>
+</form>
 
 <div class="table-container">
     <table class="data-table">
