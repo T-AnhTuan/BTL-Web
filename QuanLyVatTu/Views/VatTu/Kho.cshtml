@@ -1,150 +1,10 @@
-﻿@{
+﻿@using QuanLyVatTu.Models
+@model IEnumerable<ChiTietKho>
+@{
     ViewData["Title"] = "Báo Cáo Chi Tiết Thẻ Kho";
 }
 
-<style>
-    /* --- CSS CƠ BẢN --- */
-    .page-title {
-        font-size: 26px;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 20px;
-    }
-
-    .btn {
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.2s;
-    }
-
-    .btn-primary {
-        background-color: #3b82f6;
-        color: #fff;
-    }
-
-        .btn-primary:hover {
-            background-color: #2563eb;
-        }
-
-    /* --- THANH CÔNG CỤ (BỘ LỌC) --- */
-    .filter-toolbar {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-        align-items: center;
-    }
-
-    .filter-box {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-        .filter-box i {
-            position: absolute;
-            left: 12px;
-            color: #94a3b8;
-            font-size: 14px;
-        }
-
-    .select-vattu {
-        width: 300px;
-        padding: 10px 15px 10px 35px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-        color: #475569;
-        appearance: none;
-        background: #fff url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E") no-repeat right 12px top 50%;
-        background-size: 10px auto;
-    }
-
-        .select-vattu:focus {
-            border-color: #3b82f6;
-        }
-
-    .input-date {
-        padding: 10px 15px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-        color: #475569;
-        width: 180px;
-    }
-
-        .input-date:focus {
-            border-color: #3b82f6;
-        }
-
-    /* --- BẢNG DỮ LIỆU --- */
-    .table-container {
-        background: #fff;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .table-header-title {
-        text-align: center;
-        font-size: 16px;
-        font-weight: 700;
-        color: #0f172a;
-        padding: 15px;
-        border-bottom: 1px solid #e2e8f0;
-        background-color: #f8fafc;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            border: 1px solid #e2e8f0;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        .data-table th {
-            background-color: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-            text-align: center;
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .data-table tbody tr:hover {
-            background-color: #f1f5f9;
-        }
-
-    .text-center {
-        text-align: center !important;
-    }
-
-    .text-right {
-        text-align: right !important;
-    }
-
-    .font-medium {
-        font-weight: 500;
-        color: #1e293b;
-    }
-</style>
+<link rel="stylesheet" href="~/css/kho.css" asp-append-version="true" />
 
 <h1 class="page-title">Báo Cáo Chi Tiết Thẻ Kho</h1>
 
@@ -153,32 +13,72 @@
         <i class="fa-solid fa-magnifying-glass"></i>
         <select class="select-vattu">
             <option value="">Chọn Vật Tư...</option>
+            @if (ViewBag.VatTus != null)
+            {
+                foreach (var vt in ViewBag.VatTus)
+                {
+                    <option value="@vt.MaVatTu" selected="@(Model?.VatTuId == vt.Id ? "selected":null)">@vt.TenVatTu</option>
+                }
+            }
         </select>
     </div>
 
-    <input type="date" class="input-date" title="Từ Ngày">
-    <input type="date" class="input-date" title="Đến Ngày">
+    <input type="date" class="input-date" title="Từ ngày">
+    <input type="date" class="input-date" title="Đến ngày">
 
-    <button class="btn btn-primary">Xem Báo Cáo</button>
+    <button class="btn btn-primary">Xem báo cáo</button>
 </div>
 
 <div class="table-container">
-    <div class="table-header-title">Thẻ Kho Vật Tư: [Tên Vật Tư] - [Tên Kho]</div>
-
+    <div class="table-header-title">
+        Kho Vật Tư: @(Model?.TenVatTu ?? "[Chưa chọn vật tư]") - Kho: @(Model?.TenKho ?? "Kho Tổng")
+    </div>
     <table class="data-table">
         <thead>
             <tr>
                 <th style="width: 50px;">STT</th>
                 <th style="width: 120px;">Ngày</th>
-                <th style="width: 150px;">Số Chứng Từ</th>
+                <th style="width: 150px;">Số chứng từ</th>
                 <th>Diễn Giải</th>
                 <th style="width: 100px;">Nhập</th>
                 <th style="width: 100px;">Xuất</th>
                 <th style="width: 120px;">Tồn</th>
-                <th style="width: 100px;">Ghi Chú</th>
+                <th style="width: 100px;">Ghi chú</th>
             </tr>
         </thead>
         <tbody>
+            @if (Model != null && Model.ChiTietGiaoDich != null && Model.ChiTietGiaoDich.Any())
+            {
+                int stt = 1;
+                foreach (var dong in Model.ChiTietGiaoDich)
+                {
+                    <tr>
+                        <td>@(stt++)</td>
+                        <td>@dong.NgayGiaoDich.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="color: #0284c7; font-weight: 500;">@dong.SoChungTu</td>
+                        <td>@dong.DienGiai</td>
+
+                        <!-- Kiểm tra nếu là Nhập thì in cột Nhập, là Xuất thì in cột Xuất -->
+                        <td style="color: #16a34a; font-weight: bold;">
+                            @(dong.LoaiGiaoDich == "Nhập" ? dong.SoLuong.ToString("N0") : "")
+                        </td>
+                        <td style="color: #dc2626; font-weight: bold;">
+                            @(dong.LoaiGiaoDich == "Xuất" ? dong.SoLuong.ToString("N0") : "")
+                        </td>
+
+                        <td style="font-weight: bold;">@dong.TonKhoSauGiaoDich.ToString("N0")</td>
+                        <td style="font-size: 13px; color: #64748b;">@dong.GhiChu</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 20px;">
+                        Vui lòng chọn vật tư và thời gian để xem Thẻ Kho, hoặc không có giao dịch nào trong kỳ.
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>

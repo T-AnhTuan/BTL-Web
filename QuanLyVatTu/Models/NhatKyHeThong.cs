@@ -7,27 +7,25 @@ namespace QuanLyVatTu.Models
         [Key]
         public int Id { get; set; }
 
-        // Người thực hiện
-        public int NguoiDungId { get; set; }
-
-        [ForeignKey("NguoiDungId")]
-        public NguoiDung NguoiDung { get; set; } = null!;
-
-        // Nội dung thao tác
+        // Người thực hiện hành động
         [Required]
-        [StringLength(150)]
-        public string HanhDong { get; set; } = string.Empty;
+        [Display(Name = "Tài khoản thực hiện")]
+        public int TaiKhoanId { get; set; }
+        [ForeignKey("TaiKhoanId")]
+        public TaiKhoan TaiKhoan { get; set; } // Liên kết với bảng TaiKhoan ở phần trước
 
-        // Ví dụ:
-        // "Đăng nhập hệ thống"
-        // "Tạo phiếu nhập"
-        // "Xóa vật tư"
+        [Required(ErrorMessage = "Hành động không được để trống")]
+        [StringLength(255)]
+        [Display(Name = "Hành Động")]
+        public string HanhDong { get; set; }
+        // Ví dụ: "Đăng nhập hệ thống", "Tạo phiếu nhập PN001", "Cập nhật tồn kho"
 
-        // Thời gian
+        [Display(Name = "Thời Gian")]
         public DateTime ThoiGian { get; set; } = DateTime.Now;
 
-        // Địa chỉ IP (nếu cần)
+        // Lưu vết thêm địa chỉ IP để tăng cường bảo mật (tùy chọn)
         [StringLength(50)]
-        public string? DiaChiIP { get; set; }
+        [Display(Name = "Địa Chỉ IP")]
+        public string DiaChiIP { get; set; }
     }
 }

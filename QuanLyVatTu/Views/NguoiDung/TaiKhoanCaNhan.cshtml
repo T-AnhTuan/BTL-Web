@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Hồ Sơ Cá Nhân";
+}
+<head>
+    <link rel="stylesheet" href="~/css/taikhoan.css" asp-append-version="true">
+</head>
+
+<h1 class="page-title">Hồ Sơ Cá Nhân</h1>
+
+<form asp-action="#" method="post" enctype="multipart/form-data">
+    <div class="profile-container">
+
+        <div class="card-panel">
+            <h2 class="card-title">Thông Tin Cơ Bản</h2>
+
+            <div class="basic-info-layout">
+                <div class="avatar-section">
+                    <div class="avatar-circle">
+                        <i class="fa-solid fa-user" id="defaultAvatarIcon"></i>
+                        <img id="imagePreview" src="#" alt="Avatar Preview" style="display: none;" />
+                    </div>
+                    <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+
+                    <button type="button" class="btn btn-outline" style="width: 100%; padding: 6px 10px; font-size: 13px;" onclick="document.getElementById('avatarUpload').click();">Thay đổi ảnh hồ sơ</button>
+                </div>
+
+                <div class="form-fields">
+                    <div class="form-group">
+                        <label>Tên đầy đủ</label>
+                        <input type="text" value="Nguyễn Văn A">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tên tài khoản</label>
+                        <input type="text" value="[Tên Tài Khoản]" readonly title="Tên đăng nhập không thể thay đổi">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email liên hệ</label>
+                        <input type="email" placeholder="Nhập địa chỉ email...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Số điện thoại</label>
+                        <input type="text" value="0123 456 789">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Vai trò</label>
+                        <input type="text" value="[Vai Trò]" readonly title="Vai trò do Admin cấp phát">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h2 class="card-title">Bảo Mật</h2>
+
+                <div class="form-fields">
+                    <div class="form-group">
+                        <label>Mật khẩu hiện tại</label>
+                        <input type="password" placeholder="Nhập mật khẩu đang sử dụng...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mật khẩu mới</label>
+                        <input type="password" placeholder="Nhập mật khẩu mới...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Xác nhận mật khẩu mới</label>
+                        <input type="password" placeholder="Nhập lại mật khẩu mới...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <button type="button" class="btn btn-secondary">Hủy bỏ</button>
+                <button type="button" class="btn btn-primary" onclick="alert('Giao diện Hồ sơ cá nhân đã sẵn sàng! Chờ kết nối CSDL.');"><i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Lưu thay đổi</button>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+<script>
+    const avatarUpload = document.getElementById('avatarUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    const defaultAvatarIcon = document.getElementById('defaultAvatarIcon');
+
+    avatarUpload.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                defaultAvatarIcon.style.display = 'none';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>

@@ -2,52 +2,49 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace QuanLyVatTu.Models
 {
+    public enum TrangThaiPhieuXuat  
+    {
+        ChoDuyet = 0,    // Mặc định khi mới tạo
+        DaDuyet = 1,     // Khi quản lý đã duyệt
+        TuChoi = -1       // Khi bị từ chối
+    }
     public class PhieuXuat
     {
         [Key]
         public int Id { get; set; }
 
-        // Thông tin chứng từ
+        [Required]
+        [StringLength(50)]
+        [Display(Name = "Mã Phiếu Xuất")]
+        public string MaPhieu { get; set; }
 
         [Required]
+        [Display(Name = "Ngày Xuất")]
         public DateTime NgayXuat { get; set; } = DateTime.Now;
 
         [Required]
-        public string SoPhieu { get; set; } = string.Empty;
+        [StringLength(255)]
+        [Display(Name = "Khách Hàng")]
+        public string KhachHang { get; set; }
+        [StringLength(100)]
+        [Display(Name = "Kho xuất")]
+        public int KhoId { get; set; }
+        [StringLength(100)]
+        [Display(Name = "Người Xuất")]
+        public string NguoiXuat { get; set; }
 
-        public string? DonVi { get; set; }
+        [StringLength(500)]
+        [Display(Name = "Lý Do Xuất")]
+        public string LyDoXuat { get; set; }
 
-        public string? DiaChi { get; set; }
+        [Display(Name = "Tổng Tiền")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TongTien { get; set; } // Thường được tự động tính: Sum(ThanhTien) của ChiTiet
 
-        // Định khoản kế toán
-        public string? TaiKhoanNo { get; set; }
+        // TRẠNG THÁI DUYỆT (Quan trọng)
+        public TrangThaiPhieuXuat TrangThai { get; set; } = TrangThaiPhieuXuat.ChoDuyet;
 
-        public string? TaiKhoanCo { get; set; }
-
-        // Thông tin xuất kho
-        public string? NguoiMua { get; set; }
-
-        public string? XuatTaiKho { get; set; }
-
-        public string? DiaDiemKho { get; set; }
-
-        public string? LyDoXuat { get; set; }
-    
-        //Thông tin kỹ nhận, tổng kết
-        public int NguoiLapId { get; set; }
-
-        [ForeignKey("NguoiLapId")]
-        public NguoiDung? NguoiLap { get; set; }
-
-        public string? ThuKho { get; set; }
-
-        public string? KeToanTruong { get; set; }
-
-        public string? NguoiNhanHang { get; set; }
-
-        public string? TrangThai { get; set; }
-        public string? NguoiDuyet { get; set; }
+        // Navigation Properties (1 Phiếu Xuất có nhiều Chi tiết)
         public ICollection<ChiTietPhieuXuat> ChiTietPhieuXuats { get; set; }
-            = new List<ChiTietPhieuXuat>();
     }
 }

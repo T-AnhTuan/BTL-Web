@@ -1,64 +1,62 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QuanLyVatTu.Services; // Gọi namespace chứa Service bạn vừa tạo
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using QuanLyVatTu.Data;
+using QuanLyVatTu.Services;
+using QuanLyVatTu.ViewModels;
 using System;
 using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {
-    // Yêu cầu quyền truy cập: Chỉ Admin và Manager mới được xem Báo cáo
-    [Authorize(Roles = "Admin, Manager")]
+    // Chỉ Admin và Quản lý kho mới được xem báo cáo kế toán
+    [Authorize(Roles = "Quản trị viên, Quản lý kho")]
     public class BaoCaoController : Controller
     {
-        // Khai báo giao diện (Interface) của Service thay vì gọi thẳng DbContext
-        private readonly ITongHopBaoCaoService _baoCaoService;
+        private readonly IBaoCaoService _baoCaoService;
+        private readonly AppDbContext _context;
 
-        // Tiêm (Inject) Service vào Controller
-        public BaoCaoController(ITongHopBaoCaoService baoCaoService)
+        public BaoCaoController(IBaoCaoService baoCaoService, AppDbContext context)
         {
             _baoCaoService = baoCaoService;
+            _context = context;
         }
 
         // =========================================================================
-        // 1. TRANG CHỦ BÁO CÁO (Menu chọn loại báo cáo)
+        // TRANG CHỦ BÁO CÁO: TỔNG HỢP XUẤT - NHẬP - TỒN (Map với Views/BaoCao/Index.cshtml)
         // =========================================================================
-        public IActionResult Index()
+        [HttpGet]
+        public async Task<IActionResult> Index(int? khoId, DateTime? tuNgay, DateTime? denNgay, string tuKhoa)
         {
-            return View();
+            try
+            {
+                // 1. Chuẩn bị dữ liệu cho Dropdown chọn Kho
+                ViewBag.DanhSachKho = new SelectList(await _context.DanhMucKhos.ToListAsync(), "Id", "TenKho", khoId);
+
+                // 2. Thiết lập thời gian mặc định (Từ đầu tháng đến ngày hiện tại)
+                if (!tuNgay.HasValue) tuNgay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                if (!denNgay.HasValue) denNgay = DateTime.Now;
+
+                // 3. Gọi Service xử lý thuật toán cộng trừ Tồn đầu - Nhập - Xuất - Tồn cuối
+                var viewModel = await _baoCaoService.LayBaoCaoNhapXuatTonAsync(khoId, tuNgay.Value, denNgay.Value, tuKhoa);
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                return Content($"Lỗi khi tải báo cáo: {ex.Message}");
+            }
         }
 
         // =========================================================================
-        // 2. BÁO CÁO TỒN KHO
+        // TRANG BIỂU ĐỒ PHÂN TÍCH THỐNG KÊ
         // =========================================================================
-        public async Task<IActionResult> bcTonKho()
-        {
-            // Gọi Service để lấy dữ liệu đã được tổng hợp sẵn (Dạng BaoCaoTonKhoDto)
-            var data = await _baoCaoService.LayDuLieuBaoCaoTonKhoAsync();
-
-            // Truyền gói dữ liệu (data) đó thẳng ra View
-            return View(data);
-        }
-
-        // =========================================================================
-        // 3. BÁO CÁO NHẬP XUẤT (Kèm bộ lọc theo ngày)
-        // =========================================================================
-        public async Task<IActionResult> bcNhapXuat(DateTime? tuNgay, DateTime? denNgay)
-        {
-            // Gọi Service và truyền 2 tham số ngày tháng vào
-            var data = await _baoCaoService.LayDuLieuBaoCaoNhapXuatAsync(tuNgay, denNgay);
-
-            return View(data);
-        }
-
-        // =========================================================================
-        // 4. PHÂN TÍCH THỐNG KÊ (Biểu đồ)
-        // =========================================================================
+        [HttpGet]
         public async Task<IActionResult> PhanTichThongKe()
         {
-            // Lấy các mảng dữ liệu (Labels, Data) và tỷ lệ luân chuyển từ Service
-            var data = await _baoCaoService.LayDuLieuPhanTichThongKeAsync();
-
-            return View(data);
+            // Trả về View để Frontend dùng Chart.js vẽ biểu đồ
+            return View();
         }
     }
 }

@@ -4,36 +4,29 @@ namespace QuanLyVatTu.Models
 {
     public class ChiTietPhieuXuat
     {
-         [Key]
-         public int Id { get; set; }
+        [Key]
+        public int Id { get; set; }
 
-         [Required]
-         public int PhieuXuatId { get; set; }
+        [Required]
+        public int PhieuXuatId { get; set; }
+        [ForeignKey("PhieuXuatId")]
+        public PhieuXuat PhieuXuat { get; set; }
 
-         [ForeignKey("PhieuXuatId")]
-         public virtual PhieuXuat PhieuXuat { get; set; } = null!;
+        [Required]
+        public int VatTuId { get; set; }
+        [ForeignKey("VatTuId")]
+        public VatTu VatTu { get; set; }
 
-         [Required]
-         public int VatTuId { get; set; }
+        [Required]
+        [Display(Name = "Số Lượng Xuất")]
+        public int SoLuong { get; set; }
 
-         [ForeignKey("VatTuId")]
-         public virtual VatTu VatTu { get; set; } = null!;
+        [Display(Name = "Đơn Giá Xuất (Giá Vốn)")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DonGiaXuat { get; set; } // Sẽ được hệ thống tự tính và điền vào dựa trên phương pháp Bình Quân Gia Quyền
 
-         // Thông tin vật tư
-         public int STT { get; set; }
-
-         public string? MaSo { get; set; }
-
-         public decimal SoLuongYeuCau { get; set; }
-
-         public decimal SoLuongThucXuat { get; set; }
-
-         [Required]
-         [Column(TypeName = "decimal(10,2)")]
-         public decimal DonGia { get; set; }
-
-         // Thành tiền
-         [NotMapped]
-         public decimal ThanhTien => SoLuongThucXuat * DonGia;
+        [Display(Name = "Thành Tiền")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ThanhTien => SoLuong * DonGiaXuat;
     }
 }

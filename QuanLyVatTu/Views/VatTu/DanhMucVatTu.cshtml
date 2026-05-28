@@ -1,264 +1,10 @@
-﻿@{
+﻿@using QuanLyVatTu.Models
+@model IEnumerable<DanhMucVatTu>
+@{
     ViewData["Title"] = "Danh Sách Danh Mục Vật Tư";
 }
 
-<style>
-    /* --- CSS CƠ BẢN --- */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .page-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #1e293b;
-    }
-
-    .btn {
-        padding: 9px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: 0.2s;
-    }
-
-    .btn-primary {
-        background-color: #2563eb;
-        color: #fff;
-    }
-
-        .btn-primary:hover {
-            background-color: #1d4ed8;
-        }
-
-    /* --- BỘ LỌC TÌM KIẾM --- */
-    .filter-section {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-        align-items: center;
-    }
-
-    .search-input {
-        flex: 1;
-        padding: 10px 15px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-    }
-
-        .search-input:focus {
-            border-color: #2563eb;
-        }
-
-    .status-select {
-        padding: 10px 15px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-        color: #475569;
-        background: #fff;
-        width: 200px;
-    }
-
-    /* --- BẢNG DỮ LIỆU --- */
-    .table-container {
-        background: #fff;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-
-        .data-table th, .data-table td {
-            padding: 14px 15px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        .data-table th {
-            background-color: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-        }
-
-        .data-table tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
-    .text-center {
-        text-align: center;
-    }
-
-    /* Status Badges */
-    .badge {
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
-        display: inline-block;
-    }
-
-    .badge-active {
-        background-color: #dcfce7;
-        color: #166534;
-    }
-
-    .badge-inactive {
-        background-color: #fef08a;
-        color: #854d0e;
-    }
-
-    .action-icons i {
-        cursor: pointer;
-        margin: 0 6px;
-        font-size: 16px;
-        transition: 0.2s;
-    }
-
-    .icon-edit {
-        color: #3b82f6;
-    }
-
-        .icon-edit:hover {
-            color: #1d4ed8;
-        }
-
-    .icon-delete {
-        color: #ef4444;
-    }
-
-        .icon-delete:hover {
-            color: #b91c1c;
-        }
-
-    /* --- POPUP MODAL --- */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        z-index: 999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        align-items: center;
-        justify-content: center;
-    }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-    .modal-box {
-        background-color: #fff;
-        width: 500px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        animation: slideDown 0.3s ease-out;
-    }
-
-    @@keyframes slideDown {
-        from {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .modal-header {
-        padding: 15px 20px;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-        .modal-header h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin: 0;
-        }
-
-    .close-btn {
-        font-size: 20px;
-        color: #64748b;
-        cursor: pointer;
-        border: none;
-        background: none;
-    }
-
-    .modal-body {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-        .form-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            outline: none;
-            font-size: 14px;
-        }
-
-            .form-group input:focus, .form-group textarea:focus {
-                border-color: #2563eb;
-            }
-
-    .modal-footer {
-        padding: 15px 20px;
-        border-top: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background: #f8fafc;
-        border-radius: 0 0 8px 8px;
-    }
-
-    .btn-cancel {
-        background-color: #fff;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-    }
-
-        .btn-cancel:hover {
-            background-color: #f1f5f9;
-        }
-</style>
+<link rel="stylesheet" href="~/css/danhmucvattu.css" asp-append-version="true">
 
 <div class="page-header">
     <h1 class="page-title">Danh Sách Danh Mục Vật Tư</h1>
@@ -270,9 +16,9 @@
     <div style="display:flex; align-items: center; gap: 10px;">
         <span style="font-size:14px; color:#475569; font-weight:500;">Trạng thái</span>
         <select class="status-select">
-            <option value="">(All, Active, Inactive)</option>
-            <option value="active">Hoạt Động</option>
-            <option value="inactive">Tạm Ngừng</option>
+            <option value="">Tất cả</option>
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Tạm ngừng</option>
         </select>
     </div>
 
@@ -295,6 +41,43 @@
             </tr>
         </thead>
         <tbody>
+            @if (Model != null && Model.Any())
+            {
+                int stt = 1;
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>@(stt++)</td>
+                        <td>@item.MaDanhMuc</td>
+                        <td style="font-weight: 500;">@item.TenDanhMuc</td>
+                        <td>@item.MoTa</td>
+                        <td>@item.NguoiTao</td>
+                        <td>@item.NgayTao.ToString("dd/MM/yyyy")</td>
+                        <td class="text-center">
+                            @if (item.TrangThai.Actice)
+                            {
+                                <span class="status-badge active">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge inactive">Tạm ngừng</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <button class="action-btn edit-btn"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="10" class="text-center">Không có danh mục nào để hiển thị.</td>
+                </tr>
+            }
+            )
         </tbody>
     </table>
 </div>
@@ -315,22 +98,22 @@
             </div>
 
             <div class="form-group">
-                <label>Mô Tả</label>
+                <label>Mô tả</label>
                 <textarea rows="3" placeholder="Ghi chú thêm về danh mục này..."></textarea>
             </div>
 
             <div class="form-group">
-                <label>Trạng Thái</label>
+                <label>Trạng thái</label>
                 <select>
-                    <option value="active">Hoạt Động</option>
-                    <option value="inactive">Tạm Ngừng</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Tạm ngừng</option>
                 </select>
             </div>
         </div>
 
         <div class="modal-footer">
             <button id="btnCancel" class="btn btn-cancel">Hủy</button>
-            <button id="btnSave" class="btn btn-primary">Lưu Danh Mục</button>
+            <button id="btnSave" class="btn btn-primary">Lưu danh mục</button>
         </div>
     </div>
 </div>

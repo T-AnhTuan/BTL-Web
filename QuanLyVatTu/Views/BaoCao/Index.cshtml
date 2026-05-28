@@ -1,155 +1,8 @@
-﻿@{
+﻿@model QuanLyVatTu.ViewModels.BaoCaoVM
+@{
     ViewData["Title"] = "Báo Cáo Xuất-Nhập-Tồn Vật Tư";
 }
-
-<style>
-    /* --- CSS CƠ BẢN --- */
-    .page-title {
-        font-size: 26px;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 20px;
-    }
-
-    .btn {
-        padding: 9px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: 0.2s;
-    }
-
-    .btn-primary {
-        background-color: #3b82f6;
-        color: #fff;
-    }
-
-        .btn-primary:hover {
-            background-color: #2563eb;
-        }
-
-    .btn-outline {
-        background-color: #fff;
-        border: 1px solid #cbd5e1;
-        color: #475569;
-    }
-
-        .btn-outline:hover {
-            background-color: #f1f5f9;
-            color: #0f172a;
-        }
-
-    /* --- THANH CÔNG CỤ (BỘ LỌC & XUẤT FILE) --- */
-    .filter-toolbar {
-        display: flex;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 20px;
-        align-items: flex-end;
-        background: #fff;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
-
-    .filter-group-wrapper {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .filter-box {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-        .filter-box label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-        }
-
-    .input-control {
-        padding: 9px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        font-size: 14px;
-        color: #475569;
-        min-width: 160px;
-        background: #fff;
-    }
-
-        .input-control:focus {
-            border-color: #3b82f6;
-        }
-
-    .action-group {
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-    }
-
-    /* --- BẢNG DỮ LIỆU --- */
-    .table-container {
-        background: #fff;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        overflow: auto;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-        white-space: nowrap;
-    }
-
-        .data-table th, .data-table td {
-            padding: 12px 10px;
-            border: 1px solid #e2e8f0;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        /* Header 2 tầng */
-        .data-table thead th {
-            background-color: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-            text-align: center;
-        }
-
-        /* Ruột bảng */
-        .data-table tbody tr:hover {
-            background-color: #f1f5f9;
-        }
-
-        /* Dòng Footer (Tổng cộng) */
-        .data-table tfoot td {
-            background-color: #f8fafc;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-    /* Căn lề số liệu */
-    .text-center {
-        text-align: center !important;
-    }
-
-    .text-right {
-        text-align: right !important;
-    }
-</style>
+<link rel="stylesheet" href="~/css/baocao.css" asp-append-version="true">
 
 <h1 class="page-title">Báo Cáo Xuất-Nhập-Tồn Vật Tư</h1>
 
@@ -173,12 +26,12 @@
 
         <div class="filter-box">
             <label>Đến Ngày</label>
-            <input type="date" class="input-control">
+            <input type="date" asp-for="TuNgay" class="input-control">
         </div>
 
         <div class="filter-box">
             <label>Tên/Mã VT</label>
-            <input type="text" class="input-control" placeholder="Nhập để tìm kiếm...">
+            <input type="text" asp-for="TuKhoa" class="input-control" placeholder="Nhập để tìm kiếm...">
         </div>
 
         <div class="filter-box" style="justify-content: flex-end;">
@@ -218,6 +71,16 @@
         </thead>
 
         <tbody>
+            @foreach (var item in Model.DanhSachChiTiet)
+            {
+                <tr>
+                    <td>@item.MaVatTu</td>
+                    <td>@item.TenVatTu</td>
+                    <!-- Các cột Tồn đầu, Nhập, Xuất, Tồn cuối... -->
+                    <td class="text-right">@item.TonDauSoLuong</td>
+                    <td class="text-right">@item.TonDauGiaTri.ToString("N0")</td>
+                </tr>
+            }
         </tbody>
 
         <tfoot>

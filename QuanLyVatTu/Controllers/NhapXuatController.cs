@@ -1,115 +1,60 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using QuanLyVatTu.Services; // Thư mục chứa INhapXuatService
+using QuanLyVatTu.Services;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {
-    [Authorize]
+    [Authorize] // Bắt buộc đăng nhập
     public class NhapXuatController : Controller
     {
-        // Khai báo Interface của Service thay vì gọi AppDbContext
         private readonly INhapXuatService _nhapXuatService;
+        private readonly AppDbContext _context;
 
-        // Tiêm (Inject) NhapXuatService vào Controller
-        public NhapXuatController(INhapXuatService nhapXuatService)
+        public NhapXuatController(INhapXuatService nhapXuatService, AppDbContext context)
         {
             _nhapXuatService = nhapXuatService;
+            _context = context;
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        // =========================================================================
-        // NGHIỆP VỤ NHẬP KHO
-        // =========================================================================
-
-        public async Task<IActionResult> DanhSachPhieuNhap()
-        {
-            // Gọi Service để lấy dữ liệu
-            var danhSach = await _nhapXuatService.LayDanhSachPhieuNhapAsync();
-            return View(danhSach);
-        }
-
-        [Authorize(Roles = "Admin, NhanVienKho")]
-        public IActionResult LapPhieuNhap()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin, NhanVienKho")]
-        public async Task<IActionResult> LapPhieuNhap(PhieuNhap phieuNhap)
-        {
-            // Validation dữ liệu form vẫn nên để ở Controller
-            if (ModelState.IsValid)
-            {
-                // Lấy tên user đăng nhập để truyền xuống Service
-                string nguoiLap = User.Identity.Name;
-
-                // Gọi Service xử lý lưu và tính giá vốn
-                var result = await _nhapXuatService.LapPhieuNhapAsync(phieuNhap, nguoiLap);
-
-                if (result.IsSuccess)
-                {
-                    TempData["SuccessMsg"] = result.Message;
-                    return RedirectToAction(nameof(DanhSachPhieuNhap));
-                }
-                else
-                {
-                    ModelState.AddModelError("", result.Message);
-                }
-            }
-
-            // Trả về view nếu nhập thiếu thông tin
-            return View(phieuNhap);
-        }
-
-        // =========================================================================
-        // NGHIỆP VỤ XUẤT KHO
-        // =========================================================================
-
+        // ================================================================
+        // 1. DANH SÁCH PHIẾU XUẤT
+        // ================================================================
         public async Task<IActionResult> DanhSachPhieuXuat()
         {
-            var danhSach = await _nhapXuatService.LayDanhSachPhieuXuatAsync();
+            // Lấy danh sách phiếu xuất đổ ra giao diện
+            var danhSach = await _context.PhieuXuats
+                .Include(p => p.KhoId)
+                .OrderByDescending(p => p.NgayXuat)
+                .ToListAsync();
+
             return View(danhSach);
         }
 
-        [Authorize(Roles = "Admin, NhanVienKho")]
-        public IActionResult LapPhieuXuat()
-        {
-            return View();
-        }
-
+        // ================================================================
+        // 2. CHỨC NĂNG DUYỆT PHIẾU XUẤT (Chỉ Quản lý mới được phép)
+        // ================================================================
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin, NhanVienKho")]
-        public async Task<IActionResult> LapPhieuXuat(PhieuXuat phieuXuat)
+        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
+        public async Task<IActionResult> DuyetPhieuXuat(int id)
         {
-            if (ModelState.IsValid)
-            {
-                // Chuyển việc lưu xuống Database cho Service lo
-                await _nhapXuatService.LapPhieuXuatAsync(phieuXuat);
+            // Lấy trực tiếp ID tài khoản từ Claims (nhanh và an toàn hơn việc Query DB theo Tên)
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                TempData["SuccessMsg"] = "Đã lập phiếu xuất. Đang chờ Quản lý phê duyệt!";
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
+            {
+                TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
                 return RedirectToAction(nameof(DanhSachPhieuXuat));
             }
-            return View(phieuXuat);
-        }
 
-        [HttpPost]
-        [Authorize(Roles = "Admin, Manager")]
-        public async Task<IActionResult> PheDuyetPhieuXuat(int id)
-        {
-            string nguoiDuyet = User.Identity.Name;
+            // GỌI SERVICE: Xử lý nghiệp vụ duyệt, trừ tồn kho và tạo cảnh báo
+            var result = await _nhapXuatService.PheDuyetPhieuXuatAsync(id, taiKhoanId);
 
-            // Gọi Service để xử lý duyệt và trừ kho
-            var result = await _nhapXuatService.PheDuyetPhieuXuatAsync(id, nguoiDuyet);
-
+            // Bắn thông báo ra giao diện
             if (result.IsSuccess)
             {
                 TempData["SuccessMsg"] = result.Message;
@@ -122,14 +67,18 @@ namespace QuanLyVatTu.Controllers
             return RedirectToAction(nameof(DanhSachPhieuXuat));
         }
 
-        // =========================================================================
-        // KIỂM KÊ KHO
-        // =========================================================================
-        [Authorize(Roles = "Admin, Manager")]
+        // ================================================================
+        // 3. NGHIỆP VỤ KIỂM KÊ KHO (Chỉ Quản lý mới được phép)
+        // ================================================================
+        [HttpGet]
+        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
         public async Task<IActionResult> KiemKeDinhKy()
         {
-            // Gọi Service lấy danh sách vật tư
-            var danhSachTonKho = await _nhapXuatService.LayDanhSachKiemKeAsync();
+            var danhSachTonKho = await _context.VatTus
+                .Include(v => v.DanhMuc)
+                .OrderBy(v => v.TenVatTu)
+                .ToListAsync();
+
             return View(danhSachTonKho);
         }
     }

@@ -1,256 +1,13 @@
-﻿@{
+﻿@using QuanLyVatTu.Models
+@model IEnumerable<VatTu>
+@{
     ViewData["Title"] = "Danh Sách Hàng Hóa & Vật Tư";
 }
 
-<style>
-    /* --- CSS CỦA BẢNG VÀ GIAO DIỆN --- */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .page-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: #1e293b;
-        text-transform: uppercase;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 10px;
-    }
-
-    .btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #fff;
-        transition: 0.2s;
-    }
-
-    .btn-primary {
-        background-color: #1a2d42;
-    }
-
-        .btn-primary:hover {
-            background-color: #0f1a26;
-        }
-
-    .filter-section {
-        background: #fff;
-        padding: 15px;
-        border-radius: 8px;
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
-        .filter-group label {
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .filter-group select, .filter-group input {
-            padding: 9px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            outline: none;
-            font-size: 14px;
-            color: #333;
-        }
-
-    .btn-filter {
-        background-color: #1a2d42;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        padding: 0 20px;
-        cursor: pointer;
-        font-weight: 600;
-        margin-top: 22px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .table-container {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        overflow: auto;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        .data-table th {
-            background-color: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-            white-space: nowrap;
-        }
-
-        .data-table tbody tr:hover {
-            background-color: #f1f5f9;
-        }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .action-icons i {
-        cursor: pointer;
-        margin: 0 5px;
-        font-size: 16px;
-    }
-
-    .icon-edit {
-        color: #1a2d42;
-    }
-
-    .icon-delete {
-        color: #ef4444;
-    }
-
-    .rbac-note {
-        font-style: italic;
-        color: #111;
-        font-size: 13.5px;
-        font-weight: 500;
-    }
-
-    /* --- CSS CHO POPUP MODAL THÊM VẬT TƯ --- */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        z-index: 999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        align-items: center;
-        justify-content: center;
-    }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-    .modal-box {
-        background-color: #fff;
-        width: 550px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        overflow: hidden;
-        animation: slideDown 0.3s ease-out;
-    }
-
-    @@keyframes slideDown {
-        from {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .modal-header {
-        background-color: #f8fafc;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-        .modal-header h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-        }
-
-    .close-btn {
-        font-size: 20px;
-        color: #64748b;
-        cursor: pointer;
-        border: none;
-        background: none;
-    }
-
-        .close-btn:hover {
-            color: #ef4444;
-        }
-
-    .modal-body {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .input-row {
-        display: flex;
-        gap: 15px;
-    }
-
-        .input-row .filter-group {
-            flex: 1;
-        }
-
-    .modal-footer {
-        padding: 15px 20px;
-        border-top: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background-color: #f8fafc;
-    }
-
-    .btn-cancel {
-        background-color: #cbd5e1;
-        color: #333;
-    }
-
-        .btn-cancel:hover {
-            background-color: #94a3b8;
-        }
-</style>
+<link rel="stylesheet" href="~/css/dsvattu.css" asp-append-version="true" />
 
 <div class="page-header">
-    <h1 class="page-title">Danh Sách Vật Tư</h1>
+    <h1 class="page-title">DANH SÁCH VẬT TƯ</h1>
     <div class="action-buttons">
         <button id="btnOpenAddModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm Vật Tư Mới</button>
         <button class="btn btn-primary"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
@@ -260,7 +17,16 @@
 <div class="filter-section">
     <div class="filter-group">
         <label>Danh Mục</label>
-        <select><option>Tất cả</option></select>
+        <select>
+            <option value="">Tất cả</option>
+            @if (ViewBag.DanhMucs != null)
+            {
+                foreach (var dm in ViewBag.DanhMucs)
+                {
+                    <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                }
+            }
+            </select>
     </div>
     <div class="filter-group" style="flex: 2;">
         <label>Tìm kiếm</label>
@@ -283,18 +49,30 @@
             </tr>
         </thead>
         <tbody id="vattuTableBody">
-            <tr>
-                <td>VT-001</td>
-                <td style="font-weight: 500;">Xi Măng Hà Tiên</td>
-                <td>Xi Măng</td>
-                <td>Bao</td>
-                <td>120</td>
-                <td class="rbac-note">85,000 đ</td>
-                <td class="action-icons text-center">
-                    <i class="fa-solid fa-pen icon-edit"></i>
-                    <i class="fa-solid fa-trash icon-delete"></i>
-                </td>
-            </tr>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.MaVatTu</td>
+                        <td style="font-weight: 500;">@item.TenVatTu</td>
+                        <td>@item.DanhMucId</td>
+                        <td>@item.DonViTinh</td>
+                        <td>@item.TonKhoHienTai</td>
+                        <td>@item.GiaVonBinhQuan.ToString("N0") VNĐ</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-primary btn-edit" data-id="@item.Id"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
+                            <button class="btn btn-sm btn-danger btn-delete" data-id="@item.Id"><i class="fa-solid fa-trash"></i> Xóa</button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center">Không có dữ liệu vật tư.</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
@@ -311,37 +89,41 @@
 
             <div class="input-row">
                 <div class="filter-group">
-                    <label>Mã Vật Tư (MaVatTu) <span style="color:red">*</span></label>
+                    <label>Mã vật tư <span style="color:red">*</span></label>
                     <input type="text" id="inputMaVatTu" placeholder="Nhập mã...">
                 </div>
                 <div class="filter-group">
-                    <label>Danh Mục (DanhMucId)</label>
+                    <label>Danh mục</label>
                     <select id="inputDanhMucId">
-                        <option value="Xi Măng">Xi Măng</option>
-                        <option value="Sơn">Sơn</option>
-                        <option value="Dầu Nhớt">Dầu Nhớt</option>
+                        @if (ViewBag.DanhMucs != null)
+                        {
+                            foreach (var dm in ViewBag.DanhMucs)
+                            {
+                                <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                            }
+                        }
                     </select>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>Tên Vật Tư (TenVatTu) <span style="color:red">*</span></label>
+                <label>Tên vật tư <span style="color:red">*</span></label>
                 <input type="text" id="inputTenVatTu" placeholder="Nhập tên vật tư...">
             </div>
 
             <div class="input-row">
                 <div class="filter-group">
-                    <label>Đơn Vị Tính (DonViTinh)</label>
+                    <label>Đơn vị tính</label>
                     <input type="text" id="inputDonViTinh" placeholder="VD: Bao, Thùng...">
                 </div>
                 <div class="filter-group">
-                    <label>Tồn Kho (TonKhoHienTai)</label>
+                    <label>Tồn kho</label>
                     <input type="number" id="inputTonKhoHienTai" value="0">
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>Giá Vốn Bình Quân (GiaVonBinhQuan)</label>
+                <label>Giá vốn bình quân)</label>
                 <input type="number" id="inputGiaVonBinhQuan" value="0" placeholder="VNĐ">
             </div>
         </div>
@@ -353,62 +135,6 @@
     </div>
 </div>
 
-<script>
-    const modal = document.getElementById('addModal');
-    const btnOpen = document.getElementById('btnOpenAddModal');
-    const btnClose = document.getElementById('btnCloseModal');
-    const btnCancel = document.getElementById('btnCancel');
-    const btnSave = document.getElementById('btnSave');
-    const tableBody = document.getElementById('vattuTableBody');
-
-    // Mở Modal
-    btnOpen.onclick = () => modal.classList.add('show');
-
-    // Đóng Modal
-    const closeModal = () => modal.classList.remove('show');
-    btnClose.onclick = closeModal;
-    btnCancel.onclick = closeModal;
-    window.onclick = (e) => { if (e.target == modal) closeModal(); }
-
-    // Xử lý nút Lưu và chèn dữ liệu động vào bảng
-    btnSave.onclick = function() {
-        const maVatTu = document.getElementById('inputMaVatTu').value;
-        const tenVatTu = document.getElementById('inputTenVatTu').value;
-        const danhMucId = document.getElementById('inputDanhMucId').value;
-        const donViTinh = document.getElementById('inputDonViTinh').value;
-        const tonKhoHienTai = document.getElementById('inputTonKhoHienTai').value;
-        const giaVonBinhQuan = document.getElementById('inputGiaVonBinhQuan').value;
-
-        if(!maVatTu || !tenVatTu) {
-            alert("Vui lòng nhập Mã và Tên vật tư!");
-            return;
-        }
-
-        // Định dạng tiền tệ cho Giá Vốn
-        const formattedGiaVon = new Intl.NumberFormat('vi-VN').format(giaVonBinhQuan) + " đ";
-
-        // Chèn dòng HTML mới
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td>${maVatTu}</td>
-            <td style="font-weight: 500;">${tenVatTu}</td>
-            <td>${danhMucId}</td>
-            <td>${donViTinh}</td>
-            <td>${tonKhoHienTai}</td>
-            <td class="rbac-note">${formattedGiaVon}</td>
-            <td class="action-icons text-center">
-                <i class="fa-solid fa-pen icon-edit"></i>
-                <i class="fa-solid fa-trash icon-delete"></i>
-            </td>
-        `;
-        tableBody.insertBefore(newRow, tableBody.firstChild);
-
-        // Xóa form và đóng
-        document.getElementById('inputMaVatTu').value = '';
-        document.getElementById('inputTenVatTu').value = '';
-        document.getElementById('inputDonViTinh').value = '';
-        document.getElementById('inputTonKhoHienTai').value = '0';
-        document.getElementById('inputGiaVonBinhQuan').value = '0';
-        closeModal();
-    }
+<script src="~/js/dsvattu.js" asp-append-version="true">
+    
 </script>

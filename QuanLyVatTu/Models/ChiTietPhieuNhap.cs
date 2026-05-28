@@ -4,38 +4,33 @@ namespace QuanLyVatTu.Models
 {
     public class ChiTietPhieuNhap
     {
+
         [Key]
         public int Id { get; set; }
 
-        // --- KHÓA NGOẠI LIÊN KẾT ĐẾN PHIẾU NHẬP (HEADER) ---
         [Required]
         public int PhieuNhapId { get; set; }
-
         [ForeignKey("PhieuNhapId")]
-        public virtual PhieuNhap PhieuNhap { get; set; } = null!;
+        public PhieuNhap PhieuNhap { get; set; }
 
-        // --- KHÓA NGOẠI LIÊN KẾT ĐẾN VẬT TƯ ---
         [Required]
         public int VatTuId { get; set; }
-
         [ForeignKey("VatTuId")]
-        public virtual VatTu VatTu { get; set; } = null!;
-
-        //Thông tin chi tiết hàng hóa
-        public int STT { get; set; } //cột STT
-        public string MaSo { get; set; } = string.Empty;// Mã số quản lý riêng của lô hàng (nếu có, ví dụ: Mã vạch/Số lô)
-
-        public decimal SoLuongTheoChungTu { get; set; } // Cột số lượng trên giấy tờ
-
-        public decimal SoLuongThucNhap { get; set; } // Cột thực tế nhập vào kho
+        public VatTu VatTu { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal DonGia { get; set; }//Đơn giá
+        [Display(Name = "Số Lượng")]
+        public int SoLuong { get; set; }
 
-        // Thuộc tính tự động tính Thành tiền
+        [Required]
+        [Display(Name = "Đơn Giá")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DonGia { get; set; }
+
+        [Display(Name = "Thành Tiền")]
         [NotMapped]
-        public decimal ThanhTien => SoLuongThucNhap * DonGia;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ThanhTien => SoLuong * DonGia;
         
     }
 }

@@ -7,24 +7,26 @@ namespace QuanLyVatTu.Models
         [Key]
         public int Id { get; set; }
 
-        // Tiêu đề & nội dung
-        [Required]
-        [StringLength(100)]
-        public string TieuDe { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Tiêu đề không được để trống")]
+        [StringLength(255)]
+        [Display(Name = "Tiêu Đề")]
+        public string TieuDe { get; set; }
 
-        [Required]
-        public string NoiDung { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Nội dung không được để trống")]
+        [Display(Name = "Nội Dung")]
+        public string NoiDung { get; set; }
 
-        // Thời gian tạo
+        [Display(Name = "Ngày Tạo")]
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
-        // Trạng thái
+        // Cờ đánh dấu người dùng đã click vào xem thông báo hay chưa
+        [Display(Name = "Đã Xem")]
         public bool DaXem { get; set; } = false;
 
-        // Người nhận thông báo
-        public int NguoiDungId { get; set; }
-
-        [ForeignKey("NguoiDungId")]
-        public NguoiDung NguoiDung { get; set; } = null!;
+        // Người nhận thông báo (Nếu null có thể hiểu là gửi cho toàn hệ thống/Admin)
+        [Required]
+        public int TaiKhoanId { get; set; }
+        [ForeignKey("TaiKhoanId")]
+        public TaiKhoan TaiKhoan { get; set; }
     }
 }
