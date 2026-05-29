@@ -157,7 +157,7 @@
                     <tr>
                         <td><input type="checkbox" value="@item.Id"></td>
                         <td style="font-weight: 600; color: #2563eb;">@item.MaPhieu</td>
-                        <td>@item.NgayNhap.ToString("dd/MM/yyyy")</td>
+                        <td>@item.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@(item.NhaCungCap != null ? item.NhaCungCap.TenNhaCungCap : "N/A")</td>
                         <td>@(item.Kho != null ? item.Kho.TenKho : "N/A")</td>
                         <td class="text-center">@(item.ChiTietPhieuNhaps != null ? item.ChiTietPhieuNhaps.Count : 0)</td>
@@ -177,9 +177,12 @@
                             }
                         </td>
                         <td class="text-center" style="display: flex; justify-content: center;">
-                            <form asp-controller="PhieuNhap" asp-action="ChiTietPhieuNhap" asp-route-id="@item.Id" class="btn btn-sm"
-                                    style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Xem chi tiết">
-                                <i class="fa-solid fa-eye"></i>
+                            <form asp-controller="PhieuNhap" asp-action="XemChiTiet" asp-route-id="@item.Id" method="get" style="display: inline;">
+                                <button type="submit" class="btn btn-sm"
+                                        style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
+                                        title="Xem chi tiết">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
                             </form>
                             @if (item.TrangThai == TrangThaiPhieuNhap.ChoDuyet)
                             {
@@ -189,7 +192,7 @@
                                         <i class="fa-solid fa-check"></i>
                                     </button>
                                 </form>
-                                <form asp-action="XoaPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline;">
+                                <form asp-action="TuChoiPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline;">
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Hủy phiếu nhập" onclick="return confirm('Bạn có chắc muốn hủy phiếu nhập này?');">
                                         <i class="fa-solid fa-xmark"></i>

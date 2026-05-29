@@ -1,76 +1,80 @@
 ﻿// =========================================================================
-// HÀM 1: HOÀN TẤT LƯU PHIẾU (GỬI LÊN SERVER)
+// HÀM: HOÀN TẤT LƯU TOÀN BỘ PHIẾU (CẢ HEADER VÀ DETAILS)
 // =========================================================================
 function hoanTatPhieu() {
+    // 1. Quét lưới để lấy danh sách chi tiết vật tư
     let arrChiTiet = [];
-
     document.querySelectorAll('#chiTietBody tr:not(#emptyRow)').forEach(row => {
-        let idVatTu = row.querySelector('.td-vattu').getAttribute('data-id');
-        let soLuong = row.querySelector('.num-soluong').innerText.replace(/,/g, ''); // Fix nếu có dấu phẩy
-        let donGia = row.querySelector('.num-dongia').getAttribute('data-value');
+        let tdVatTu = row.querySelector('.td-vattu');
+        let tdSoLuong = row.querySelector('.num-soluong');
+        let tdDonGia = row.querySelector('.num-dongia');
 
-        arrChiTiet.push({
-            VatTuId: parseInt(idVatTu),
-            SoLuong: parseInt(soLuong),
-            DonGia: parseFloat(donGia)
-        });
+        if (tdVatTu && tdSoLuong && tdDonGia) {
+            let idVatTu = tdVatTu.getAttribute('data-id');
+            let soLuong = tdSoLuong.innerText.replace(/,/g, '').trim();
+            let donGia = tdDonGia.getAttribute('data-value') || tdDonGia.innerText.replace(/,/g, '').trim();
+
+            arrChiTiet.push({
+                VatTuId: parseInt(idVatTu),
+                SoLuong: parseInt(soLuong),
+                DonGia: parseFloat(donGia)
+            });
+        }
     });
-
-    if (arrChiTiet.length === 0) {
+    
+    if (arrChiTiet.length == 0) {
         alert("Lưới rỗng! Vui lòng thêm vật tư xuống lưới trước khi lưu.");
         return;
     }
 
-    const hdfId = document.getElementById('hdfPhieuNhapId');
-    const txtMa = document.getElementById('txtMaPhieu');
-    const hdfNgay = document.getElementById('hdfNgayNhap');
-    const hdfKho = document.getElementById('hdfKhoId');
-    const hdfNcc = document.getElementById('hdfNhaCungCapId');
-    const hdfNote = document.getElementById('hdfGhiChu');
+    // 2. Lấy thông tin chung của phiếu (Header)
+    // Lưu ý: Bạn cần kiểm tra xem ID các thẻ HTML này có khớp với file View của bạn không nhé!
+    const txtMaPhieu = document.getElementById('txtMaPhieu') ? document.getElementById('txtMaPhieu').value : "";
+    const txtNgayNhap = document.getElementById('txtNgayNhap') ? document.getElementById('txtNgayNhap').value : new Date().toISOString();
+    const cboKho = document.getElementById('cboKhoId');
+    const cboNhaCungCap = document.getElementById('cboNhaCungCapId');
+    const txtGhiChu = document.getElementById('txtGhiChu');
 
-    if (!hdfId || !txtMa) {
-        alert("Lỗi Giao diện: Không tìm thấy thẻ ẩn chứa Mã Phiếu!");
+    if (!cboKho || !cboKho.value || !cboNhaCungCap || !cboNhaCungCap.value) {
+        alert("Vui lòng chọn đầy đủ Kho nhập và Nhà cung cấp ở phần thông tin chung!");
         return;
     }
 
+    // 3. Đóng gói toàn bộ thành 1 cục dữ liệu (Khớp với PhieuNhapToanBoDto bên C#)
     const payload = {
-        Id: parseInt(hdfId.value) || 0,
-        MaPhieu: txtMa.value,
-        NgayNhap: hdfNgay.value,
-        KhoId: parseInt(hdfKho.value),
-        NhaCungCapId: parseInt(hdfNcc.value),
-        GhiChu: hdfNote ? hdfNote.value : "",
-        ChiTiet: arrChiTiet
+        MaPhieu: txtMaPhieu,
+        NgayNhap: txtNgayNhap,
+        KhoId: parseInt(cboKho.value),
+        NhaCungCapId: parseInt(cboNhaCungCap.value),
+        GhiChu: txtGhiChu ? txtGhiChu.value : "",
+        ChiTiets: arrChiTiet
     };
 
-    const btnLuu = document.querySelector('button[onclick="hoanTatPhieu()"]');
-    const oldText = btnLuu.innerHTML;
-    btnLuu.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
-    btnLuu.disabled = true;
-
-    fetch('/PhieuNhap/LuuPhieuNhapHoanChinh', {
+    // 4. Gửi một lần duy nhất lên Server
+    fetch('/PhieuNhap/LuuToanBoPhieu', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(payload)
     })
-        .then(response => response.json())
-        .then(res => {
-            if (res.success) {
-                alert(res.message);
-                window.location.href = '/PhieuNhap/PhieuNhap';
+        .then(response => {
+            if (!response.ok) throw new Error("Lỗi mạng hoặc Server từ chối!");
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Chuyển hướng về trang danh sách nếu thành công
+                window.location.href = data.redirectUrl || '/PhieuNhap/PhieuNhap';
             } else {
-                alert(res.message);
-                btnLuu.innerHTML = oldText;
-                btnLuu.disabled = false;
+                alert("Lưu thất bại: " + data.message);
             }
         })
-        .catch(err => {
-            alert("Lỗi kết nối máy chủ! Vui lòng thử lại.");
-            btnLuu.innerHTML = oldText;
-            btnLuu.disabled = false;
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Có lỗi xảy ra khi lưu phiếu. Vui lòng xem Console (F12) để biết chi tiết.");
         });
 }
-
 // =========================================================================
 // HÀM 2: TÍNH TỔNG TIỀN VÀ SỐ LƯỢNG MẶT HÀNG
 // =========================================================================
@@ -125,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const selectedOption = cbo.options[cbo.selectedIndex];
             const vatTuId = cbo.value;
             const maVatTu = selectedOption.getAttribute('data-code') || "---";
-            const donViTinh = selectedOption.getAttribute('data-dvt') || "---"; // SỬA Ở ĐÂY: Lấy biến ĐVT
+            const donViTinh = selectedOption.getAttribute('data-dvt') || "---"; 
             const tenVatTu = selectedOption.text;
 
             const soLuong = parseInt(sl);

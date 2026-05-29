@@ -36,11 +36,11 @@
         </div>
         <div class="form-group">
             <label>Kho Nhập</label>
-            <input value="@Model.Kho?.TenKho" readonly class="form-control" style="background-color: #f8fafc;">
+            <input id="cboKhoId" value="@Model.Kho?.TenKho" readonly class="form-control" style="background-color: #f8fafc;">
         </div>
         <div class="form-group">
             <label>Nhà cung cấp</label>
-            <input value="@Model.NhaCungCap?.TenNhaCungCap" readonly class="form-control" style="background-color: #f8fafc;">
+            <input id="cboNhaCungCapId" value="@Model.NhaCungCap?.TenNhaCungCap" readonly class="form-control" style="background-color: #f8fafc;">
         </div>
     </div>
 </div>
@@ -104,11 +104,11 @@
                     {
                         <tr>
                             <td class="text-center">@(stt++)</td>
-                            <td>@item.VatTu?.MaVatTu</td>
-                            <td>@item.VatTu?.TenVatTu</td>
+                            <td class="td-vattu" data-id="@item.VatTuId>@item.VatTu?.MaVatTu</td>
+                            <td class="td-vattu" >@item.VatTu?.TenVatTu</td>
                             <td class="text-center">@item.VatTu?.DonViTinh</td>
                             <td class="text-center num-soluong" data="@item.SoLuong">@item.SoLuong.ToString("N0")</td>
-                            <td class="text-center" data="@item.DonGia">@item.DonGia.ToString("N0") ₫</td>
+                            <td class="text-center num-dongia" data-value="@item.DonGia">@item.DonGia.ToString("N0") ₫</td>
                             <td class="text-center num-thanhtien" data-value="@item.ThanhTien" style="font-weight: 700; color: #e11d48;">
                                 @item.ThanhTien.ToString("N0") ₫
                             </td>
@@ -123,7 +123,7 @@
                 else
                 {
                     <tr id="emptyRow">
-                        <td colspan="7" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">
+                        <td colspan="8" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">
                             Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!
                         </td>
                     </tr>

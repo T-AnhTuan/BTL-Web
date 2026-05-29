@@ -29,12 +29,12 @@ function toggleDropdown(event) {
 // 3. Đóng tất cả các bảng menu xổ xuống nếu người dùng bấm ra khoảng trắng
 window.onclick = function (event) {
     // Đóng menu User
-    if (!event.target.closest('.user-dropdown')) {
+    if (!event.target.closest('.user-dropdown') && !event.target.closest('.user-dropdown-menu')) {
         var pMenu = document.getElementById("profileMenu");
         if (pMenu && pMenu.classList.contains('show')) pMenu.classList.remove('show');
     }
 
-    // Đóng menu Thông báo (Trừ khi người dùng đang bấm chọn gì đó bên trong rọt menu)
+    // Đóng menu Thông báo
     if (!event.target.closest('.notification-wrapper') && !event.target.closest('.notification-dropdown')) {
         var nMenu = document.getElementById("notiMenu");
         if (nMenu && nMenu.classList.contains('show')) nMenu.classList.remove('show');
