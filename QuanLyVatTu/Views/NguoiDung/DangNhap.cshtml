@@ -32,21 +32,43 @@
 
                 <div class="input-group">
                     <i class="fa-solid fa-lock left-icon"></i>
-                    <input type="password" name="password" placeholder="Mật khẩu">
-                    <i class="fa-solid fa-eye-slash right-icon"></i>
+                    <input type="password" name="password" id="passwordInput" placeholder="Mật khẩu">
+                    <i class="fa-solid fa-eye-slash right-icon" id="togglePassword" style="cursor: pointer;" title="Hiển thị mật khẩu"></i>
                 </div>
 
                 <div class="options">
                     <label>
                         <input type="checkbox"> Ghi nhớ đăng nhập
                     </label>
-                    <a href="/Home/Baotri">Quên mật khẩu?</a>
+                    <a href="/Home/Baotri" target="_blank">Quên mật khẩu?</a>
                 </div>
 
                 <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
             </form>
         </div>
     </div>
+    <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const togglePassword = document.getElementById('togglePassword');
+                const passwordInput = document.getElementById('passwordInput');
 
+                togglePassword.addEventListener('click', function () {
+                    // Kiểm tra type hiện tại của ô input
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+
+                    // Đổi icon con mắt
+                    this.classList.toggle('fa-eye-slash');
+                    this.classList.toggle('fa-eye');
+
+                    // Đổi tiêu đề tooltip khi rê chuột
+                    if(type === 'text') {
+                        this.setAttribute('title', 'Ẩn mật khẩu');
+                    } else {
+                        this.setAttribute('title', 'Hiển thị mật khẩu');
+                    }
+                });
+            });
+    </script>
 </body>
 </html>
