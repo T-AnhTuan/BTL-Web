@@ -1,115 +1,122 @@
-@using System.Text.Json
+@model QuanLyVatTu.Models.PhieuXuat
 @{
-    ViewData["Title"] = "Dashboard";
-    
-    // Đóng gói số liệu thống kê tổng quan
-    var statsObj = new
-    {
-        totalItems = (int?)(ViewBag.TongLoaiVatTu ?? 0) ?? 0,
-        totalValue = (decimal?)(ViewBag.TongGiaTriKho ?? 0m) ?? 0m,
-        receiptsWeek = (int?)(ViewBag.PhieuNhapChoPheDuyet ?? 0) ?? 0,
-        issuesWeek = (int?)(ViewBag.PhieuXuatChoPheDuyet ?? 0) ?? 0
-    };
-    var statsJson = JsonSerializer.Serialize(statsObj, new JsonSerializerOptions { PropertyNamingPolicy = null });
+    ViewData["Title"] = "Chi Tiết Phiếu Xuất Kho";
 }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+<link rel="stylesheet" href="~/css/ctNhap.css" asp-append-version="true" />
 
-<h1 class="page-title">TỔNG QUAN HỆ THỐNG</h1>
-
-<!-- Khối Thống kê ngắn gọn -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon icon-orange"><i class="fa-solid fa-box-open"></i></div>
-        <div class="stat-info">
-            <div class="stat-title">Tổng loại vật tư</div>
-            <div class="stat-value" id="totalTypesVal">@statsObj.totalItems</div>
-        </div>
+<div class="page-header">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <a asp-controller="PhieuXuat" asp-action="PhieuXuat" class="btn btn-secondary" title="Quay lại"><i class="fa-solid fa-arrow-left"></i></a>
+        <h1 class="page-title">Chi tiết phiếu xuất: @Model.MaPhieu</h1>
     </div>
-    <!-- Bạn có thể thêm các stat-card khác ở đây cho đủ 4 ô -->
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-success" onclick="hoanTatPhieu()"><i class="fa-solid fa-check"></i> Hoàn tất phiếu</button>
+    </div>
 </div>
 
-<!-- Khối Biểu đồ (Chia làm 2 cột: Đường và Tròn) -->
-<div class="dashboard-tables-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; margin-bottom: 20px;">
-    <!-- Biểu đồ Đường -->
-    <div class="table-card" style="margin: 0;">
-        <div class="chart-header"><i class="fas fa-chart-line" style="padding-right: 5px;"></i>Biểu đồ Nhập/Xuất kho</div>
-        <!-- Vẫn giữ position: relative để chống treo máy -->
-        <div style="position: relative; height: 300px; width: 100%;">
-            <canvas id="trendChart"></canvas>
+<div class="section-card">
+    <div class="section-title"><i class="fa-solid fa-circle-info" style="color:#3b82f6;"></i> THÔNG TIN PHIẾU XUẤT</div>
+    <div class="input-row">
+        <!-- NẾU TRUYỀN ĐÚNG 1 OBJECT, ĐOẠN NÀY SẼ KHÔNG BỊ LỖI NỮA -->
+        <input type="hidden" id="hdfPhieuXuatId" value="@Model.Id" />
+        
+        <div class="form-group">
+            <label>Khách hàng / Công trình</label>
+            <input type="text" class="form-control" value="@Model.KhachHang" readonly style="background-color: #f8fafc;" />
         </div>
-    </div>
-
-    <!-- Biểu đồ Tròn (Thêm mới) -->
-    <div class="table-card" style="margin: 0;">
-        <div class="chart-header"><i class="fas fa-chart-pie" style="padding-right: 5px;"></i>Phân bổ danh mục</div>
-        <div style="position: relative; height: 300px; width: 100%;">
-            <canvas id="categoryChart"></canvas>
+        <div class="form-group">
+            <label>Kho xuất</label>
+            <input type="text" class="form-control" value="@Model.Kho?.TenKho" readonly style="background-color: #f8fafc;" />
+        </div>
+        <div class="form-group">
+            <label>Ngày xuất</label>
+            <input type="datetime-local" class="form-control" value="@Model.NgayXuat.ToString("yyyy-MM-ddTHH:mm")" readonly style="background-color: #f8fafc;" />
         </div>
     </div>
 </div>
 
-<!-- Khối Bảng biểu: Cảnh báo & Thông báo -->
-<div class="dashboard-tables-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-    <!-- Cảnh báo tồn kho -->
-    <div class="table-card">
-        <div class="chart-header"><i class="fas fa-exclamation-triangle text-danger" style="padding-right: 5px;"></i>Cảnh báo sắp hết hàng</div>
-        <div style="overflow-x: auto;">
-            <table class="data-table" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>Mã VT</th>
-                        <th>Tên Vật Tư</th>
-                        <th>Số Lượng</th>
-                        <th>Định Mức</th>
-                        <th class="text-center">Trạng Thái</th>
+<div class="section-card">
+    <div class="section-title"><i class="fa-solid fa-box-open" style="color:#10b981;"></i> THÊM VẬT TƯ XUẤT KHO</div>
+    <div class="input-row" style="align-items: flex-end;">
+        <div class="form-group" style="flex: 2;">
+            <label>Chọn Vật Tư</label>
+            <select id="ddlVatTu" class="form-control">
+                <option value="">-- Chọn vật tư --</option>
+                @if (ViewBag.VatTus != null)
+                {
+                    foreach (var vt in ViewBag.VatTus)
+                    {
+                        <option value="@vt.Id" data-ten="@vt.TenVatTu" data-gia="@vt.GiaNhapTB">@vt.TenVatTu</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>Số Lượng Xuất</label>
+            <input type="number" id="txtSoLuong" class="form-control" min="1" value="1" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>Đơn Giá (Tạm tính)</label>
+            <input type="number" id="txtDonGia" class="form-control" min="0" />
+        </div>
+        <div class="form-group" style="flex: 0.5;">
+            <button class="btn btn-primary" style="width: 100%; height: 40px;" onclick="themVatTuVaoLuoi()">Thêm</button>
+        </div>
+    </div>
+</div>
+
+<div class="section-card">
+    <div class="table-container">
+        <table class="table" id="tblChiTiet">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Mã VT (ID)</th>
+                    <th>Tên Vật Tư</th>
+                    <th>Số Lượng</th>
+                    <th>Đơn Giá</th>
+                    <th>Thành Tiền</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ChiTietPhieuXuats != null && Model.ChiTietPhieuXuats.Any())
+                {
+                    int stt = 1;
+                    foreach (var item in Model.ChiTietPhieuXuats)
+                    {
+                        <tr data-vattu-id="@item.VatTuId">
+                            <td>@(stt++)</td>
+                            <td>@item.VatTuId</td>
+                            <td>@item.VatTu?.TenVatTu</td>
+                            <td class="so-luong">@item.SoLuong</td>
+                            <td class="don-gia">@item.DonGiaXuat</td>
+                            <td class="thanh-tien">@( (decimal)item.SoLuong * item.DonGiaXuat )</td>
+                            <td>
+                                <button class="btn btn-danger btn-delete-row" onclick="xoaDong(this)"><i class="fa fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyRow">
+                        <td colspan="7" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">
+                            Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!
+                        </td>
                     </tr>
-                </thead>
-                <tbody id="lowStockBody">
-                    <tr><td colspan="5" class="text-center text-muted">Đang cập nhật...</td></tr>
-                </tbody>
-            </table>
-        </div>
+                }
+            </tbody>
+        </table>
     </div>
 
-    <!-- Thông báo hoạt động -->
-    <div class="table-card">
-        <div class="chart-header"><i class="fas fa-history" style="padding-right: 5px;"></i>Thông báo hoạt động gần đây</div>
-        <div style="overflow-x: auto;">
-            <table class="data-table" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>Thời gian</th>
-                        <th>Loại</th>
-                        <th>Nội dung</th>
-                        <th>Người thực hiện</th>
-                    </tr>
-                </thead>
-                <tbody id="recentActivityBody">
-                    <tr><td colspan="4" class="text-center text-muted">Đang cập nhật...</td></tr>
-                </tbody>
-            </table>
+    <div class="summary-section" style="margin-top: 20px; text-align: right;">
+        <div class="summary-total" style="font-size: 1.2rem;">
+            <span>TỔNG TIỀN PHIẾU XUẤT: </span>
+            <span id="lblTongTien" style="color: red; font-weight: bold;">0 đ</span>
         </div>
     </div>
 </div>
 
-<!-- Bơm dữ liệu từ C# sang JS an toàn -->
-<script>
-    const statsData = @Html.Raw(statsJson ?? "{}");
-    
-    // Dữ liệu biểu đồ đường
-    const trendLabels = @Html.Raw(ViewBag.TrendLabelsJson ?? "[]");
-    const trendIn = @Html.Raw(ViewBag.TrendInJson ?? "[]");
-    const trendOut = @Html.Raw(ViewBag.TrendOutJson ?? "[]");
-    
-    // Dữ liệu biểu đồ tròn (Thêm mới)
-    const categoryLabels = @Html.Raw(ViewBag.CategoryLabelsJson ?? "[]");
-    const categoryValues = @Html.Raw(ViewBag.CategoryValuesJson ?? "[]");
-    
-    // Dữ liệu bảng
-    const lowStockData = @Html.Raw(ViewBag.LowStockJson ?? "[]");
-    const activityData = @Html.Raw(ViewBag.ActivitiesJson ?? "[]");
-</script>
-
-<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/ctXuat.js" asp-append-version="true"></script>

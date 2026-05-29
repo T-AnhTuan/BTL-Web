@@ -1,39 +1,71 @@
-﻿const exportModal = document.getElementById('addExportModal');
-const btnOpenExport = document.getElementById('btnOpenModal');
-const btnCloseExport = document.getElementById('btnCloseModal');
-const btnCancelExport = document.getElementById('btnCancel');
-// Chọn form
-const formXuat = exportModal.querySelector('form');
+﻿const receiptModal = document.getElementById('addReceiptModal');
+const btnOpenReceipt = document.getElementById('btnOpenModal');
+const btnCloseReceipt = document.getElementById('btnCloseModal');
+const btnCancelReceipt = document.getElementById('btnCancel');
+// Chọn form bên trong modal
+const formXuat = receiptModal ? receiptModal.querySelector('form') : null;
 
-// Mở Modal
-btnOpenExport.addEventListener('click', () => exportModal.classList.add('show'));
-
-// Đóng Modal
-const closeExportModal = () => {
-    exportModal.classList.remove('show');
-    formXuat.reset();
-};
-btnCloseExport.addEventListener('click', closeExportModal);
-btnCancelExport.addEventListener('click', closeExportModal);
-
-// Bấm ra ngoài khoảng đen để đóng
-window.addEventListener('click', (e) => {
-    if (e.target == exportModal) closeExportModal();
-});
-
-// Xử lý Submit Form
-formXuat.addEventListener('submit', function (e) {
-    const ngayXuat = formXuat.querySelector('[name="NgayXuat"]').value;
-    const khachHang = formXuat.querySelector('[name="KhachHang"]').value;
-    const kho = formXuat.querySelector('[name="KhoId"]').value;
-
-    if (!ngayXuat || !khachHang || !kho) {
-        e.preventDefault();
-        alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
-        return false;
+// ==========================================
+// 1. XỬ LÝ LỌC TỰ ĐỘNG (AUTO FILTER)
+// ==========================================
+document.addEventListener('DOMContentLoaded', function () {
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+        // Lấy tất cả các ô input và select trong form lọc
+        const filterElements = filterForm.querySelectorAll('input, select');
+        filterElements.forEach(element => {
+            // Khi người dùng thay đổi giá trị (chọn ngày, chọn dropdown)
+            element.addEventListener('change', function () {
+                // Tự động submit form lên server
+                filterForm.submit();
+            });
+        });
     }
-
-    const btnSubmit = formXuat.querySelector('button[type="submit"]');
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
-    btnSubmit.disabled = true;
 });
+
+// ==========================================
+// 2. XỬ LÝ MODAL TẠO PHIẾU
+// ==========================================
+if (btnOpenReceipt && receiptModal) {
+    // Mở Modal
+    btnOpenReceipt.addEventListener('click', () => receiptModal.classList.add('show'));
+
+    // Đóng Modal
+    const closeReceiptModal = () => {
+        receiptModal.classList.remove('show');
+        if (formXuat) formXuat.reset(); // Xóa trắng dữ liệu khi đóng
+    };
+
+    if (btnCloseReceipt) btnCloseReceipt.addEventListener('click', closeReceiptModal);
+    if (btnCancelReceipt) btnCancelReceipt.addEventListener('click', closeReceiptModal);
+
+    // Bấm ra ngoài khoảng đen để đóng
+    window.addEventListener('click', (e) => {
+        if (e.target == receiptModal) closeReceiptModal();
+    });
+
+    // Khi submit form (Bấm nút Tiếp tục)
+    if (formXuat) {
+        formXuat.addEventListener('submit', function (e) {
+            // Client-side validation cơ bản
+            const ngayNhap = formXuat.querySelector('[name="NgayXuat"]').value;
+            const kh = formXuat.querySelector('[name="KhachHang"]').value;
+            const kho = formXuat.querySelector('[name="KhoId"]').value;
+
+            if (!ngayNhap || !kh || !kho) {
+                e.preventDefault(); // Chặn submit
+                alert("Vui lòng điền đầy đủ thông tin bắt buộc (*)");
+                return false;
+            }
+
+            // Đổi chữ nút thành "Đang xử lý..." để chống click 2 lần
+            const btnSubmit = formXuat.querySelector('button[type="submit"]');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+                btnSubmit.disabled = true;
+            }
+
+            // Cho phép form tự động submit theo đường dẫn asp-action
+        });
+    }
+}

@@ -31,6 +31,10 @@ namespace QuanLyVatTu.Models
         public int KhoId { get; set; }
         [ForeignKey("KhoId")]
         public DanhMucKho Kho { get; set; }
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Tài Khoản")]
+        public string TaiKhoanId { get; set; }
         [StringLength(100)]
         [Display(Name = "Người Xuất")]
         public string? NguoiXuat { get; set; }

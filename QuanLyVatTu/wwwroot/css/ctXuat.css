@@ -1,2 +1,196 @@
-﻿body {
+﻿.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+}
+
+.btn {
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+}
+
+.btn-primary {
+    background-color: #1d4ed8;
+    color: #fff;
+}
+
+    .btn-primary:hover {
+        background-color: #1e40af;
+    }
+
+.btn-secondary {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+    .btn-secondary:hover {
+        background-color: #e2e8f0;
+    }
+
+.btn-success {
+    background-color: #10b981;
+    color: #fff;
+}
+
+    .btn-success:hover {
+        background-color: #059669;
+    }
+
+/* --- BỐ CỤC KHUNG FORM --- */
+.section-card {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Layout dòng input */
+.input-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 200px;
+}
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .form-group input, .form-group select {
+        padding: 9px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        outline: none;
+        font-size: 14px;
+        color: #1e293b;
+    }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #3b82f6;
+        }
+
+        .form-group input[readonly] {
+            background-color: #f8fafc;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+/* --- BẢNG CHI TIẾT VẬT TƯ --- */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+    .data-table th, .data-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .data-table th {
+        background-color: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+        white-space: nowrap;
+    }
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.btn-remove-row {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.2s;
+}
+
+    .btn-remove-row:hover {
+        color: #b91c1c;
+    }
+
+/* --- TỔNG KẾT PHÍA DƯỚI --- */
+.summary-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.summary-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 15px 25px;
+    width: 350px;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 10px;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ef4444;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 10px;
+    margin-top: 10px;
 }

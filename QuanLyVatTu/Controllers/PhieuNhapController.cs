@@ -8,6 +8,7 @@ using QuanLyVatTu.Services;
 namespace QuanLyVatTu.Controllers
 {
     [Route("PhieuNhap/[action]")]
+    [Authorize]
     public class PhieuNhapController : Controller
     {
         private readonly INhapXuatService _nhapXuatService;
@@ -16,8 +17,7 @@ namespace QuanLyVatTu.Controllers
         public PhieuNhapController(
             INhapXuatService nhapXuatService,
             ITinhGiaVonService tinhGiaVonService,
-            AppDbContext context,
-            ILogger<PhieuNhapController> logger
+            AppDbContext context
             )
         {
             _nhapXuatService = nhapXuatService;
@@ -93,7 +93,7 @@ namespace QuanLyVatTu.Controllers
             return View(phieuNhap);
         }
 
-        // === 5. CÁC HÀM DUYỆT / XÓA  ===
+        // === 5. CÁC HÀM DUYỆT  ===
         [HttpPost]
         [Authorize(Roles = "Admin , Manager, Quản trị viên, Quản lý kho")]
         public async Task<IActionResult> DuyetPhieuNhap(int id)

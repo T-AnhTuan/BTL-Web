@@ -1,0 +1,157 @@
+﻿@model QuanLyVatTu.Models.PhieuXuat
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Chi Tiết Phiếu Xuất Kho";
+    // Đánh dấu đây là trang ReadOnly để script bên dưới khóa các input
+    bool isReadOnly = true;
+}
+
+<link rel="stylesheet" href="~/css/ctXuat.css" asp-append-version="true" />
+
+<body data-readonly="true">
+    <!-- Khu vực thanh công cụ trên cùng -->
+    <div class="page-header">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a asp-controller="PhieuXuat" asp-action="PhieuXuat" class="btn btn-secondary" title="Quay lại danh sách" style="text-decoration: none;">
+                <i class="fa-solid fa-arrow-left"></i> Quay lại
+            </a>
+            <h1 class="page-title">Chi tiết phiếu xuất</h1>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <!-- Nút gọi chức năng in mặc định của trình duyệt -->
+            <button class="btn btn-secondary" onclick="window.print();"><i class="fa-solid fa-print"></i> In phiếu</button>
+
+            @* CHỈ Hiển thị nút Duyệt / Từ chối nếu phiếu đang ở trạng thái Chờ duyệt *@
+            @if (Model.TrangThai == QuanLyVatTu.Models.TrangThaiPhieuXuat.ChoDuyet)
+            {
+                <!-- Form gửi lệnh Duyệt bằng phương thức POST an toàn -->
+                <form asp-action="DuyetPhieuXuat" asp-controller="PhieuXuat" method="post" style="display:inline" class="keep-enabled">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <!-- Hiển thị bảng Alert hỏi lại người dùng cho chắc chắn -->
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Bạn có chắc chắn muốn DUYỆT phiếu xuất này? Hệ thống sẽ trừ tồn kho.');">
+                        <i class="fa-solid fa-check"></i> Duyệt Phiếu
+                    </button>
+                </form>
+
+                <!-- Form gửi lệnh Từ chối bằng phương thức POST an toàn -->
+                <form asp-action="TuChoiPhieuXuat" asp-controller="PhieuXuat" method="post" style="display:inline" class="keep-enabled">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI phiếu xuất này?');">
+                        <i class="fa-solid fa-xmark"></i> Từ Chối
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- KHU VỰC THÔNG TIN CHUNG (Trình bày dưới dạng các ô input đã bị khóa) -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Thông tin chung</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Mã Phiếu Xuất:</label>
+                    <input type="text" class="form-control" value="PX-@Model.Id.ToString("D5")" readonly />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Ngày Lập:</label>
+                    <input type="text" class="form-control" value="@Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")" readonly />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Kho Xuất:</label>
+                    <input type="text" class="form-control" value="@Model.Kho?.TenKho" readonly />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Tài Khoản Lập:</label>
+                    <!-- ĐÃ SỬA: Lấy tên đăng nhập từ bảng Tài Khoản -->
+                    <input type="text" class="form-control" value="@Model.NguoiXuat" readonly />
+                </div>
+                <div class="col-md-8 mb-3">
+                    <!-- ĐÃ SỬA: Hiển thị đúng tên Lý do xuất -->
+                    <label class="fw-bold">Lý Do Xuất:</label>
+                    <input type="text" class="form-control" value="@Model.LyDoXuat" readonly />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BẢNG DANH SÁCH CHI TIẾT (Lặp dữ liệu từ CSDL ra) -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Chi tiết vật tư xuất</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" width="50">STT</th>
+                            <th>Mã Vật Tư</th>
+                            <th>Tên Vật Tư</th>
+                            <th class="text-center">ĐVT</th>
+                            <th class="text-end">Số Lượng Xuất</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Kiểm tra xem phiếu có chi tiết nào không -->
+                        @if (Model.ChiTietPhieuXuats != null && Model.ChiTietPhieuXuats.Any())
+                        {
+                            int stt = 1;
+                            <!-- Duyệt qua từng chi tiết để in ra dòng bảng -->
+                            foreach (var item in Model.ChiTietPhieuXuats)
+                            {
+                                <tr>
+                                    <td class="text-center">@stt</td>
+                                    <td>@item.VatTu?.MaVatTu</td>
+                                    <td>@item.VatTu?.TenVatTu</td>
+                                    <td class="text-center">@item.VatTu?.DonViTinh</td>
+                                    <!-- Hiển thị số lượng màu đỏ, có dấu phẩy ngăn cách hàng nghìn -->
+                                    <td class="text-end fw-bold text-danger">@item.SoLuong.ToString("N0", new CultureInfo("vi-VN"))</td>
+                                </tr>
+                                stt++;
+                            }
+                        }
+                        else
+                        {
+                            <!-- Nếu không có thì báo lỗi -->
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Không có dữ liệu chi tiết.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT CHẶN CHỈNH SỬA (Giữ nguyên các nút Submit) -->
+    <script>
+            (function() {
+                try {
+                    // Chỉ cho phép click vào 2 nút Duyệt hoặc Từ Chối
+                    const keepActions = ['DuyetPhieuXuat', 'TuChoiPhieuXuat'];
+                    // Lấy tất cả các thẻ có khả năng nhập liệu
+                    document.querySelectorAll('button, input, select, textarea').forEach(function(el){
+                        const form = el.closest('form');
+                        // Nếu nó nằm trong Form Duyệt/Hủy thì bỏ qua (return)
+                        if (form) {
+                            const action = form.getAttribute('action') || '';
+                            const shouldKeep = keepActions.some(k => action.includes(k));
+                            if (shouldKeep) return;
+                            if (form.classList && form.classList.contains('keep-enabled')) return;
+                        }
+                        if (el.hasAttribute('data-keep-enabled')) return;
+                        // Khóa toàn bộ các ô còn lại bằng thuộc tính disabled
+                        el.setAttribute('disabled', 'disabled');
+                    });
+                } catch (e) {
+                    console.error('Disable script error:', e);
+                }
+            })();
+    </script>
+</body>
