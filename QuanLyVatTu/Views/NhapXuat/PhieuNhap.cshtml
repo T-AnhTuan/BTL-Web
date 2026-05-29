@@ -25,14 +25,14 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-info">
-            <h4>Tổng Phiếu Nhập</h4>
+            <h4>Tổng phiếu nhập</h4>
             <div class="value">@(Model != null ? Model.Count() : 0)</div>
         </div>
         <div class="stat-icon icon-blue"><i class="fa-solid fa-file-lines"></i></div>
     </div>
     <div class="stat-card">
         <div class="stat-info">
-            <h4>Giá Trị Nhập Tháng Này</h4>
+            <h4>Giá trị nhập trong kỳ</h4>
             <div class="value">
                 @(Model != null ? Model.Where(m => m.NgayNhap.Month == DateTime.Now.Month).Sum(m => m.TongGiaTri).ToString("N0") : "0") VNĐ
             </div>
@@ -41,51 +41,93 @@
     </div>
     <div class="stat-card">
         <div class="stat-info">
-            <h4>Phiếu Chờ Duyệt</h4>
+            <h4>Phiếu chờ duyệt</h4>
             <div class="value">@(Model != null ? Model.Count(m => m.TrangThai == TrangThaiPhieuNhap.ChoDuyet) : 0)</div>
         </div>
         <div class="stat-icon icon-orange"><i class="fa-regular fa-clock"></i></div>
     </div>
     <div class="stat-card">
         <div class="stat-info">
-            <h4>Trạng Thái</h4>
+            <h4>Trạng thái</h4>
             <div class="value" style="font-size: 18px; color: #64748b;">Đang hoạt động</div>
         </div>
         <div class="stat-icon icon-emerald"><i class="fa-solid fa-layer-group"></i></div>
     </div>
 </div>
 
-<div class="filter-section">
-    <div class="filter-group search-box-container">
-        <label>Tìm kiếm</label>
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" placeholder="Tìm kiếm mã phiếu, nhà cung cấp...">
-    </div>
-    <div class="filter-group">
-        <label>Nhà Cung Cấp</label>
-        <select>
-            <option value="">-- Tất cả nhà cung cấp --</option>
-            @if (ViewBag.NhaCungCaps != null)
-            {
-                foreach (var ncc in ViewBag.NhaCungCaps)
+<div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <form id="filterForm" method="get" asp-action="PhieuNhap" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+
+        <div style="flex: 1; min-width: 130px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Từ ngày</label>
+            <input type="date" name="tuNgay" id="filterTuNgay" value="@ViewBag.TuNgay" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
+        </div>
+
+        <div style="flex: 1; min-width: 130px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Đến ngày</label>
+            <input type="date" name="denNgay" id="filterDenNgay" value="@ViewBag.DenNgay" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
+        </div>
+
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Kho nhập</label>
+            <select name="khoId" id="filterKho" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
+                <option value="">-- Tất cả kho --</option>
+                @if (ViewBag.Khos != null)
                 {
-                    <option value="@ncc.Id">@ncc.TenNhaCungCap</option>
+                    foreach (var kho in ViewBag.Khos)
+                    {
+                        if (ViewBag.KhoId != null && (int)ViewBag.KhoId == kho.Id)
+                        {
+                            <option value="@kho.Id" selected>@kho.TenKho</option>
+                        }
+                        else
+                        {
+                            <option value="@kho.Id">@kho.TenKho</option>
+                        }
+                    }
                 }
-            }
-        </select>
-    </div>
-    <div class="filter-group">
-        <label>Trạng Thái</label>
-        <select>
-            <option value="">Tất cả</option>
-            <option value="1">Đã Duyệt</option>
-            <option value="0">Chờ Duyệt</option>
-        </select>
-    </div>
-    <div class="filter-group">
-        <label>Khoảng Thời Gian</label>
-        <input type="date" placeholder="Từ ngày - Đến ngày">
-    </div>
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 180px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Nhà cung cấp</label>
+            <select name="nhaCungCapId" id="filterNcc" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
+                <option value="">-- Tất cả NCC --</option>
+                @if (ViewBag.NhaCungCaps != null)
+                {
+                    foreach (var ncc in ViewBag.NhaCungCaps)
+                    {
+                        if (ViewBag.NhaCungCapId != null && (int)ViewBag.NhaCungCapId == ncc.Id)
+                        {
+                            <option value="@ncc.Id" selected>@ncc.TenNhaCungCap</option>
+                        }
+                        else
+                        {
+                            <option value="@ncc.Id">@ncc.TenNhaCungCap</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- BỔ SUNG: Ô Lọc Trạng Thái -->
+        <div style="flex: 1; min-width: 140px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Trạng thái</label>
+            <select name="trangThai" id="filterTrangThai" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
+                <option value="">-- Tất cả --</option>
+                <!-- Dùng cấu trúc Razor ngắn gọn để set selected -->
+                <option value="0" selected="@(ViewBag.TrangThai == 0 ? "selected" : null)">Chờ duyệt</option>
+                <option value="1" selected="@(ViewBag.TrangThai == 1 ? "selected" : null)">Đã duyệt</option>
+                <option value="-1" selected="@(ViewBag.TrangThai == -1 ? "selected" : null)">Đã hủy</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 2px;">
+            <a href="@Url.Action("PhieuNhap")" class="btn btn-secondary" style="padding: 10px 15px; border-radius: 6px; text-decoration: none; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1;" title="Xóa bộ lọc">
+                <i class="fa-solid fa-rotate-right"></i>
+            </a>
+        </div>
+    </form>
 </div>
 
 <div class="table-toolbar">
@@ -97,14 +139,14 @@
         <thead>
             <tr>
                 <th style="width: 40px;"><input type="checkbox"></th>
-                <th>Mã Phiếu</th>
-                <th>Ngày Nhập</th>
-                <th>Nhà Cung Cấp</th>
-                <th>Kho Nhập</th>
-                <th class="text-center">Số Dòng</th>
-                <th class="text-right">Tổng Giá Trị (VNĐ)</th>
-                <th class="text-center">Trạng Thái</th>
-                <th class="text-center">Hành Động</th>
+                <th>Mã phiếu</th>
+                <th>Ngày nhập</th>
+                <th>Nhà cung cấp</th>
+                <th>Kho nhập</th>
+                <th class="text-center">Số dòng</th>
+                <th class="text-right">Tổng giá trị (VNĐ)</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center">Hành động</th>
             </tr>
         </thead>
         <tbody>
@@ -170,7 +212,7 @@
 <!-- Modal Bọc bằng Form chuẩn MVC -->
 <div id="addReceiptModal" class="modal-overlay">
     <div class="modal-box">
-        <form asp-action="TaoPhieuNhap" asp-controller="NhapXuat" method="post">
+        <form asp-action="ChiTietPhieuNhap" asp-controller="NhapXuat" method="post">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-file-circle-plus" style="color:#2563eb; margin-right:8px;"></i> TẠO PHIẾU NHẬP MỚI</h3>
                 <button type="button" id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
@@ -179,7 +221,7 @@
             <div class="modal-body">
                 <div class="input-row">
                     <div class="filter-group">
-                        <label>Mã Phiếu (Hệ thống tự sinh nếu để trống)</label>
+                        <label>Mã phiếu (Hệ thống tự sinh nếu để trống)</label>
                         <input type="text" name="MaPhieu" placeholder="VD: PN-00123">
                     </div>
                     <div class="filter-group">
@@ -190,7 +232,7 @@
 
                 <div class="input-row">
                     <div class="filter-group">
-                        <label>Nhà Cung Cấp <span style="color:red">*</span></label>
+                        <label>Nhà cung cấp <span style="color:red">*</span></label>
                         <select name="NhaCungCapId" required>
                             <option value="">-- Chọn nhà cung cấp --</option>
                             @if (ViewBag.NhaCungCaps != null)
@@ -203,7 +245,7 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>Kho Nhập <span style="color:red">*</span></label>
+                        <label>Kho nhập <span style="color:red">*</span></label>
                         <select name="KhoId" required>
                             <option value="">-- Chọn kho nhập --</option>
                             @if (ViewBag.Khos != null)
@@ -219,7 +261,7 @@
 
                 <div class="filter-group">
                     <label>Ghi Chú</label>
-                    <textarea name="GhiChu" rows="2" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; font-family: inherit;" placeholder="Nhập ghi chú cho phiếu nhập này..."></textarea>
+                    <textarea name="GhiChu" rows="2" style="resize: none;overflow: auto;padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; font-family: inherit;" placeholder="Nhập ghi chú cho phiếu nhập này..."></textarea>
                 </div>
 
                 <div style="background: #eff6ff; padding: 10px; border-radius: 6px; color: #1e40af; font-size: 13px; margin-top: 15px;">

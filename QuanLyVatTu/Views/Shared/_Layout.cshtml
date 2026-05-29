@@ -87,9 +87,26 @@
             </div>
 
             <div class="topbar-right">
-                <div class="notification">
-                    <i class="fa-regular fa-bell"></i>
-                    <span class="badge">1</span>
+                <div class="notification-wrapper" onclick="toggleNoti(event)">
+                    <div class="notification">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="badge" id="notiBadge">0</span>
+                    </div>
+
+                    <div class="notification-dropdown" id="notiMenu">
+                        <div class="noti-header">Trung Tâm Thông Báo</div>
+                        <div class="noti-body" id="notiList">
+
+                            <div style="padding: 30px 20px; text-align: center; color: #94a3b8; font-size: 13px;">
+                                <i class="fa-regular fa-bell-slash" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                                Chưa có thông báo mới
+                            </div>
+
+                        </div>
+                        <div class="noti-footer">
+                            <a asp-controller="Home" asp-action="ThongBao">Xem tất cả thông báo</a>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="user-dropdown" onclick="toggleDropdown()">
@@ -121,25 +138,8 @@
         </footer>
     </div>
 
-    <script>
-            function toggleDropdown() {
-                var menu = document.getElementById("profileMenu");
-                if (menu.style.display === "none" || menu.style.display === "") {
-                    menu.style.display = "block";
-                } else {
-                    menu.style.display = "none";
-                }
-            }
-
-            // Click ra ngoài để đóng menu
-            window.onclick = function(event) {
-                if (!event.target.closest('.user-dropdown')) {
-                    var menu = document.getElementById("profileMenu");
-                    if (menu && menu.style.display === "block") {
-                        menu.style.display = "none";
-                    }
-                }
-            }
+    <script src="~/js/layout.js" asp-append-version="true">
+            
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

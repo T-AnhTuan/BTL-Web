@@ -26,33 +26,161 @@ namespace QuanLyVatTu.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> PhieuNhap()
+        public async Task<IActionResult> PhieuNhap(DateTime? tuNgay, DateTime? denNgay, int? khoId, int? nhaCungCapId)
         {
+            // 1. Lấy dữ liệu cho các Dropdown (Dùng cho cả form tạo mới và bộ lọc)
             ViewBag.NhaCungCaps = await _context.NhaCungCaps
                 .AsNoTracking()
                 .Where(n => n.TrangThai == TrangThaiNhaCungCap.Active)
                 .OrderBy(n => n.TenNhaCungCap)
                 .ToListAsync();
+
             ViewBag.Khos = await _context.DanhMucKhos
                 .AsNoTracking()
                 .Where(k => k.TrangThai == TrangThaiKho.Active)
                 .OrderBy(k => k.TenKho)
                 .ToListAsync();
 
-            var danhSach = await _context.PhieuNhaps
-                .AsNoTracking()
-                .Include(p => p.Kho)
+            // 2. Query cơ sở dữ liệu
+            var query = _context.PhieuNhaps
                 .Include(p => p.NhaCungCap)
-                .Include(p => p.ChiTietPhieuNhaps)
-                .OrderByDescending(p => p.NgayNhap)
-                .ToListAsync();
+                .Include(p => p.Kho)
+                .AsQueryable();
 
+            // 3. Xử lý Logic lọc tự động
+            if (tuNgay.HasValue)
+            {
+                query = query.Where(p => p.NgayNhap >= tuNgay.Value);
+            }
+
+            if (denNgay.HasValue)
+            {
+                // Cộng thêm đến 23:59:59 của ngày kết thúc để lấy trọn vẹn ngày đó
+                var toDate = denNgay.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(p => p.NgayNhap <= toDate);
+            }
+
+            if (khoId.HasValue && khoId > 0)
+            {
+                query = query.Where(p => p.KhoId == khoId);
+            }
+
+            if (nhaCungCapId.HasValue && nhaCungCapId > 0)
+            {
+                query = query.Where(p => p.NhaCungCapId == nhaCungCapId);
+            }
+
+            // Trả lại các giá trị lọc ra View để hiển thị lại trên ô input
+            ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
+            ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
+            ViewBag.KhoId = khoId;
+            ViewBag.NhaCungCapId = nhaCungCapId;
+            // 4. Trả kết quả ra View
+            var danhSach = await query.OrderByDescending(p => p.NgayNhap).ToListAsync();
             return View(danhSach);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
+        public async Task<IActionResult> DuyetPhieuNhap(int id)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
+            {
+                TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            var phieu = await _context.PhieuNhaps
+                .Include(p => p.ChiTietPhieuNhaps)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (phieu == null)
+            {
+                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            if (phieu.TrangThai != TrangThaiPhieuNhap.ChoDuyet)
+            {
+                TempData["ErrorMsg"] = "Chỉ có thể duyệt phiếu nhập đang chờ duyệt.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            if (phieu.ChiTietPhieuNhaps == null || !phieu.ChiTietPhieuNhaps.Any())
+            {
+                TempData["ErrorMsg"] = "Phiếu nhập chưa có vật tư, không thể duyệt.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
+            await _context.SaveChangesAsync();
+
+            var updatedCost = await _tinhGiaVonService.TinhGiaVonBinhQuanSauKhiNhapAsync(id, taiKhoanId);
+            TempData[updatedCost ? "SuccessMsg" : "ErrorMsg"] = updatedCost
+                ? "Đã duyệt phiếu nhập và cập nhật tồn kho/giá vốn."
+                : "Đã duyệt phiếu nhập nhưng cập nhật tồn kho/giá vốn thất bại.";
+
+            return RedirectToAction(nameof(PhieuNhap));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TaoPhieuNhap(PhieuNhap phieuNhap)
+        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
+        public async Task<IActionResult> HuyPhieuNhap(int id)
+        {
+            var phieu = await _context.PhieuNhaps.FindAsync(id);
+            if (phieu == null)
+            {
+                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            if (phieu.TrangThai != TrangThaiPhieuNhap.ChoDuyet)
+            {
+                TempData["ErrorMsg"] = "Chỉ có thể hủy phiếu nhập đang chờ duyệt.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            phieu.TrangThai = TrangThaiPhieuNhap.TuChoi;
+            await _context.SaveChangesAsync();
+            TempData["SuccessMsg"] = "Đã hủy phiếu nhập thành công!";
+
+            return RedirectToAction(nameof(PhieuNhap));
+        }
+        [HttpGet]
+        public async Task<IActionResult> ChiTietPhieuNhap(int id)
+        {
+            // Tìm phiếu nhập theo ID, bắt buộc phải móc nối (Include) chi tiết và vật tư để tránh lỗi rỗng
+            var phieuNhap = await _context.PhieuNhaps
+                .Include(p => p.NhaCungCap)
+                .Include(p => p.Kho)
+                .Include(p => p.ChiTietPhieuNhaps)
+                    .ThenInclude(c => c.VatTu)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            // Nếu tìm không thấy ID, báo lỗi và đẩy về trang danh sách
+            if (phieuNhap == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy phiếu nhập này hoặc phiếu đã bị xóa.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            // Đổ danh sách Vật tư lên ViewBag để người dùng chọn trong Dropdown lúc ấn "Thêm chi tiết"
+            ViewBag.VatTus = await _context.VatTus
+                .Select(v => new {
+                    v.Id,
+                    v.MaVatTu,
+                    v.TenVatTu,
+                    v.DonViTinh
+                })
+                .OrderBy(v => v.TenVatTu)
+                .ToListAsync();
+
+            return View(phieuNhap); // Trả phiếu nhập kèm chi tiết ra View
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChiTietPhieuNhap(PhieuNhap phieuNhap)
         {
             try
             {
@@ -140,170 +268,45 @@ namespace QuanLyVatTu.Controllers
             return RedirectToAction(nameof(PhieuNhap));
         }
 
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
-        public async Task<IActionResult> DuyetPhieuNhap(int id)
+        public async Task<IActionResult> AddChiTietPhieuNhap([FromBody] ChiTietPhieuNhap chiTiet)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
+            // Kiểm tra các trường dữ liệu gửi lên xem có hợp lệ không (ID > 0, Số lượng > 0)
+            if (chiTiet.PhieuNhapId == 0 || chiTiet.VatTuId == 0 || chiTiet.SoLuong <= 0 || chiTiet.DonGia < 0)
             {
-                TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
-                return RedirectToAction(nameof(PhieuNhap));
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại." });
             }
 
-            var phieu = await _context.PhieuNhaps
-                .Include(p => p.ChiTietPhieuNhaps)
-                .FirstOrDefaultAsync(p => p.Id == id);
-            if (phieu == null)
-            {
-                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            if (phieu.TrangThai != TrangThaiPhieuNhap.ChoDuyet)
-            {
-                TempData["ErrorMsg"] = "Chỉ có thể duyệt phiếu nhập đang chờ duyệt.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            if (phieu.ChiTietPhieuNhaps == null || !phieu.ChiTietPhieuNhaps.Any())
-            {
-                TempData["ErrorMsg"] = "Phiếu nhập chưa có vật tư, không thể duyệt.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
-            await _context.SaveChangesAsync();
-
-            var updatedCost = await _tinhGiaVonService.TinhGiaVonBinhQuanSauKhiNhapAsync(id, taiKhoanId);
-            TempData[updatedCost ? "SuccessMsg" : "ErrorMsg"] = updatedCost
-                ? "Đã duyệt phiếu nhập và cập nhật tồn kho/giá vốn."
-                : "Đã duyệt phiếu nhập nhưng cập nhật tồn kho/giá vốn thất bại.";
-
-            return RedirectToAction(nameof(PhieuNhap));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Quản trị viên, Quản lý kho")]
-        public async Task<IActionResult> HuyPhieuNhap(int id)
-        {
-            var phieu = await _context.PhieuNhaps.FindAsync(id);
-            if (phieu == null)
-            {
-                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            if (phieu.TrangThai != TrangThaiPhieuNhap.ChoDuyet)
-            {
-                TempData["ErrorMsg"] = "Chỉ có thể hủy phiếu nhập đang chờ duyệt.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            phieu.TrangThai = TrangThaiPhieuNhap.TuChoi;
-            await _context.SaveChangesAsync();
-            TempData["SuccessMsg"] = "Đã hủy phiếu nhập thành công!";
-
-            return RedirectToAction(nameof(PhieuNhap));
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ChiTietPhieuNhap(int id)
-        {
-            var phieu = await _context.PhieuNhaps
-                .Include(p => p.NhaCungCap)
-                .Include(p => p.Kho)
-                .Include(p => p.ChiTietPhieuNhaps)
-                    .ThenInclude(ct => ct.VatTu)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (phieu == null)
-            {
-                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            // Load danh sách vật tư để dropdown
-            ViewBag.DanhSachVatTu = await _context.VatTus
-                .AsNoTracking()
-                .OrderBy(v => v.TenVatTu)
-                .ToListAsync();
-
-            return View(phieu);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddChiTietPhieuNhap(int PhieuNhapId, int VatTuId, int SoLuong, decimal DonGia)
-        {
             try
             {
-                // Kiểm tra phiếu nhập tồn tại
-                var phieu = await _context.PhieuNhaps.FindAsync(PhieuNhapId);
-                if (phieu == null)
-                {
-                    TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
-                    return RedirectToAction(nameof(PhieuNhap));
-                }
+                // Kiểm tra xem Vật tư này đã có trong Phiếu Nhập này chưa?
+                var existChiTiet = await _context.ChiTietPhieuNhaps
+                    .FirstOrDefaultAsync(c => c.PhieuNhapId == chiTiet.PhieuNhapId && c.VatTuId == chiTiet.VatTuId);
 
-                // Kiểm tra vật tư tồn tại
-                var vatTu = await _context.VatTus.FindAsync(VatTuId);
-                if (vatTu == null)
+                if (existChiTiet != null)
                 {
-                    TempData["ErrorMsg"] = "Vật tư không hợp lệ.";
-                    return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
-                }
-
-                // Kiểm tra dữ liệu hợp lệ
-                if (SoLuong <= 0 || DonGia < 0)
-                {
-                    TempData["ErrorMsg"] = "Số lượng phải > 0 và đơn giá phải >= 0.";
-                    return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
-                }
-
-                // Kiểm tra vật tư đã tồn tại trong phiếu chưa
-                var existingDetail = await _context.ChiTietPhieuNhaps
-                    .FirstOrDefaultAsync(ct => ct.PhieuNhapId == PhieuNhapId && ct.VatTuId == VatTuId);
-
-                if (existingDetail != null)
-                {
-                    // Cập nhật nếu đã tồn tại
-                    existingDetail.SoLuong += SoLuong;
-                    existingDetail.DonGia = DonGia;
+                    // Nếu có rồi, cộng dồn số lượng và cập nhật đơn giá mới
+                    existChiTiet.SoLuong += chiTiet.SoLuong;
+                    existChiTiet.DonGia = chiTiet.DonGia;
+                    _context.Update(existChiTiet);
                 }
                 else
                 {
-                    // Thêm mới nếu chưa tồn tại
-                    var chiTiet = new ChiTietPhieuNhap
-                    {
-                        PhieuNhapId = PhieuNhapId,
-                        VatTuId = VatTuId,
-                        SoLuong = SoLuong,
-                        DonGia = DonGia
-                    };
+                    // Nếu chưa có, thêm mới dòng này vào Database
                     _context.ChiTietPhieuNhaps.Add(chiTiet);
                 }
 
+                // Lưu thực tế xuống CSDL
                 await _context.SaveChangesAsync();
-
-                // Cập nhật tổng giá trị phiếu
-                var tongGiaTri = await _context.ChiTietPhieuNhaps
-                    .Where(ct => ct.PhieuNhapId == PhieuNhapId)
-                    .SumAsync(ct => ct.SoLuong * ct.DonGia);
-
-                phieu.TongGiaTri = tongGiaTri;
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMsg"] = "Đã thêm vật tư thành công!";
+                return Json(new { success = true, message = "Thêm vật tư thành công!" }); // Trả JSON cho JS biết thành công
             }
             catch (Exception ex)
             {
-                TempData["ErrorMsg"] = $"Lỗi: {ex.Message}";
+                // Nếu văng lỗi máy chủ, báo lại cho JS
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
             }
-
-            return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
         }
 
         [HttpPost]
@@ -312,37 +315,25 @@ namespace QuanLyVatTu.Controllers
         {
             try
             {
+                // Tìm dòng chi tiết trong DB theo ID
                 var chiTiet = await _context.ChiTietPhieuNhaps.FindAsync(id);
                 if (chiTiet == null)
                 {
-                    TempData["ErrorMsg"] = "Không tìm thấy chi tiết phiếu nhập.";
-                    return RedirectToAction(nameof(PhieuNhap));
+                    return Json(new { success = false, message = "Không tìm thấy dữ liệu để xóa." });
                 }
 
-                var phieuNhapId = chiTiet.PhieuNhapId;
+                // Ra lệnh xóa dòng đó đi
                 _context.ChiTietPhieuNhaps.Remove(chiTiet);
+                // Cập nhật sự thay đổi xuống CSDL
                 await _context.SaveChangesAsync();
 
-                // Cập nhật tổng giá trị phiếu
-                var phieu = await _context.PhieuNhaps.FindAsync(phieuNhapId);
-                if (phieu != null)
-                {
-                    var tongGiaTri = await _context.ChiTietPhieuNhaps
-                        .Where(ct => ct.PhieuNhapId == phieuNhapId)
-                        .SumAsync(ct => ct.SoLuong * ct.DonGia);
-
-                    phieu.TongGiaTri = tongGiaTri;
-                    await _context.SaveChangesAsync();
-                }
-
-                TempData["SuccessMsg"] = "Đã xóa vật tư thành công!";
+                // Trả tín hiệu về cho JS để JS tải lại trang
+                return Json(new { success = true, message = "Xóa thành công!" });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMsg"] = $"Lỗi: {ex.Message}";
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
             }
-
-            return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = id });
         }
 
         [HttpGet]
@@ -367,7 +358,7 @@ namespace QuanLyVatTu.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TaoPhieuXuat(PhieuXuat phieuXuat)
+        public async Task<IActionResult> ChiTietPhieuXuat(PhieuXuat phieuXuat)
         {
             phieuXuat.MaPhieu = phieuXuat.MaPhieu?.Trim() ?? string.Empty;
             phieuXuat.KhachHang = phieuXuat.KhachHang?.Trim() ?? string.Empty;

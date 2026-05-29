@@ -156,12 +156,17 @@ body {
     align-items: center;
     gap: 25px;
 }
+.notification-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
 
 .notification {
-    position: relative;
     cursor: pointer;
     color: #64748b;
     font-size: 18px;
+    position: relative;
 }
 
     .notification .badge {
@@ -179,6 +184,58 @@ body {
         align-items: center;
         font-weight: bold;
     }
+
+.notification-dropdown {
+    display: none;
+    position: absolute;
+    top: 45px;
+    right: -10px;
+    background: #fff;
+    width: 320px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    z-index: 100;
+    cursor: default;
+}
+
+    .notification-dropdown.show {
+        display: block;
+    }
+
+.noti-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 15px;
+}
+
+.noti-body {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.noti-footer {
+    padding: 12px;
+    text-align: center;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+    .noti-footer a {
+        color: #3b82f6;
+        font-size: 13px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+        .noti-footer a:hover {
+            text-decoration: underline;
+            color: #2563eb;
+        }
 
 /* Dropdown User */
 .user-dropdown {
