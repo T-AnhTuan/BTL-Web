@@ -7,9 +7,6 @@ using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.ViewModels;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Hosting;
-using BCrypt.Net; // Cần cài BCrypt.Net-Next qua NuGet để mã hóa mật khẩu
-using System.IO;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -194,7 +191,6 @@ namespace QuanLyVatTu.Controllers
                     await model.AvatarUpload.CopyToAsync(fileStream);
                 }
 
-                // Lưu đường dẫn vào Database
                 taiKhoan.NhanVien.AvatarUrl = "/uploads/avatars/" + uniqueFileName;
             }
             // 3. XỬ LÝ ĐỔI MẬT KHẨU (NẾU CÓ NHẬP)
@@ -218,14 +214,13 @@ namespace QuanLyVatTu.Controllers
             TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
             return RedirectToAction("TaiKhoanCaNhan");
         }
-        // QUẢN LÝ TÀI KHOẢN VÀ PHÂN QUYỀN
-        
+
         // ================================================================
         // ĐĂNG XUẤT
         // ================================================================
         [HttpPost]
         [Authorize]
-        [ValidateAntiForgeryToken] // Nên có để bảo mật
+        [ValidateAntiForgeryToken] 
         public async Task<IActionResult> DangXuat()
         {
             // Lấy thông tin user để ghi log trước khi xóa phiên
@@ -235,13 +230,7 @@ namespace QuanLyVatTu.Controllers
                 await LogActionAsync(userId, "Đăng xuất khỏi hệ thống");
             }
 
-            // Xóa cookie xác thực
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            // Xóa toàn bộ Session/TempData nếu có (tùy chọn)
-            HttpContext.Session.Clear();
-
-            // Chuyển hướng về trang Đăng nhập
             return RedirectToAction("DangNhap", "NguoiDung");
         }
 

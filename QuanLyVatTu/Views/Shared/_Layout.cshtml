@@ -104,11 +104,13 @@
                     <div class="user-dropdown-menu" id="profileMenu">
                         <a asp-controller="NguoiDung" asp-action="TaiKhoanCaNhan"><i class="fa-regular fa-user"></i> Tài khoản cá nhân</a>
                         <a asp-controller="NguoiDung" asp-action="TaiKhoanCaNhan"><i class="fa-solid fa-lock"></i> Đổi mật khẩu</a>
-                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
-                        <form id="logoutForm" asp-controller="NguoiDung" asp-action="DangXuat" method="post"></form>
-                        <a style="color: #ef4444; cursor: pointer;" href="javascript:document.getElementById('logoutForm').submit();">
-                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
-                        </a>
+                        <div style="border-top: 1px solid #e2e8f0; margin: 5px 0;">
+                            <form asp-controller="NguoiDung" asp-action="DangXuat" method="post" style="margin: 0; padding: 0;">
+                                <button type="submit" style="background: none; border: none; color: #ef4444; width: 100%; text-align: left; padding: 10px 20px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 8px; font-family: inherit;">
+                                    <i class="fa-solid fa-arrow-right-from-bracket" style="width: 20px;"></i> Đăng xuất
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -126,17 +128,19 @@
     <script>
             function toggleDropdown() {
                 var menu = document.getElementById("profileMenu");
-                menu.classList.toggle("show");
+                if (menu.style.display === "none" || menu.style.display === "") {
+                    menu.style.display = "block";
+                } else {
+                    menu.style.display = "none";
+                }
             }
 
+            // Click ra ngoài để đóng menu
             window.onclick = function(event) {
                 if (!event.target.closest('.user-dropdown')) {
-                    var dropdowns = document.getElementsByClassName("user-dropdown-menu");
-                    for (var i = 0; i < dropdowns.length; i++) {
-                        var openDropdown = dropdowns[i];
-                        if (openDropdown.classList.contains('show')) {
-                            openDropdown.classList.remove('show');
-                        }
+                    var menu = document.getElementById("profileMenu");
+                    if (menu && menu.style.display === "block") {
+                        menu.style.display = "none";
                     }
                 }
             }
