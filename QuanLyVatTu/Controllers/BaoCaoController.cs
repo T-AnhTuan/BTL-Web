@@ -55,12 +55,6 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> PhanTichThongKe()
-        {
-            return View();
-        }
-
         // =========================================================================
         // TRANG THẺ KHO: Lấy dữ liệu chi tiết Nhập - Xuất
         // =========================================================================
@@ -88,12 +82,16 @@ namespace QuanLyVatTu.Controllers
                     model.TenVatTu = vt.TenVatTu;
                     model.TenKho = "Kho Tổng";
                 }
-
+                DateTime? realDenNgay = denNgay;
+                if (denNgay.HasValue)
+                {
+                    realDenNgay = denNgay.Value.Date.AddDays(1).AddTicks(-1);
+                }
                 var dsNhap = await _context.ChiTietPhieuNhaps
                     .Include(c => c.PhieuNhap)
                     .Where(c => c.VatTuId == vatTuId.Value
                                 && (!tuNgay.HasValue || c.PhieuNhap.NgayNhap >= tuNgay.Value)
-                                && (!denNgay.HasValue || c.PhieuNhap.NgayNhap <= denNgay.Value))
+                                && (!realDenNgay.HasValue || c.PhieuNhap.NgayNhap <= realDenNgay.Value))
                     .Select(c => new ChiTietGiaoDichViewModel
                     {
                         NgayGiaoDich = c.PhieuNhap.NgayNhap,
@@ -108,7 +106,7 @@ namespace QuanLyVatTu.Controllers
                     .Include(c => c.PhieuXuat)
                     .Where(c => c.VatTuId == vatTuId.Value
                                 && (!tuNgay.HasValue || c.PhieuXuat.NgayXuat >= tuNgay.Value)
-                                && (!denNgay.HasValue || c.PhieuXuat.NgayXuat <= denNgay.Value))
+                                && (!realDenNgay.HasValue || c.PhieuXuat.NgayXuat <= realDenNgay.Value))
                     .Select(c => new ChiTietGiaoDichViewModel
                     {
                         NgayGiaoDich = c.PhieuXuat.NgayXuat,

@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using QuanLyVatTu.ViewModels; // Gọi ViewModel
-using System.Security.Claims;
-using BCrypt.Net;
+using QuanLyVatTu.ViewModels; 
 
 namespace QuanLyVatTu.Controllers
 {
@@ -172,36 +170,40 @@ namespace QuanLyVatTu.Controllers
         [HttpGet]
         public async Task<IActionResult> PhanQuyen(int? vaiTroId)
         {
-            var danhSachVaiTro = await _context.VaiTros
-                .Include(v => v.PhanQuyens)
-                .OrderBy(v => v.Id)
-                .ToListAsync();
+            // 1. Lấy danh sách tất cả các vai trò hiển thị ở Menu trái
+            var danhSachVaiTro = await _context.VaiTros.ToListAsync();
 
-            // 1. Kiểm tra nếu DB chưa có vai trò nào
+            // Nếu DB chưa có vai trò nào, trả về View rỗng để không bị sập trang
             if (danhSachVaiTro == null || !danhSachVaiTro.Any())
-                return View(new PhanQuyenVM { DanhSachVaiTro = new List<VaiTro>() });
-
-            // 2. Chọn vai trò: Nếu có ID thì tìm, không có thì lấy vai trò đầu tiên
-            var vaiTroDangChon = vaiTroId.HasValue
-                ? danhSachVaiTro.FirstOrDefault(v => v.Id == vaiTroId.Value)
-                : danhSachVaiTro.FirstOrDefault();
-
-            // 3. Nếu ID truyền vào sai (không tìm thấy), mặc định lấy vai trò đầu tiên
-            if (vaiTroDangChon == null) vaiTroDangChon = danhSachVaiTro.First();
-
-            // 4. Logic tự động sinh quyền (Giữ nguyên logic của bạn)
-            if (vaiTroDangChon.PhanQuyens == null || !vaiTroDangChon.PhanQuyens.Any())
             {
-                var danhSachModule = new List<string> { "Quản lý Danh mục", "Quản lý Vật tư", "Phiếu Nhập", "Phiếu Xuất", "Báo cáo", "Quản trị" };
-                foreach (var module in danhSachModule)
-                {
-                    _context.PhanQuyens.Add(new PhanQuyen { VaiTroId = vaiTroDangChon.Id, TenChucNang = module });
-                }
-                await _context.SaveChangesAsync();
-                vaiTroDangChon = await _context.VaiTros.Include(v => v.PhanQuyens).FirstOrDefaultAsync(v => v.Id == vaiTroDangChon.Id);
+                TempData["ErrorMessage"] = "Chưa có vai trò nào trong hệ thống. Vui lòng thêm vai trò mới.";
+                return View(new PhanQuyenVM { DanhSachVaiTro = new List<VaiTro>() });
             }
 
-            return View(new PhanQuyenVM { DanhSachVaiTro = danhSachVaiTro, VaiTroDangChon = vaiTroDangChon });
+            // 2. Chốt chặn Null: Nếu click từ menu vào (vaiTroId == null), tự động chọn vai trò đầu tiên
+            int selectedId = vaiTroId ?? danhSachVaiTro.First().Id;
+
+            // 3. Lấy chi tiết vai trò đang chọn KÈM THEO danh sách phân quyền của nó
+            var vaiTroDangChon = await _context.VaiTros
+                .Include(v => v.PhanQuyens) // Bắt buộc phải có Include để không bị lỗi Null reference ở bảng bên phải
+                .FirstOrDefaultAsync(v => v.Id == selectedId);
+
+            // Xử lý ngoại lệ: Nếu ai đó cố tình gõ URL một cái ID không tồn tại
+            if (vaiTroDangChon == null)
+            {
+                vaiTroDangChon = await _context.VaiTros
+                    .Include(v => v.PhanQuyens)
+                    .FirstOrDefaultAsync(v => v.Id == danhSachVaiTro.First().Id);
+            }
+
+            // 4. Đóng gói vào ViewModel và ném ra View
+            var model = new PhanQuyenVM
+            {
+                DanhSachVaiTro = danhSachVaiTro,
+                VaiTroDangChon = vaiTroDangChon
+            };
+
+            return View(model);
         }
         // PHÂN QUYỀN - POST (Lưu dữ liệu cấu hình)
         // ==========================================

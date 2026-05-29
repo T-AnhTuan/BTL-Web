@@ -1,166 +1,131 @@
-const catModal = document.getElementById('addCategoryModal');
-const btnOpenCat = document.getElementById('btnOpenModal');
-const btnCloseCat = document.getElementById('btnCloseModal');
-const btnCancelCat = document.getElementById('btnCancel');
-const btnSaveCat = document.getElementById('btnSave');
-const inputId = document.getElementById('inputId');
-const inputMa = document.getElementById('inputMa');
-const inputTen = document.getElementById('inputTen');
-const inputMoTa = document.getElementById('inputMoTa');
-const selectTrangThai = document.getElementById('selectTrangThai');
-const modalTitle = catModal.querySelector('.modal-header h3');
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('addCategoryModal');
+    const btnOpenModal = document.getElementById('btnOpenModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnSave = document.getElementById('btnSave');
 
-const openCatModal = (mode = 'create') => {
-    if (mode === 'create') {
-        inputId.value = '0';
-        inputMa.value = '';
-        inputTen.value = '';
-        inputMoTa.value = '';
-        selectTrangThai.value = '1';
-        modalTitle.textContent = 'Thêm Danh Mục Mới';
-        btnSaveCat.textContent = 'Lưu danh mục';
-    } else {
-        modalTitle.textContent = 'Cập Nhật Danh Mục';
-        btnSaveCat.textContent = 'Cập nhật';
-    }
+    // Các ô input
+    const inputId = document.getElementById('inputId');
+    const inputMa = document.getElementById('inputMa');
+    const inputTen = document.getElementById('inputTen');
+    const inputMoTa = document.getElementById('inputMoTa');
+    const selectTrangThai = document.getElementById('selectTrangThai');
 
-    catModal.classList.add('show');
-};
+    // 1. Mở Modal Thêm mới
+    if (btnOpenModal) {
+        btnOpenModal.addEventListener('click', function () {
+            // Reset form
+            inputId.value = '0';
+            inputMa.value = '';
+            inputTen.value = '';
+            inputMoTa.value = '';
+            selectTrangThai.value = '1';
 
-const closeCatModal = () => catModal.classList.remove('show');
-
-btnOpenCat.addEventListener('click', () => openCatModal('create'));
-btnCloseCat.addEventListener('click', closeCatModal);
-btnCancelCat.addEventListener('click', closeCatModal);
-
-window.addEventListener('click', (e) => {
-    if (e.target === catModal) {
-        closeCatModal();
-    }
-});
-
-btnSaveCat.addEventListener('click', async () => {
-    const data = {
-        Id: parseInt(inputId.value || '0', 10),
-        MaDanhMuc: inputMa.value.trim(),
-        TenDanhMuc: inputTen.value.trim(),
-        MoTa: inputMoTa.value.trim(),
-        TrangThai: parseInt(selectTrangThai.value || '1', 10)
-    };
-
-    if (!data.MaDanhMuc) {
-        alert('Vui lòng nhập mã danh mục.');
-        inputMa.focus();
-        return;
-    }
-
-    if (!data.TenDanhMuc) {
-        alert('Vui lòng nhập tên danh mục.');
-        inputTen.focus();
-        return;
-    }
-
-    try {
-        btnSaveCat.disabled = true;
-        const response = await fetch('/DanhMuc/LuuDanhMuc', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            document.querySelector('#addCategoryModal h3').innerText = 'Thêm Danh Mục Mới';
+            modal.style.display = 'flex';
         });
-
-        const result = await response.json();
-        if (result.success) {
-            alert('Lưu thành công!');
-            location.reload();
-        } else {
-            alert(result.message || 'Có lỗi xảy ra!');
-        }
-    } catch (err) {
-        alert('Lỗi kết nối: ' + err.message);
-    } finally {
-        btnSaveCat.disabled = false;
     }
-});
 
-const searchInput = document.getElementById('searchInput');
-const statusSelect = document.getElementById('statusSelect');
-const selectAll = document.getElementById('selectAll');
-const tableRows = Array.from(document.querySelectorAll('#tableBody tr[data-id]'));
+    // Đóng modal
+    const closeModal = () => modal.style.display = 'none';
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
-function filterRows() {
-    const keyword = (searchInput?.value || '').trim().toLowerCase();
-    const status = statusSelect?.value || '';
+    // 2. Xử lý nút SỬA (Lấy dữ liệu đổ vào Modal)
+    document.querySelectorAll('.btn-edit').forEach(button => {
+        button.addEventListener('click', function () {
+            const id = this.getAttribute('data-id');
 
-    tableRows.forEach((row) => {
-        const code = row.children[2]?.textContent?.toLowerCase() || '';
-        const name = row.children[3]?.textContent?.toLowerCase() || '';
-        const rowStatus = row.children[7]?.textContent?.includes('Hoạt động') ? '1' : '0';
-        const matchesKeyword = !keyword || code.includes(keyword) || name.includes(keyword);
-        const matchesStatus = !status || rowStatus === status;
-        row.style.display = matchesKeyword && matchesStatus ? '' : 'none';
+            // Gọi API lấy dữ liệu chi tiết
+            fetch(`/DanhMuc/GetDanhMucById?id=${id}`)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.success) {
+                        // Đổ dữ liệu vào Form
+                        inputId.value = res.data.id;
+                        inputMa.value = res.data.maDanhMuc;
+                        inputTen.value = res.data.tenDanhMuc;
+                        inputMoTa.value = res.data.moTa || '';
+                        selectTrangThai.value = res.data.trangThai;
+
+                        // Đổi tiêu đề và mở Modal
+                        document.querySelector('#addCategoryModal h3').innerText = 'Cập Nhật Danh Mục';
+                        modal.style.display = 'flex';
+                    } else {
+                        alert(res.message || 'Không lấy được thông tin danh mục.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Lỗi kết nối đến máy chủ.');
+                });
+        });
     });
-}
 
-searchInput?.addEventListener('input', filterRows);
-statusSelect?.addEventListener('change', filterRows);
-selectAll?.addEventListener('change', () => {
-    document.querySelectorAll('.rowCheckbox').forEach((checkbox) => {
-        checkbox.checked = selectAll.checked;
+    // 3. Xử lý nút XÓA
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function () {
+            const id = this.getAttribute('data-id');
+
+            if (confirm('Bạn có chắc chắn muốn xóa danh mục này không? Thao tác này không thể hoàn tác!')) {
+                fetch(`/DanhMuc/XoaDanhMuc?id=${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(res => {
+                        if (res.success) {
+                            alert('Xóa danh mục thành công!');
+                            location.reload(); // Tải lại trang để cập nhật bảng
+                        } else {
+                            alert(res.message || 'Không thể xóa danh mục này.');
+                        }
+                    })
+                    .catch(err => console.error('Error:', err));
+            }
+        });
     });
-});
 
-document.querySelectorAll('.edit-btn').forEach((button) => {
-    button.addEventListener('click', async () => {
-        const id = button.dataset.id;
-
-        try {
-            const response = await fetch(`/DanhMuc/GetDanhMucById?id=${encodeURIComponent(id)}`);
-            const result = await response.json();
-
-            if (!result.success) {
-                alert(result.message || 'Không lấy được dữ liệu danh mục.');
+    // 4. Xử lý nút LƯU (Dùng cho cả Thêm mới và Sửa)
+    if (btnSave) {
+        btnSave.addEventListener('click', function () {
+            // Validate sơ bộ
+            if (inputMa.value.trim() === '' || inputTen.value.trim() === '') {
+                alert('Vui lòng nhập đầy đủ Mã và Tên danh mục!');
                 return;
             }
 
-            inputId.value = result.data.id;
-            inputMa.value = result.data.maDanhMuc || '';
-            inputTen.value = result.data.tenDanhMuc || '';
-            inputMoTa.value = result.data.moTa || '';
-            selectTrangThai.value = String(result.data.trangThai ?? 1);
-            openCatModal('edit');
-        } catch (err) {
-            alert('Lỗi kết nối: ' + err.message);
-        }
-    });
-});
+            const dataObj = {
+                Id: parseInt(inputId.value) || 0,
+                MaDanhMuc: inputMa.value.trim(),
+                TenDanhMuc: inputTen.value.trim(),
+                MoTa: inputMoTa.value.trim(),
+                TrangThai: parseInt(selectTrangThai.value)
+            };
 
-document.querySelectorAll('.delete-btn').forEach((button) => {
-    button.addEventListener('click', async () => {
-        const id = button.dataset.id;
-        const row = button.closest('tr');
-        const name = row?.children[3]?.textContent?.trim() || 'danh mục này';
-
-        if (!confirm(`Bạn có chắc muốn xóa "${name}"?`)) {
-            return;
-        }
-
-        try {
-            button.disabled = true;
-            const response = await fetch(`/DanhMuc/XoaDanhMuc?id=${encodeURIComponent(id)}`, {
-                method: 'POST'
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                alert('Xóa thành công!');
-                location.reload();
-            } else {
-                alert(result.message || 'Không xóa được danh mục.');
-                button.disabled = false;
-            }
-        } catch (err) {
-            button.disabled = false;
-            alert('Lỗi kết nối: ' + err.message);
-        }
-    });
+            fetch('/DanhMuc/LuuDanhMuc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataObj)
+            })
+                .then(response => response.json())
+                .then(res => {
+                    if (res.success) {
+                        alert(res.message || 'Lưu danh mục thành công!');
+                        location.reload(); // Tải lại bảng
+                    } else {
+                        alert(res.message || 'Có lỗi xảy ra khi lưu.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Lỗi kết nối đến máy chủ.');
+                });
+        });
+    }
 });
