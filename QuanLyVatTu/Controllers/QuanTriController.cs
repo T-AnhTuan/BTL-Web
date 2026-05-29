@@ -195,7 +195,27 @@ namespace QuanLyVatTu.Controllers
                     .Include(v => v.PhanQuyens)
                     .FirstOrDefaultAsync(v => v.Id == danhSachVaiTro.First().Id);
             }
+            if (vaiTroDangChon != null && (vaiTroDangChon.PhanQuyens == null || !vaiTroDangChon.PhanQuyens.Any()))
+            {
+                var cacModuleMacDinh = new List<PhanQuyen>
+                {
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_DANHMUC", TenChucNang = "Quản lý Danh Mục Vật Tư", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_NHAPKHO", TenChucNang = "Quản lý Phiếu Nhập Kho", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_XUATKHO", TenChucNang = "Quản lý Phiếu Xuất Kho", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "BAOCAO", TenChucNang = "Báo Cáo Xuất Nhập Tồn", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "HT_TAIKHOAN", TenChucNang = "Quản lý Tài Khoản Hệ Thống", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "HT_PHANQUYEN", TenChucNang = "Thiết lập Phân Quyền", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false }
+                };
 
+                // Thêm vào Database và lưu lại
+                _context.PhanQuyens.AddRange(cacModuleMacDinh);
+                await _context.SaveChangesAsync();
+
+                // Truy vấn lại để lấy dữ liệu mới nhất (có chứa ID của PhanQuyen) ném ra View
+                vaiTroDangChon = await _context.VaiTros
+                    .Include(v => v.PhanQuyens)
+                    .FirstOrDefaultAsync(v => v.Id == vaiTroDangChon.Id);
+            }
             // 4. Đóng gói vào ViewModel và ném ra View
             var model = new PhanQuyenVM
             {
@@ -208,7 +228,8 @@ namespace QuanLyVatTu.Controllers
         // PHÂN QUYỀN - POST (Lưu dữ liệu cấu hình)
         // ==========================================
         [HttpPost]
-        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyen> PhanQuyens)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyenUpdateDto> PhanQuyens)
         {
             try
             {
@@ -216,9 +237,13 @@ namespace QuanLyVatTu.Controllers
                     .Include(v => v.PhanQuyens)
                     .FirstOrDefaultAsync(v => v.Id == VaiTroId);
 
-                if (vaiTro == null) return NotFound();
+                if (vaiTro == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy vai trò cần lưu.";
+                    return RedirectToAction(nameof(PhanQuyen));
+                }
 
-                // Cập nhật lại các cờ Checkbox vào Database
+                // Lưu dữ liệu cấu hình phân quyền
                 foreach (var quyenMoi in PhanQuyens)
                 {
                     var quyenCu = vaiTro.PhanQuyens.FirstOrDefault(q => q.Id == quyenMoi.Id);
@@ -233,6 +258,7 @@ namespace QuanLyVatTu.Controllers
 
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!";
+
                 return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
             }
             catch (Exception ex)
@@ -242,7 +268,6 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
-        // DTO nhận dữ liệu từ JS
         public class TaiKhoanCrudDto
         {
             public int Id { get; set; }
@@ -251,6 +276,14 @@ namespace QuanLyVatTu.Controllers
             public string? HoTen { get; set; }
             public int VaiTroId { get; set; }
             public int TrangThai { get; set; }
+        }
+        public class PhanQuyenUpdateDto
+        {
+            public int Id { get; set; }
+            public bool CoQuyenXem { get; set; }
+            public bool CoQuyenThem { get; set; }
+            public bool CoQuyenSua { get; set; }
+            public bool CoQuyenXoa { get; set; }
         }
     }
 }

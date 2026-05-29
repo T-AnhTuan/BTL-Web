@@ -24,12 +24,12 @@
             <tr>
                 <th>STT</th>
                 <th>Mã NCC</th>
-                <th>Tên Nhà Cung Cấp</th>
-                <th>Địa Chỉ</th>
-                <th>Số Điện Thoại</th>
+                <th>Tên đơn vị</th>
+                <th>Địa chỉ</th>
+                <th>Hotline</th>
                 <th>Email</th>
-                <th class="text-center">Trạng Thái</th>
-                <th class="text-center">Thao Tác</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center">Thao tác</th>
             </tr>
         </thead>
         <tbody>
@@ -55,9 +55,9 @@
                                 <span>Tạm ngừng</span>
                             }
                         </td>
-                        <td class="text-center">
-                            <button class="action-btn edit-btn" data-id="@item.Id"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button class="action-btn delete-btn" data-id="@item.Id"><i class="fa-solid fa-trash"></i></button>
+                        <td class="text-center" style="justify-content: center; gap: 10px; display: flex;">
+                            <button class="btn btn-sm btn-primary btn-edit" data-id="@item.Id" style="background: green; color: white;"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
+                            <button class="btn btn-sm btn-danger btn-delete" data-id="@item.Id" style="background: red; color: white;"><i class="fa-solid fa-trash"></i> Xóa</button>
                         </td>
                     </tr>
                 }
