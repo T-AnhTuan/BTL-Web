@@ -220,7 +220,7 @@ namespace QuanLyVatTu.Controllers
         // ================================================================
         [HttpPost]
         [Authorize]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DangXuat()
         {
             // Lấy thông tin user để ghi log trước khi xóa phiên

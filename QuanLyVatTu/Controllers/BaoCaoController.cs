@@ -5,9 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Services;
 using QuanLyVatTu.ViewModels;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {

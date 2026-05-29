@@ -1,141 +1,84 @@
-﻿/// 1. Hàm Xử lý khi click "Toàn Quyền"
-function toggleAll(btnNode) {
-    var row = btnNode.closest('tr');
-    var childChecks = row.querySelectorAll('.chk-child');
+﻿// 1. XỬ LÝ NÚT TÍCH CHỌN TOÀN QUYỀN
+function toggleAll(source) {
+    // Tìm thẻ <tr> chứa cái checkbox "Toàn quyền" vừa được click
+    const row = source.closest('tr');
 
-    childChecks.forEach(function (chk) {
-        if (chk.checked !== btnNode.checked) {
-            chk.checked = btnNode.checked;
-            chk.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+    // Tìm tất cả các checkbox con (Xem, Thêm, Sửa, Xóa) trong cùng cái hàng đó
+    const childCheckboxes = row.querySelectorAll('.chk-child');
+
+    // Đổi trạng thái của các checkbox con theo trạng thái của nút Toàn quyền
+    childCheckboxes.forEach(chk => {
+        chk.checked = source.checked;
     });
 }
 
-// 2. Hàm Xử lý khi click các ô quyền con
-function checkChild(chkNode) {
-    var row = chkNode.closest('tr');
-    var childChecks = row.querySelectorAll('.chk-child');
-    var checkAllBtn = row.querySelector('.chk-all-row');
-
-    var isAllChecked = Array.from(childChecks).every(function (chk) {
-        return chk.checked === true;
-    });
-
-    if (checkAllBtn) {
-        checkAllBtn.checked = isAllChecked;
-    }
-}
-
-// 3. Xử lý UI Modal và Khởi tạo
+// 2. XỬ LÝ MODAL THÊM VAI TRÒ MỚI
 document.addEventListener('DOMContentLoaded', function () {
-    const btnOpenRole = document.getElementById('btnOpenAddRole');
-    const roleModal = document.getElementById('addRoleModal');
-    const btnCloseRole = document.getElementById('btnCloseRoleModal');
-    const btnCancelRole = document.getElementById('btnCancelRole');
-    const btnSaveRole = document.getElementById('btnSaveRole');
+    const modal = document.getElementById('addRoleModal');
+    const btnOpen = document.getElementById('btnThemVaiTro'); // Cần đảm bảo nút thêm ở sidebar có id này
+    const btnClose = document.getElementById('btnCloseRoleModal');
+    const btnCancel = document.getElementById('btnCancelRole');
+    const btnSave = document.getElementById('btnSaveRole');
 
-    // Mở Modal
-    if (btnOpenRole) {
-        btnOpenRole.addEventListener('click', function () {
-            roleModal.style.display = 'flex';
+    // Mở modal
+    if (btnOpen) {
+        btnOpen.addEventListener('click', function (e) {
+            e.preventDefault();
+            modal.style.display = 'flex';
+            document.getElementById('newRoleName').value = '';
+            document.getElementById('newRoleDesc').value = '';
         });
     }
 
-    // Đóng Modal
-    const closeRoleModal = () => {
-        if (roleModal) roleModal.style.display = 'none';
-    };
+    // Đóng modal
+    const closeModal = () => modal.style.display = 'none';
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
-    if (btnCloseRole) btnCloseRole.addEventListener('click', closeRoleModal);
-    if (btnCancelRole) btnCancelRole.addEventListener('click', closeRoleModal);
+    // Lưu Vai trò mới xuống Server bằng Fetch API
+    if (btnSave) {
+        btnSave.addEventListener('click', async function () {
+            const tenVaiTro = document.getElementById('newRoleName').value.trim();
+            const moTa = document.getElementById('newRoleDesc').value.trim();
 
-    window.addEventListener('click', function (e) {
-        if (e.target == roleModal) closeRoleModal();
-    });
-
-    // SỰ KIỆN: Bấm nút "Lưu Vai Trò" (Đã được khôi phục)
-    if (btnSaveRole) {
-        btnSaveRole.addEventListener('click', function () {
-            const newRoleName = document.getElementById('newRoleName').value.trim();
-            const newRoleDesc = document.getElementById('newRoleDesc') ? document.getElementById('newRoleDesc').value.trim() : '';
-
-            if (newRoleName === "") {
-                alert("Vui lòng nhập tên vai trò!");
+            if (!tenVaiTro) {
+                alert('Vui lòng nhập tên vai trò!');
                 return;
             }
 
-            // Gọi API Thêm vai trò
-            fetch('/QuanTri/ThemVaiTro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ TenVaiTro: newRoleName, MoTa: newRoleDesc })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload(); // Load lại trang để thấy vai trò mới
-                    } else {
-                        alert(data.message || "Có lỗi xảy ra khi thêm vai trò!");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert("Lỗi kết nối đến máy chủ!");
+            // Đổi text nút thành Đang lưu để tránh click nhiều lần
+            btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+            btnSave.disabled = true;
+
+            try {
+                const response = await fetch('/QuanTri/TaoMoiVaiTro', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        TenVaiTro: tenVaiTro,
+                        MoTa: moTa
+                    })
                 });
-        });
-    }
 
-    // 4. Tự động kiểm tra: Nếu 4 quyền con đã tích, bật luôn ô Toàn quyền
-    var rows = document.querySelectorAll('.matrix-table tbody tr');
-    rows.forEach(function (row) {
-        var childChecks = row.querySelectorAll('.chk-child');
-        if (childChecks.length > 0) {
-            var checkAllBtn = row.querySelector('.chk-all-row');
-            var isAllChecked = Array.from(childChecks).every(chk => chk.checked === true);
-            if (checkAllBtn) checkAllBtn.checked = isAllChecked;
-        }
-    });
-});
-// 3. Xử lý UI các nút bật tắt Modal (Thêm Vai trò)
-document.addEventListener('DOMContentLoaded', function () {
-    const btnOpenRole = document.getElementById('btnOpenAddRole');
-    const roleModal = document.getElementById('addRoleModal');
-    const btnCloseRole = document.getElementById('btnCloseRoleModal');
-    const btnCancelRole = document.getElementById('btnCancelRole');
+                const result = await response.json();
 
-    // Mở Modal
-    if (btnOpenRole) {
-        btnOpenRole.addEventListener('click', function () {
-            roleModal.style.display = 'flex';
-        });
-    }
-
-    // Đóng Modal
-    const closeRoleModal = () => {
-        if (roleModal) roleModal.style.display = 'none';
-    };
-
-    if (btnCloseRole) btnCloseRole.addEventListener('click', closeRoleModal);
-    if (btnCancelRole) btnCancelRole.addEventListener('click', closeRoleModal);
-
-    // Đóng khi click ngoài vùng modal
-    window.addEventListener('click', function (e) {
-        if (e.target == roleModal) {
-            closeRoleModal();
-        }
-    });
-
-    // 4. CHẠY MỘT LẦN KHI LOAD TRANG: 
-    // Quét toàn bộ bảng xem hàng nào đã đủ 4 quyền thì bật ô "Toàn quyền" lên
-    var rows = document.querySelectorAll('.matrix-table tbody tr');
-    rows.forEach(function (row) {
-        var childChecks = row.querySelectorAll('.chk-child');
-        if (childChecks.length > 0) { // Bỏ qua nếu là dòng "Chưa khởi tạo chức năng"
-            var checkAllBtn = row.querySelector('.chk-all-row');
-            var isAllChecked = Array.from(childChecks).every(chk => chk.checked === true);
-            if (checkAllBtn) {
-                checkAllBtn.checked = isAllChecked;
+                if (result.success) {
+                    alert(result.message);
+                    // Tải lại trang để thấy vai trò mới ở menu bên trái
+                    window.location.reload();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                    btnSave.innerHTML = 'Lưu Vai Trò';
+                    btnSave.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi kết nối đến máy chủ!');
+                btnSave.innerHTML = 'Lưu Vai Trò';
+                btnSave.disabled = false;
             }
-        }
-    });
+        });
+    }
 });

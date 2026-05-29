@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using QuanLyVatTu.ViewModels; 
+using QuanLyVatTu.ViewModels;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -229,42 +229,103 @@ namespace QuanLyVatTu.Controllers
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyenUpdateDto> PhanQuyens)
+        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyenUpdateDto> dsQuyen) // Hàm nhận vào ID Vai Trò và Danh sách các quyền được tích từ HTML
         {
-            try
+            try // Bắt đầu khối lệnh thử nghiệm để bắt lỗi hệ thống nếu có
             {
-                var vaiTro = await _context.VaiTros
-                    .Include(v => v.PhanQuyens)
-                    .FirstOrDefaultAsync(v => v.Id == VaiTroId);
-
-                if (vaiTro == null)
+                // 1. Kiểm tra vai trò
+                var vaiTro = await _context.VaiTros.FindAsync(VaiTroId); // Tìm Vai Trò trong Database dựa theo VaiTroId gửi lên
+                if (vaiTro == null) // Nếu Vai Trò không tồn tại trong Database
                 {
-                    TempData["ErrorMessage"] = "Không tìm thấy vai trò cần lưu.";
-                    return RedirectToAction(nameof(PhanQuyen));
+                    TempData["ErrorMessage"] = "Lỗi: Không tìm thấy vai trò cần cập nhật!"; // Ghi lại câu thông báo lỗi
+                    return RedirectToAction(nameof(PhanQuyen)); // Load lại trang phân quyền
                 }
 
-                // Lưu dữ liệu cấu hình phân quyền
-                foreach (var quyenMoi in PhanQuyens)
+                // 2. Kiểm tra dữ liệu danh sách quyền gửi lên
+                if (dsQuyen == null || dsQuyen.Count == 0) // Nếu danh sách quyền bị rỗng (HTML không gửi lên được do sai tên biến)
                 {
-                    var quyenCu = vaiTro.PhanQuyens.FirstOrDefault(q => q.Id == quyenMoi.Id);
-                    if (quyenCu != null)
+                    TempData["ErrorMessage"] = "Lỗi: Không nhận được dữ liệu phân quyền từ giao diện!"; // Ghi lại thông báo lỗi
+                    return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Load lại trang phân quyền của vai trò đó
+                }
+
+                // 3. Cập nhật từng dòng quyền vào cơ sở dữ liệu
+                foreach (var quyenMoi in dsQuyen) // Dùng vòng lặp chạy qua từng dòng quyền mà giao diện vừa gửi lên
+                {
+                    var quyenCu = await _context.PhanQuyens.FindAsync(quyenMoi.Id); // Tìm dòng phân quyền tương ứng ở trong Database bằng ID
+
+                    if (quyenCu != null) // Nếu dòng phân quyền này có tồn tại trong Database
                     {
-                        quyenCu.CoQuyenXem = quyenMoi.CoQuyenXem;
-                        quyenCu.CoQuyenThem = quyenMoi.CoQuyenThem;
-                        quyenCu.CoQuyenSua = quyenMoi.CoQuyenSua;
-                        quyenCu.CoQuyenXoa = quyenMoi.CoQuyenXoa;
+                        quyenCu.CoQuyenXem = quyenMoi.CoQuyenXem;   // Cập nhật quyền Xem: Nếu giao diện gửi lên true thì gán true, không gửi thì mặc định là false
+                        quyenCu.CoQuyenThem = quyenMoi.CoQuyenThem; // Cập nhật quyền Thêm: Ghi đè giá trị từ giao diện vào CSDL
+                        quyenCu.CoQuyenSua = quyenMoi.CoQuyenSua;   // Cập nhật quyền Sửa: Ghi đè giá trị từ giao diện vào CSDL
+                        quyenCu.CoQuyenXoa = quyenMoi.CoQuyenXoa;   // Cập nhật quyền Xóa: Ghi đè giá trị từ giao diện vào CSDL
                     }
                 }
 
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!";
+                // 4. Lưu xuống CSDL và thông báo
+                await _context.SaveChangesAsync(); // Chạy lệnh lưu tất cả các thay đổi vừa làm ở trên xuống CSDL thật
+                TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!"; // Tạo ra câu thông báo thành công màu xanh
 
-                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Điều hướng load lại trang phân quyền của đúng vai trò đó
+            }
+            catch (Exception ex) // Nếu có bất kỳ lỗi nào xảy ra trong quá trình chạy (ví dụ: đứt kết nối CSDL)
+            {
+                TempData["ErrorMessage"] = "Lỗi hệ thống khi lưu cấu hình: " + ex.Message; // Bắt lấy lỗi đó và ghi vào thông báo
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Load lại trang và hiển thị lỗi ra
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TaoMoiVaiTro([FromBody] VaiTroMoiDto model)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.TenVaiTro))
+                    return Json(new { success = false, message = "Tên vai trò không được để trống!" });
+
+                // Kiểm tra trùng lặp
+                bool tonTai = await _context.VaiTros.AnyAsync(v => v.TenVaiTro.Trim().ToLower() == model.TenVaiTro.Trim().ToLower());
+                if (tonTai)
+                    return Json(new { success = false, message = "Tên vai trò này đã tồn tại trong hệ thống!" });
+
+                // 1. Tạo vai trò mới
+                var vaiTroMoi = new VaiTro
+                {
+                    TenVaiTro = model.TenVaiTro,
+                    MoTa = model.MoTa
+                };
+                _context.VaiTros.Add(vaiTroMoi);
+                await _context.SaveChangesAsync(); // Lưu để lấy ID mới
+
+                // 2. KHỞI TẠO MA TRẬN QUYỀN MẶC ĐỊNH (Tất cả = false)
+                // Lấy danh sách các chức năng hiện có trong hệ thống (từ một vai trò mẫu, ví dụ Admin)
+                var danhSachChucNang = await _context.PhanQuyens
+                    .Select(p => p.TenChucNang)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Tạo các dòng dữ liệu quyền cho Vai trò vừa tạo
+                foreach (var chucNang in danhSachChucNang)
+                {
+                    _context.PhanQuyens.Add(new Models.PhanQuyen
+                    {
+                        VaiTroId = vaiTroMoi.Id,
+                        TenChucNang = chucNang,
+                        CoQuyenXem = false,
+                        CoQuyenThem = false,
+                        CoQuyenSua = false,
+                        CoQuyenXoa = false
+                    });
+                }
+
+                // Lưu ma trận quyền
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Thêm vai trò và khởi tạo ma trận quyền thành công!" });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Lỗi khi lưu cấu hình: " + ex.Message;
-                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
             }
         }
 
@@ -284,6 +345,11 @@ namespace QuanLyVatTu.Controllers
             public bool CoQuyenThem { get; set; }
             public bool CoQuyenSua { get; set; }
             public bool CoQuyenXoa { get; set; }
+        }
+        public class VaiTroMoiDto
+        {
+            public string TenVaiTro { get; set; }
+            public string MoTa { get; set; }
         }
     }
 }

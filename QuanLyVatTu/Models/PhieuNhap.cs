@@ -15,38 +15,48 @@ namespace QuanLyVatTu.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        [StringLength(50)]
+        [Required(ErrorMessage = "Mã phiếu không được để trống")]
+        [StringLength(50, ErrorMessage = "Mã phiếu không được vượt quá 50 ký tự")]
         [Display(Name = "Mã Phiếu")]
         public string MaPhieu { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Ngày nhập không được để trống")]
         [Display(Name = "Ngày Nhập")]
         public DateTime NgayNhap { get; set; } = DateTime.Now;
 
         // Khóa ngoại tới Nhà Cung Cấp
-        [Required]
+        [Required(ErrorMessage = "Vui lòng chọn nhà cung cấp")]
+        [Display(Name = "Nhà Cung Cấp")]
         public int NhaCungCapId { get; set; }
-        [ForeignKey("NhaCungCapId")]
-        public NhaCungCap NhaCungCap { get; set; }
 
-        [StringLength(100)]
+        [ForeignKey("NhaCungCapId")]
+        [Display(Name = "Nhà Cung Cấp")]
+        public NhaCungCap? NhaCungCap { get; set; }
+
+        // Khóa ngoại tới Kho
+        [Required(ErrorMessage = "Vui lòng chọn kho nhập")]
         [Display(Name = "Kho Nhập")]
         public int KhoId { get; set; }
+
         [ForeignKey("KhoId")]
-        public DanhMucKho Kho { get; set; }
-        [StringLength(500)]
+        [Display(Name = "Kho Nhập")]
+        public DanhMucKho? Kho { get; set; }
+
+        [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự")]
         [Display(Name = "Ghi Chú")]
         public string? GhiChu { get; set; }
 
         [Display(Name = "Tổng Giá Trị")]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal TongGiaTri { get; set; } 
+        public decimal TongGiaTri { get; set; } = 0;
 
         // TRẠNG THÁI DUYỆT (Quan trọng)
+        [Display(Name = "Trạng Thái")]
         public TrangThaiPhieuNhap TrangThai { get; set; } = TrangThaiPhieuNhap.ChoDuyet;
 
         // Navigation Properties (1 Phiếu Nhập có nhiều Chi tiết)
-        public ICollection<ChiTietPhieuNhap> ChiTietPhieuNhaps { get; set; }
+        // Nullable vì khi tạo mới phiếu chưa có chi tiết
+        [Display(Name = "Chi Tiết Phiếu Nhập")]
+        public ICollection<ChiTietPhieuNhap>? ChiTietPhieuNhaps { get; set; }
     }
 }

@@ -1,0 +1,175 @@
+﻿@using QuanLyVatTu.Models
+@model PhieuNhap
+@{
+    ViewData["Title"] = "Thêm Vật Tư Phiếu Nhập";
+}
+
+<link rel="stylesheet" href="~/css/nhap.css" asp-append-version="true" />
+
+<h1 class="page-title">Thêm Vật Tư Phiếu Nhập</h1>
+
+<!-- Hiển thị thông báo (nếu có) -->
+@if (TempData["SuccessMsg"] != null)
+{
+    <div style="padding:15px; margin-bottom: 20px; background-color: #dcfce3; color: #166534; border-radius: 8px;">
+        <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMsg"]
+    </div>
+}
+@if (TempData["ErrorMsg"] != null)
+{
+    <div style="padding:15px; margin-bottom: 20px; background-color: #fee2e2; color: #991b1b; border-radius: 8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMsg"]
+    </div>
+}
+
+<!-- PHẦN I: THÔNG TIN PHIẾU NHẬP -->
+<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+    <h3 style="margin-top: 0; color: #1e40af;">📋 Thông Tin Phiếu Nhập</h3>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+        <div>
+            <label style="font-weight: 600; color: #475569; font-size: 12px;">Mã Phiếu</label>
+            <div style="font-size: 16px; font-weight: bold; color: #2563eb;">@Model.MaPhieu</div>
+        </div>
+        <div>
+            <label style="font-weight: 600; color: #475569; font-size: 12px;">Ngày Nhập</label>
+            <div style="font-size: 16px; font-weight: bold;">@Model.NgayNhap.ToString("dd/MM/yyyy")</div>
+        </div>
+        <div>
+            <label style="font-weight: 600; color: #475569; font-size: 12px;">Nhà Cung Cấp</label>
+            <div style="font-size: 16px; font-weight: bold;">@(Model.NhaCungCap?.TenNhaCungCap ?? "N/A")</div>
+        </div>
+        <div>
+            <label style="font-weight: 600; color: #475569; font-size: 12px;">Kho Nhập</label>
+            <div style="font-size: 16px; font-weight: bold;">@(Model.Kho?.TenKho ?? "N/A")</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.GhiChu))
+    {
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <label style="font-weight: 600; color: #475569; font-size: 12px;">Ghi Chú</label>
+            <div>@Model.GhiChu</div>
+        </div>
+    }
+</div>
+
+<!-- PHẦN II: FORM THÊM VẬT TƯ -->
+<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+    <h3 style="margin-top: 0; color: #1e40af;">➕ Thêm Vật Tư</h3>
+
+    <form asp-action="AddChiTietPhieuNhap" asp-controller="NhapXuat" method="post">
+        <input type="hidden" name="PhieuNhapId" value="@Model.Id" />
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
+            <div class="filter-group">
+                <label>Vật Tư <span style="color:red">*</span></label>
+                <select name="VatTuId" required style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; outline: none;">
+                    <option value="">-- Chọn vật tư --</option>
+                    @if (ViewBag.DanhSachVatTu != null)
+                    {
+                        foreach (var vt in ViewBag.DanhSachVatTu)
+                        {
+                            <option value="@vt.Id">@vt.TenVatTu (@vt.DonVi)</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Số Lượng <span style="color:red">*</span></label>
+                <input type="number" name="SoLuong" required min="1" step="1" placeholder="0" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; outline: none;">
+            </div>
+
+            <div class="filter-group">
+                <label>Đơn Giá (VNĐ) <span style="color:red">*</span></label>
+                <input type="number" name="DonGia" required min="0" step="0.01" placeholder="0" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; outline: none;">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">
+                <i class="fa-solid fa-plus"></i> Thêm
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- PHẦN III: DANH SÁCH CHI TIẾT -->
+<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+    <h3 style="margin-top: 0; color: #1e40af;">📦 Danh Sách Vật Tư (@(Model.ChiTietPhieuNhaps?.Count ?? 0) dòng)</h3>
+
+    @if (Model.ChiTietPhieuNhaps != null && Model.ChiTietPhieuNhaps.Any())
+    {
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vật Tư</th>
+                        <th class="text-center">Đơn Vị</th>
+                        <th class="text-right">Số Lượng</th>
+                        <th class="text-right">Đơn Giá (VNĐ)</th>
+                        <th class="text-right">Thành Tiền (VNĐ)</th>
+                        <th class="text-center">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        decimal tongGiaTri = 0;
+                    }
+                    @foreach (var ct in Model.ChiTietPhieuNhaps)
+                    {
+                        decimal thanhTien = ct.SoLuong * ct.DonGia;
+                        tongGiaTri += thanhTien;
+                        <tr>
+                            <td style="font-weight: 600; color: #2563eb;">@(ct.VatTu?.TenVatTu ?? "N/A")</td>
+                            <td class="text-center">@(ct.VatTu?.DonViTinh ?? "N/A")</td>
+                            <td class="text-right">@ct.SoLuong</td>
+                            <td class="text-right">@ct.DonGia.ToString("N0")</td>
+                            <td class="text-right" style="font-weight: 600; color: #059669;">@thanhTien.ToString("N0")</td>
+                            <td class="text-center">
+                                <form asp-action="DeleteChiTietPhieuNhap" asp-controller="NhapXuat" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@ct.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Xóa vật tư" onclick="return confirm('Bạn có chắc muốn xóa vật tư này?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background: #f8fafc; font-weight: 600;">
+                    <tr>
+                        <td colspan="4" class="text-right">TỔNG CỘNG:</td>
+                        <td class="text-right" style="color: #059669; font-size: 16px;">@tongGiaTri.ToString("N0") VNĐ</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div style="text-align: center; padding: 30px; color: #64748b;">
+            <i class="fa-solid fa-inbox" style="font-size: 40px; margin-bottom: 10px; opacity: 0.5;"></i>
+            <p>Chưa có vật tư nào. Hãy thêm vật tư bằng form phía trên.</p>
+        </div>
+    }
+</div>
+
+<!-- PHẦN IV: NÚT HÀNH ĐỘNG -->
+<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+    <a href="@Url.Action("PhieuNhap", "NhapXuat")" class="btn btn-cancel" style="padding: 10px 20px;">
+        <i class="fa-solid fa-arrow-left"></i> Quay Lại Danh Sách
+    </a>
+
+    @if (Model.ChiTietPhieuNhaps != null && Model.ChiTietPhieuNhaps.Any() && Model.TrangThai == TrangThaiPhieuNhap.ChoDuyet)
+    {
+        <form asp-action="DuyetPhieuNhap" asp-controller="NhapXuat" method="post" style="display:inline;">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px;" onclick="return confirm('Bạn có chắc muốn duyệt phiếu nhập này?');">
+                <i class="fa-solid fa-check"></i> Duyệt Phiếu Nhập
+            </button>
+        </form>
+    }
+</div>
+
+<script src="~/js/nhap.js" asp-append-version="true"></script>

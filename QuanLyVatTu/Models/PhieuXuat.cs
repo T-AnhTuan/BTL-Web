@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace QuanLyVatTu.Models
 {
-    public enum TrangThaiPhieuXuat  
+    public enum TrangThaiPhieuXuat
     {
         ChoDuyet = 0,    // Mặc định khi mới tạo
         DaDuyet = 1,     // Khi quản lý đã duyệt

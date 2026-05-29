@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-
-namespace QuanLyVatTu.ViewModels
+﻿namespace QuanLyVatTu.ViewModels
 {
     // Lớp này dùng để chứa toàn bộ dữ liệu gửi ra trang Kho.cshtml
     public class KhoVM

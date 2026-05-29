@@ -2,9 +2,6 @@
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.ViewModels;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Services
 {

@@ -16,11 +16,11 @@
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success" style="color: green; padding-bottom: 10px;">@TempData["SuccessMessage"]</div>
 }
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    <div class="alert alert-danger" style="color: red; padding-bottom: 10px;">@TempData["ErrorMessage"]</div>
 }
 
 <div class="permissions-container">
@@ -64,44 +64,33 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @{
-                        // Lấy danh sách quyền của Vai trò đang chọn và ép sang List để dùng vòng lặp for
-                        var dsQuyen = Model.VaiTroDangChon?.PhanQuyens?.ToList();
-                    }
-
-                    @if (dsQuyen != null && dsQuyen.Any())
+                    @if (Model.VaiTroDangChon.PhanQuyens != null && Model.VaiTroDangChon.PhanQuyens.Any())
                     {
-                        // BẮT BUỘC dùng vòng lặp for để sinh ra index (ví dụ: dsQuyen[0], dsQuyen[1])
-                        for (int i = 0; i < dsQuyen.Count; i++)
+                        var matrix = Model.VaiTroDangChon.PhanQuyens.ToList();
+                        for (int i = 0; i < matrix.Count; i++)
                         {
                             <tr>
-                                <td>
-                                    @dsQuyen[i].MaChucNang
-                                    <!-- Chứa ID để Controller biết đang update dòng nào -->
-                                    <input type="hidden" name="dsQuyen[@i].Id" value="@dsQuyen[i].Id" />
-                                </td>
-                                <td>
-                                    @dsQuyen[i].TenChucNang
+                                <td>@matrix[i].MaChucNang</td>
+
+                                <!-- BẮT BUỘC CÓ: Chỉ cần đúng 1 thẻ hidden cho Id để làm điểm neo cho C# -->
+                                <input type="hidden" name="dsQuyen[@i].Id" value="@matrix[i].Id" />
+                                <td>@matrix[i].TenChucNang</td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="dsQuyen[@i].CoQuyenXem" value="true" @(matrix[i].CoQuyenXem ? "checked" : "") class="chk-child" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenXem" value="true" @(dsQuyen[i].CoQuyenXem ? "checked" : "") onchange="checkChild(this)" />
-                                    <input type="hidden" name="dsQuyen[@i].CoQuyenXem" value="false" /> 
+                                    <input type="checkbox" name="dsQuyen[@i].CoQuyenThem" value="true" @(matrix[i].CoQuyenThem ? "checked" : "") class="chk-child" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenThem" value="true" @(dsQuyen[i].CoQuyenThem ? "checked" : "") onchange="checkChild(this)" />
-                                    <input type="hidden" name="dsQuyen[@i].CoQuyenThem" value="false" />
+                                    <input type="checkbox" name="dsQuyen[@i].CoQuyenSua" value="true" @(matrix[i].CoQuyenSua ? "checked" : "") class="chk-child" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenSua" value="true" @(dsQuyen[i].CoQuyenSua ? "checked" : "") onchange="checkChild(this)" />
-                                    <input type="hidden" name="dsQuyen[@i].CoQuyenSua" value="false" />
+                                    <input type="checkbox" name="dsQuyen[@i].CoQuyenXoa" value="true" @(matrix[i].CoQuyenXoa ? "checked" : "") class="chk-child" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenXoa" value="true" @(dsQuyen[i].CoQuyenXoa ? "checked" : "") onchange="checkChild(this)" />
-                                    <input type="hidden" name="dsQuyen[@i].CoQuyenXoa" value="false" />
-                                </td>
-                                <td class="text-center" style="border-left: 2px solid #e2e8f0;">
-                                    <!-- Nút này chỉ dùng gọi sự kiện JS, không cần name -->
-                                    <input type="checkbox" class="chk-all-row" onchange="toggleAll(this)" />
+                                    <!-- Nút toàn quyền gọi hàm toggleAll trong file JS -->
+                                    <input type="checkbox" onchange="toggleAll(this)"
+                                    @(matrix[i].CoQuyenXem && matrix[i].CoQuyenThem && matrix[i].CoQuyenSua && matrix[i].CoQuyenXoa ? "checked" : "") />
                                 </td>
                             </tr>
                         }

@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;  // key, requird,StringLength 
-using System.ComponentModel.DataAnnotations.Schema; //
 namespace QuanLyVatTu.Models
 {
     public class VaiTro

@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Services
 {

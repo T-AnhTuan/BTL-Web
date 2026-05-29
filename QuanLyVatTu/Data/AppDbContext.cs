@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Models;
-using System.Linq;
 
 namespace QuanLyVatTu.Data
 {

@@ -11,12 +11,12 @@ namespace QuanLyVatTu.Models
         [Required]
         public int PhieuNhapId { get; set; }
         [ForeignKey("PhieuNhapId")]
-        public PhieuNhap PhieuNhap { get; set; }
+        public PhieuNhap? PhieuNhap { get; set; }
 
         [Required]
         public int VatTuId { get; set; }
         [ForeignKey("VatTuId")]
-        public VatTu VatTu { get; set; }
+        public VatTu? VatTu { get; set; }
 
         [Required]
         [Display(Name = "Số Lượng")]
@@ -31,6 +31,6 @@ namespace QuanLyVatTu.Models
         [NotMapped]
         [Column(TypeName = "decimal(18,2)")]
         public decimal ThanhTien => SoLuong * DonGia;
-        
+
     }
 }

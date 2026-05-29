@@ -4,10 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace QuanLyVatTu.Controllers
 {

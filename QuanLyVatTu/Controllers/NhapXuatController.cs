@@ -54,37 +54,87 @@ namespace QuanLyVatTu.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TaoPhieuNhap(PhieuNhap phieuNhap)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
+            try
             {
-                TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
-                return RedirectToAction(nameof(PhieuNhap));
+                // Kiểm tra đối tượng không null
+                if (phieuNhap == null)
+                {
+                    TempData["ErrorMsg"] = "Thông tin phiếu nhập không hợp lệ.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                // Lấy thông tin người dùng hiện tại
+                var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int taiKhoanId))
+                {
+                    TempData["ErrorMsg"] = "Phiên đăng nhập không hợp lệ.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                // Chuẩn hóa dữ liệu đầu vào
+                phieuNhap.MaPhieu = phieuNhap.MaPhieu?.Trim() ?? string.Empty;
+                phieuNhap.GhiChu = phieuNhap.GhiChu?.Trim() ?? string.Empty;
+
+                // Tự động tạo mã phiếu nếu chưa có
+                if (string.IsNullOrEmpty(phieuNhap.MaPhieu))
+                {
+                    phieuNhap.MaPhieu = "PN-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                }
+
+                // KIỂM TRA CHỈ CÁC TRƯỜNG BẮTBUỘC (Ko check ModelState vì nó validate cả navigation properties)
+                if (string.IsNullOrWhiteSpace(phieuNhap.MaPhieu))
+                {
+                    TempData["ErrorMsg"] = "Mã phiếu nhập không hợp lệ.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                if (phieuNhap.NhaCungCapId <= 0)
+                {
+                    TempData["ErrorMsg"] = "Vui lòng chọn nhà cung cấp.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                if (phieuNhap.KhoId <= 0)
+                {
+                    TempData["ErrorMsg"] = "Vui lòng chọn kho nhập.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                // Validate dữ liệu đầy đủ
+                var validationMessage = await ValidatePhieuNhapAsync(phieuNhap);
+                if (validationMessage != null)
+                {
+                    TempData["ErrorMsg"] = validationMessage;
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                // Gọi service để tạo phiếu nhập
+                var result = await _nhapXuatService.LapPhieuNhapAsync(phieuNhap, taiKhoanId);
+
+                if (result.IsSuccess)
+                {
+                    TempData["SuccessMsg"] = "Đã tạo thông tin Phiếu Nhập thành công! Vui lòng thêm vật tư.";
+                    // Lấy ID của phiếu vừa tạo để chuyển đến form chi tiết
+                    var newPhieu = await _context.PhieuNhaps
+                        .Where(p => p.MaPhieu == phieuNhap.MaPhieu)
+                        .FirstOrDefaultAsync();
+                    if (newPhieu != null)
+                    {
+                        return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = newPhieu.Id });
+                    }
+                }
+                else
+                {
+                    TempData["ErrorMsg"] = result.Message;
+                }
             }
-
-            phieuNhap.MaPhieu = phieuNhap.MaPhieu?.Trim() ?? string.Empty;
-            phieuNhap.GhiChu = phieuNhap.GhiChu?.Trim() ?? string.Empty;
-
-            if (string.IsNullOrEmpty(phieuNhap.MaPhieu))
+            catch (InvalidOperationException ex)
             {
-                phieuNhap.MaPhieu = "PN-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                TempData["ErrorMsg"] = $"Lỗi: {ex.Message}";
             }
-
-            var validationMessage = await ValidatePhieuNhapAsync(phieuNhap);
-            if (validationMessage != null)
+            catch (Exception ex)
             {
-                TempData["ErrorMsg"] = validationMessage;
-                return RedirectToAction(nameof(PhieuNhap));
-            }
-
-            var result = await _nhapXuatService.LapPhieuNhapAsync(phieuNhap, taiKhoanId);
-
-            if (result.IsSuccess)
-            {
-                TempData["SuccessMsg"] = "Đã tạo thông tin Phiếu Nhập thành công! Vui lòng thêm vật tư.";
-            }
-            else
-            {
-                TempData["ErrorMsg"] = result.Message;
+                TempData["ErrorMsg"] = $"Lỗi khi tạo phiếu nhập: {ex.Message}";
             }
 
             return RedirectToAction(nameof(PhieuNhap));
@@ -160,7 +210,144 @@ namespace QuanLyVatTu.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> ChiTietPhieuNhap(int id)
+        {
+            var phieu = await _context.PhieuNhaps
+                .Include(p => p.NhaCungCap)
+                .Include(p => p.Kho)
+                .Include(p => p.ChiTietPhieuNhaps)
+                    .ThenInclude(ct => ct.VatTu)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (phieu == null)
+            {
+                TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
+                return RedirectToAction(nameof(PhieuNhap));
+            }
+
+            // Load danh sách vật tư để dropdown
+            ViewBag.DanhSachVatTu = await _context.VatTus
+                .AsNoTracking()
+                .OrderBy(v => v.TenVatTu)
+                .ToListAsync();
+
+            return View(phieu);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddChiTietPhieuNhap(int PhieuNhapId, int VatTuId, int SoLuong, decimal DonGia)
+        {
+            try
+            {
+                // Kiểm tra phiếu nhập tồn tại
+                var phieu = await _context.PhieuNhaps.FindAsync(PhieuNhapId);
+                if (phieu == null)
+                {
+                    TempData["ErrorMsg"] = "Không tìm thấy phiếu nhập.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                // Kiểm tra vật tư tồn tại
+                var vatTu = await _context.VatTus.FindAsync(VatTuId);
+                if (vatTu == null)
+                {
+                    TempData["ErrorMsg"] = "Vật tư không hợp lệ.";
+                    return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
+                }
+
+                // Kiểm tra dữ liệu hợp lệ
+                if (SoLuong <= 0 || DonGia < 0)
+                {
+                    TempData["ErrorMsg"] = "Số lượng phải > 0 và đơn giá phải >= 0.";
+                    return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
+                }
+
+                // Kiểm tra vật tư đã tồn tại trong phiếu chưa
+                var existingDetail = await _context.ChiTietPhieuNhaps
+                    .FirstOrDefaultAsync(ct => ct.PhieuNhapId == PhieuNhapId && ct.VatTuId == VatTuId);
+
+                if (existingDetail != null)
+                {
+                    // Cập nhật nếu đã tồn tại
+                    existingDetail.SoLuong += SoLuong;
+                    existingDetail.DonGia = DonGia;
+                }
+                else
+                {
+                    // Thêm mới nếu chưa tồn tại
+                    var chiTiet = new ChiTietPhieuNhap
+                    {
+                        PhieuNhapId = PhieuNhapId,
+                        VatTuId = VatTuId,
+                        SoLuong = SoLuong,
+                        DonGia = DonGia
+                    };
+                    _context.ChiTietPhieuNhaps.Add(chiTiet);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Cập nhật tổng giá trị phiếu
+                var tongGiaTri = await _context.ChiTietPhieuNhaps
+                    .Where(ct => ct.PhieuNhapId == PhieuNhapId)
+                    .SumAsync(ct => ct.SoLuong * ct.DonGia);
+
+                phieu.TongGiaTri = tongGiaTri;
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMsg"] = "Đã thêm vật tư thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMsg"] = $"Lỗi: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = PhieuNhapId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteChiTietPhieuNhap(int id)
+        {
+            try
+            {
+                var chiTiet = await _context.ChiTietPhieuNhaps.FindAsync(id);
+                if (chiTiet == null)
+                {
+                    TempData["ErrorMsg"] = "Không tìm thấy chi tiết phiếu nhập.";
+                    return RedirectToAction(nameof(PhieuNhap));
+                }
+
+                var phieuNhapId = chiTiet.PhieuNhapId;
+                _context.ChiTietPhieuNhaps.Remove(chiTiet);
+                await _context.SaveChangesAsync();
+
+                // Cập nhật tổng giá trị phiếu
+                var phieu = await _context.PhieuNhaps.FindAsync(phieuNhapId);
+                if (phieu != null)
+                {
+                    var tongGiaTri = await _context.ChiTietPhieuNhaps
+                        .Where(ct => ct.PhieuNhapId == phieuNhapId)
+                        .SumAsync(ct => ct.SoLuong * ct.DonGia);
+
+                    phieu.TongGiaTri = tongGiaTri;
+                    await _context.SaveChangesAsync();
+                }
+
+                TempData["SuccessMsg"] = "Đã xóa vật tư thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMsg"] = $"Lỗi: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(ChiTietPhieuNhap), new { id = id });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> PhieuXuat()
+
         {
             ViewBag.Khos = await _context.DanhMucKhos
                 .AsNoTracking()
