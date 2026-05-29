@@ -98,7 +98,11 @@ namespace QuanLyVatTu.Controllers
         [Authorize(Roles = "Admin , Manager, Quản trị viên, Quản lý kho")]
         public async Task<IActionResult> DuyetPhieuNhap(int id)
         {
-            var phieu = await _context.PhieuNhaps.Include(p => p.ChiTietPhieuNhaps).FirstOrDefaultAsync(p => p.Id == id);
+            var phieu = await _context.PhieuNhaps
+                .Include(p => p.ChiTietPhieuNhaps)
+                    .ThenInclude(ct => ct.VatTu) // nếu không có navigation, bỏ dòng này và dùng query bên dưới
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (phieu == null) return RedirectToAction("PhieuNhap");
 
             if (phieu.ChiTietPhieuNhaps == null || !phieu.ChiTietPhieuNhaps.Any())
@@ -107,13 +111,64 @@ namespace QuanLyVatTu.Controllers
                 return RedirectToAction("PhieuNhap");
             }
 
-            phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
-            _context.PhieuNhaps.Update(phieu);
-            await _context.SaveChangesAsync();
+            // Nếu phiếu đã ở trạng thái ĐãDuyet thì không làm lại
+            if (phieu.TrangThai == TrangThaiPhieuNhap.DaDuyet)
+            {
+                TempData["InfoMsg"] = $"Phiếu {phieu.MaPhieu} đã ở trạng thái Đã duyệt.";
+                return RedirectToAction("PhieuNhap");
+            }
 
-            TempData["SuccessMsg"] = $"Đã duyệt phiếu {phieu.MaPhieu} thành công!";
-            return RedirectToAction("PhieuNhap");
+            using (var tx = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Cập nhật tồn cho từng dòng
+                    foreach (var line in phieu.ChiTietPhieuNhaps)
+                    {
+                        // Nếu ChiTietPhieuNhaps có navigation VatTu thì dùng line.VatTu
+                        //var vatTu = line.VatTu;
+
+                        // Nếu không có navigation, lấy bằng VatTuId (bỏ comment và dùng)
+                         var vatTu = await _context.VatTus.FirstOrDefaultAsync(v => v.Id == line.VatTuId);
+
+                        if (vatTu == null)
+                        {
+                            // Nếu không tìm thấy vật tư, rollback và báo lỗi
+                            throw new InvalidOperationException($"Không tìm thấy VatTu Id={line.VatTuId}");
+                        }
+
+                        // Giả sử line.SoLuong là int/decimal và TonKhoHienTai là int
+                        // Nếu cần quy đổi đơn vị, xử lý ở đây
+                        var addQty = Convert.ToInt32(line.SoLuong);
+
+                        // Cộng tồn
+                        vatTu.TonKhoHienTai += addQty;
+
+                        _context.VatTus.Update(vatTu);
+                    }
+
+                    // Lưu thay đổi tồn
+                    await _context.SaveChangesAsync();
+
+                    // Sau khi cập nhật tồn thành công, set trạng thái phiếu
+                    phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
+                    _context.PhieuNhaps.Update(phieu);
+                    await _context.SaveChangesAsync();
+
+                    await tx.CommitAsync();
+
+                    TempData["SuccessMsg"] = $"Đã duyệt phiếu {phieu.MaPhieu} và cập nhật tồn kho.";
+                    return RedirectToAction("PhieuNhap");
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackAsync();
+                    TempData["ErrorMsg"] = "Lỗi khi duyệt phiếu: " + ex.Message;
+                    return RedirectToAction("PhieuNhap");
+                }
+            }
         }
+
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> XemChiTiet(int id)

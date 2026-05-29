@@ -123,10 +123,9 @@
             <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px;">Trạng thái</label>
             <select name="trangThai" id="filterTrangThai" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;">
                 <option value="">-- Tất cả --</option>
-                <!-- Dùng cấu trúc Razor ngắn gọn để set selected -->
-                <option value="0" selected="@(ViewBag.TrangThai == 0 ? "selected" : null)">Chờ duyệt</option>
-                <option value="1" selected="@(ViewBag.TrangThai == 1 ? "selected" : null)">Đã duyệt</option>
-                <option value="-1" selected="@(ViewBag.TrangThai == -1 ? "selected" : null)">Đã hủy</option>
+                <option value="0" @@ViewBag.TrangThaiPhieuNhap.Value = 0>Chờ duyệt</option>
+                <option value="1" @@ViewBag.TrangThaiPhieuNhap.Value=1)>Đã duyệt</option>
+                <option value="-1" @@ViewBag.TrangThaiPhieuNhap.Value=-1)>Đã hủy</option>
             </select>
         </div>
 

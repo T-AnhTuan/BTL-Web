@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (filterForm) {
         // Lấy tất cả các ô input và select trong form lọc
         const filterElements = filterForm.querySelectorAll('input, select');
-
         filterElements.forEach(element => {
             // Khi người dùng thay đổi giá trị (chọn ngày, chọn dropdown)
             element.addEventListener('change', function () {
