@@ -7,12 +7,12 @@ using QuanLyVatTu.Services;
 
 namespace QuanLyVatTu.Controllers
 {
+    [Route("PhieuNhap/[action]")]
     public class PhieuNhapController : Controller
     {
         private readonly INhapXuatService _nhapXuatService;
         private readonly ITinhGiaVonService _tinhGiaVonService;
         private readonly AppDbContext _context;
-        private readonly ILogger<PhieuNhapController> _logger;
         public PhieuNhapController(
             INhapXuatService nhapXuatService,
             ITinhGiaVonService tinhGiaVonService,
@@ -22,8 +22,7 @@ namespace QuanLyVatTu.Controllers
         {
             _nhapXuatService = nhapXuatService;
             _tinhGiaVonService = tinhGiaVonService;
-            _context = context; 
-            _logger = logger;
+            _context = context;
         }
 
         // === 1. GET: DANH SÁCH ===
@@ -94,72 +93,6 @@ namespace QuanLyVatTu.Controllers
             return View(phieuNhap);
         }
 
-        // === 4. LƯU HOÀN CHỈNH (HEADER + DETAILS CÙNG LÚC) LÊN SERVER ===
-        [HttpPost]
-        public async Task<IActionResult> LuuPhieuNhapHoanChinh([FromBody] PhieuNhapPayload data)
-        {
-            try
-            {
-                PhieuNhap phieu;
-                decimal tongTien = 0;
-
-                // NẾU LÀ TẠO MỚI (Id = 0)
-                if (data.Id == 0)
-                {
-                    phieu = new PhieuNhap
-                    {
-                        MaPhieu = data.MaPhieu,
-                        NgayNhap = data.NgayNhap,
-                        KhoId = data.KhoId,
-                        NhaCungCapId = data.NhaCungCapId,
-                        GhiChu = data.GhiChu,
-                        TrangThai = TrangThaiPhieuNhap.ChoDuyet
-                    };
-                    _context.PhieuNhaps.Add(phieu);
-                    await _context.SaveChangesAsync(); // Lưu để lấy ID
-                }
-                else // NẾU LÀ CẬP NHẬT PHIẾU CŨ
-                {
-                    phieu = await _context.PhieuNhaps.FindAsync(data.Id);
-                    if (phieu == null) return Json(new { success = false, message = "Không tìm thấy phiếu gốc." });
-
-                    if (phieu.TrangThai == TrangThaiPhieuNhap.DaDuyet)
-                        return Json(new { success = false, message = "Phiếu đã duyệt không thể sửa!" });
-
-                    // Xóa chi tiết cũ đi để thêm lại lưới mới
-                    var chiTietCu = _context.ChiTietPhieuNhaps.Where(c => c.PhieuNhapId == phieu.Id);
-                    _context.ChiTietPhieuNhaps.RemoveRange(chiTietCu);
-                }
-
-                // THÊM LƯỚI VẬT TƯ VÀO DB
-                if (data.ChiTiet != null)
-                {
-                    foreach (var item in data.ChiTiet)
-                    {
-                        _context.ChiTietPhieuNhaps.Add(new ChiTietPhieuNhap
-                        {
-                            PhieuNhapId = phieu.Id,
-                            VatTuId = item.VatTuId,
-                            SoLuong = item.SoLuong,
-                            DonGia = item.DonGia
-                        });
-                        tongTien += (item.SoLuong * item.DonGia);
-                    }
-                }
-
-                // Cập nhật tổng tiền cho Header
-                phieu.TongGiaTri = tongTien;
-                _context.PhieuNhaps.Update(phieu);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "Lưu phiếu nhập thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
-            }
-        }
-
         // === 5. CÁC HÀM DUYỆT / XÓA  ===
         [HttpPost]
         [Authorize(Roles = "Admin , Manager, Quản trị viên, Quản lý kho")]
@@ -182,10 +115,9 @@ namespace QuanLyVatTu.Controllers
             return RedirectToAction("PhieuNhap");
         }
         [Authorize]
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<IActionResult> XemChiTiet(int id)
         {
-            _logger.LogInformation("XemChiTiet called with id={Id}", id);
             var phieu = await _context.PhieuNhaps
                 .Include(p => p.ChiTietPhieuNhaps).ThenInclude(ct => ct.VatTu)
                 .Include(p => p.Kho)
@@ -194,11 +126,10 @@ namespace QuanLyVatTu.Controllers
 
             if (phieu == null)
             {
-                _logger.LogWarning("XemChiTiet: phieu null id={Id}", id);
-                return NotFound(); // tạm thời trả NotFound để dễ thấy status 404
+                return NotFound(); 
             }
 
-            return View("XemChiTiet", phieu);
+            return View(phieu);
         }
 
         [Authorize(Roles = "Admin,Manager,Quản trị viên,Quản lý kho")]
@@ -246,114 +177,92 @@ namespace QuanLyVatTu.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> LuuToanBoPhieu([FromBody] PhieuNhapToanBoDto payload)
+        public async Task<IActionResult> LuuToanBoPhieu([FromBody] PhieuNhapToanBoDto model)
         {
             try
             {
-                // 1. Kiểm tra dữ liệu an toàn
-                if (payload == null || payload.ChiTiets == null || !payload.ChiTiets.Any())
+                // BƯỚC CHẶN 1: Bắt lỗi nếu JS gửi dữ liệu sai định dạng (Ví dụ chữ gửi vào số)
+                if (!ModelState.IsValid)
                 {
-                    return Json(new { success = false, message = "Lưới rỗng! Vui lòng chọn ít nhất 1 vật tư." });
+                    // Trích xuất các lỗi của C# ra thành 1 chuỗi văn bản
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(new { success = false, message = "Dữ liệu gửi lên sai định dạng C#: " + string.Join(", ", errors) });
                 }
 
-                if (payload.KhoId == 0 || payload.NhaCungCapId == 0)
-                {
-                    return Json(new { success = false, message = "Vui lòng chọn Kho và Nhà cung cấp!" });
-                }
-
-                // 2. Tạo mã phiếu tự động nếu chưa có (VD: PN_20260529_161300)
-                string maPhieuMoi = string.IsNullOrEmpty(payload.MaPhieu)
-                                    ? $"PN_{DateTime.Now:yyyyMMdd_HHmmss}"
-                                    : payload.MaPhieu;
-
-                // 3. Khởi tạo Phiếu Nhập gốc (Header)
+                // Tạo phiếu nhập mới
                 var phieuMoi = new PhieuNhap
                 {
-                    MaPhieu = maPhieuMoi,
-                    NgayNhap = payload.NgayNhap != default ? payload.NgayNhap : DateTime.Now,
-                    KhoId = payload.KhoId,
-                    NhaCungCapId = payload.NhaCungCapId,
-                    GhiChu = payload.GhiChu,
-                    TrangThai = TrangThaiPhieuNhap.ChoDuyet, // Mặc định là chờ duyệt
-                    TongGiaTri = 0 // Sẽ tính ở bước dưới
-                };// Thêm vào DB để lấy ID (Lưu ý: chưa SaveChanges ngay)
+                    MaPhieu = string.IsNullOrEmpty(model.MaPhieu) ? "PN" + DateTime.Now.ToString("yyyyMMddHHmmss") : model.MaPhieu,
+                    NgayNhap = model.NgayNhap,
+                    KhoId = model.KhoId,
+                    NhaCungCapId = model.NhaCungCapId,
+                    GhiChu = model.GhiChu,
+                    TrangThai = TrangThaiPhieuNhap.ChoDuyet,
+                    TongGiaTri = 0 // Sẽ cộng dồn ở dưới
+                };
+
                 _context.PhieuNhaps.Add(phieuMoi);
+                await _context.SaveChangesAsync(); // Lưu để lấy ID gốc
 
-                // 4. Khởi tạo danh sách Chi Tiết Phiếu Nhập
                 decimal tongTien = 0;
-                phieuMoi.ChiTietPhieuNhaps = new List<ChiTietPhieuNhap>();
 
-                foreach (var item in payload.ChiTiets)
+                // Lưu danh sách chi tiết vật tư
+                foreach (var item in model.ChiTiets)
                 {
                     var ct = new ChiTietPhieuNhap
                     {
+                        PhieuNhapId = phieuMoi.Id,
                         VatTuId = item.VatTuId,
-                        SoLuong = item.SoLuong,
+                        SoLuong = item.SoLuong, // C# đang yêu cầu số nguyên (int)
                         DonGia = item.DonGia
                     };
-                    phieuMoi.ChiTietPhieuNhaps.Add(ct); // Gắn chi tiết vào phiếu gốc
-
                     tongTien += (item.SoLuong * item.DonGia);
+                    _context.ChiTietPhieuNhaps.Add(ct);
                 }
 
-                // Cập nhật lại tổng tiền cho phiếu gốc
                 phieuMoi.TongGiaTri = tongTien;
-
-                // 5. Lưu toàn bộ (Cả Cha và Con) vào Database trong 1 transaction duy nhất của EF Core
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMsg"] = $"Đã lưu thành công phiếu nhập {maPhieuMoi}!";
-                return Json(new { success = true, message = "Lưu phiếu thành công!", redirectUrl = "/PhieuNhap/PhieuNhap" });
+                return Json(new
+                {
+                    success = true,
+                    message = "Lưu phiếu thành công!",
+                    redirectUrl = $"/PhieuNhap/XemChiTiet/{phieuMoi.Id}" // Trả về đường dẫn để JS tự nhảy trang
+                });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+                string errInfo = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                // BƯỚC CHẶN 2: Luôn trả về Json dù lỗi nặng thế nào đi nữa
+                return Json(new { success = false, message = $"Lỗi hệ thống C#: {errInfo}" });
             }
         }
-    }
 
-    // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
-    public class PhieuNhapTaoMoiDto
-    {
-        public DateTime NgayNhap { get; set; }
-        public int KhoId { get; set; }
-        public int NhaCungCapId { get; set; }
-        public string? GhiChu { get; set; }
-    }
+        // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
+        public class PhieuNhapTaoMoiDto
+        {
+            public DateTime NgayNhap { get; set; }
+            public int KhoId { get; set; }
+            public int NhaCungCapId { get; set; }
+            public string? GhiChu { get; set; }
+        }
+        public class ItemVatTuDto
+        {
+            public int VatTuId { get; set; }
+            public int SoLuong { get; set; }
+            public decimal DonGia { get; set; }
+        }
+        public class PhieuNhapToanBoDto
+        {
+            // Thông tin chung (Header)
+            public string? MaPhieu { get; set; } // Có thể rỗng, Server sẽ tự sinh
+            public DateTime NgayNhap { get; set; }
+            public int KhoId { get; set; }
+            public int NhaCungCapId { get; set; }
+            public string? GhiChu { get; set; }
 
-    public class PhieuNhapPayload
-    {
-        public int Id { get; set; }
-        public string MaPhieu { get; set; }
-        public DateTime NgayNhap { get; set; }
-        public int KhoId { get; set; }
-        public int NhaCungCapId { get; set; }
-        public string? GhiChu { get; set; }
-        public List<ChiTietDto>? ChiTiet { get; set; }
-    }
-
-    public class ChiTietDto
-    {
-        public int VatTuId { get; set; }
-        public int SoLuong { get; set; }
-        public decimal DonGia { get; set; }
-    }
-    public class ItemVatTuDto
-    {
-        public int VatTuId { get; set; }
-        public int SoLuong { get; set; }
-        public decimal DonGia { get; set; }
-    }
-    public class PhieuNhapToanBoDto
-    {
-        // Thông tin chung (Header)
-        public string? MaPhieu { get; set; } // Có thể rỗng, Server sẽ tự sinh
-        public DateTime NgayNhap { get; set; }
-        public int KhoId { get; set; }
-        public int NhaCungCapId { get; set; }
-        public string? GhiChu { get; set; }
-
-        // Danh sách vật tư (Details)
-        public List<ItemVatTuDto> ChiTiets { get; set; }
+            // Danh sách vật tư (Details)
+            public List<ItemVatTuDto> ChiTiets { get; set; }
+        }
     }
 }

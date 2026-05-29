@@ -94,8 +94,7 @@
                     <th class="text-center" style="width: 60px;">Xóa</th>
                 </tr>
             </thead>
-            <input type="hidden" id="hdfPhieuNhapId" value="@Model.Id" />
-
+            <input type="hidden" id="hdfPhieuNhapId" value="@Model.Id" />            
             <tbody id="chiTietBody">
                 @if (Model.ChiTietPhieuNhaps != null && Model.ChiTietPhieuNhaps.Any())
                 {
@@ -104,20 +103,36 @@
                     {
                         <tr>
                             <td class="text-center">@(stt++)</td>
-                            <td class="td-vattu" data-id="@item.VatTuId>@item.VatTu?.MaVatTu</td>
-                            <td class="td-vattu" >@item.VatTu?.TenVatTu</td>
+
+                            <td class="text-center td-mavat">
+                                @item.VatTu?.MaVatTu
+                            </td>
+
+                            <td class="td-vattu" data-id="@(item.VatTuId)">
+                                @item.VatTu?.TenVatTu
+                            </td>
+
                             <td class="text-center">@item.VatTu?.DonViTinh</td>
-                            <td class="text-center num-soluong" data="@item.SoLuong">@item.SoLuong.ToString("N0")</td>
-                            <td class="text-center num-dongia" data-value="@item.DonGia">@item.DonGia.ToString("N0") ₫</td>
-                            <td class="text-center num-thanhtien" data-value="@item.ThanhTien" style="font-weight: 700; color: #e11d48;">
+
+                            <td type="number" class="text-center num-soluong" step="any" data-value="@item.SoLuong">
+                                @item.SoLuong.ToString("N0")
+                            </td>
+
+                            <td type="number" class="text-center num-dongia" step="any" data-value="@item.DonGia">
+                                @item.DonGia.ToString("N0") ₫
+                            </td>
+
+                            <td class="text-center num-thanhtien" data-value="@item.ThanhTien" style="font-weight:700; color:#e11d48;">
                                 @item.ThanhTien.ToString("N0") ₫
                             </td>
+
                             <td class="text-center">
-                                <button class="btn btn-danger btn-delete-row" data-id="@item.Id" style="padding: 6px 10px;">
+                                <button class="btn btn-danger btn-delete-row" data-id="@item.Id" style="padding:6px 10px;">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
+
                     }
                 }
                 else

@@ -1,174 +1,347 @@
-﻿// =========================================================================
-// HÀM: HOÀN TẤT LƯU TOÀN BỘ PHIẾU (CẢ HEADER VÀ DETAILS)
-// =========================================================================
-function hoanTatPhieu() {
-    // 1. Quét lưới để lấy danh sách chi tiết vật tư
-    let arrChiTiet = [];
-    document.querySelectorAll('#chiTietBody tr:not(#emptyRow)').forEach(row => {
-        let tdVatTu = row.querySelector('.td-vattu');
-        let tdSoLuong = row.querySelector('.num-soluong');
-        let tdDonGia = row.querySelector('.num-dongia');
+﻿// --- Simple non-blocking toast ---
+function showToast(message, type = 'info', timeout = 3000) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        Object.assign(container.style, {
+            position: 'fixed', right: '16px', bottom: '16px', zIndex: 9999,
+            display: 'flex', flexDirection: 'column', gap: '8px'
+        });
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.innerText = message;
+    Object.assign(toast.style, {
+        padding: '10px 14px', borderRadius: '6px', color: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)', fontSize: '13px',
+        maxWidth: '360px', wordBreak: 'break-word', opacity: '1', transition: 'opacity 220ms'
+    });
+    toast.style.background = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#333';
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 240); }, timeout);
+}
 
-        if (tdVatTu && tdSoLuong && tdDonGia) {
-            let idVatTu = tdVatTu.getAttribute('data-id');
-            let soLuong = tdSoLuong.innerText.replace(/,/g, '').trim();
-            let donGia = tdDonGia.getAttribute('data-value') || tdDonGia.innerText.replace(/,/g, '').trim();
+// --- Helper: chuẩn hoá số ---
+function normalizeNumber(s) {
+    if (s == null) return '';
+    let t = String(s).trim().replace(/\s+/g, '');
+    if (t.indexOf('.') !== -1 && t.indexOf(',') !== -1) t = t.replace(/\./g, '').replace(',', '.');
+    else if (t.indexOf(',') !== -1 && t.indexOf('.') === -1) t = t.replace(',', '.');
+    t = t.replace(/[^0-9.\-]/g, '');
+    return t;
+}
 
-            arrChiTiet.push({
-                VatTuId: parseInt(idVatTu),
-                SoLuong: parseInt(soLuong),
-                DonGia: parseFloat(donGia)
-            });
+// --- Build chi tiết từ DOM (dùng chung) ---
+function buildArrChiTiet() {
+    const rows = Array.from(document.querySelectorAll('#chiTietBody tr'));
+    const arr = [];
+    rows.forEach(row => {
+        if (row.id === 'emptyRow') return;
+
+        let tdVatTu = row.querySelector('.td-vattu') || row.querySelector('.td-mavat') || null;
+        if (!tdVatTu) tdVatTu = Array.from(row.children).find(c => c.hasAttribute('data-id') || c.querySelector('[data-id]')) || null;
+        if (!tdVatTu) return;
+
+        let idVatTu = tdVatTu.getAttribute('data-id') || (tdVatTu.dataset && tdVatTu.dataset.id) || '';
+        if (!idVatTu) {
+            const child = tdVatTu.querySelector('[data-id]');
+            if (child) idVatTu = child.getAttribute('data-id') || (child.dataset && child.dataset.id) || '';
+        }
+        if (!idVatTu) return;
+
+        const tdSoLuong = row.querySelector('.num-soluong') || row.querySelector('[data-field="soluong"]') || null;
+        const tdDonGia = row.querySelector('.num-dongia') || row.querySelector('.num-thanhtien') || row.querySelector('[data-field="dongia"]') || null;
+
+        const getText = el => el ? (el.getAttribute('data-value') || el.innerText || el.value || '') : '';
+        const soLuong = parseInt(normalizeNumber(getText(tdSoLuong)) || '0', 10) || 0;
+        const donGia = parseFloat(normalizeNumber(getText(tdDonGia)) || '0') || 0;
+
+        arr.push({ VatTuId: Number(idVatTu), SoLuong: soLuong, DonGia: donGia });
+    });
+    return arr;
+}
+// Hàm được gọi khi người dùng bấm nút Hoàn tất phiếu
+// ... (giữ nguyên các hàm showToast và code cũ ở trên) ...
+
+// ==========================================
+// HÀM TÍNH TỔNG TIỀN TỰ ĐỘNG
+// ==========================================
+function tinhTongTien() {
+    const tbody = document.getElementById('chiTietBody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+    let tongMatHang = 0;
+    let tongSoLuong = 0;
+    let tongTien = 0;
+
+    rows.forEach(tr => {
+        if (tr.id === 'emptyRow') return;
+
+        let inputSL = tr.querySelector('input[type="hidden"].so-luong') || tr.querySelector('input.so-luong');
+        let inputGia = tr.querySelector('input[type="hidden"].don-gia') || tr.querySelector('input.don-gia');
+
+        if (inputSL && inputGia) {
+            let strSL = String(inputSL.value || "0");
+            let strGia = String(inputGia.value || "0");
+
+            const sl = parseFloat(strSL.replace(/,/g, '')) || 0;
+            const gia = parseFloat(strGia.replace(/,/g, '')) || 0;
+
+            if (sl > 0) tongMatHang += 1;
+            tongSoLuong += sl;
+            tongTien += (sl * gia);
         }
     });
-    
-    if (arrChiTiet.length == 0) {
-        alert("Lưới rỗng! Vui lòng thêm vật tư xuống lưới trước khi lưu.");
+
+    const lblMatHang = document.getElementById('lblTongMatHang');
+    const lblSoLuong = document.getElementById('lblTongSoLuong');
+    const lblTongTien = document.getElementById('lblTongTien');
+
+    if (lblMatHang) lblMatHang.innerText = tongMatHang;
+    if (lblSoLuong) lblSoLuong.innerText = tongSoLuong.toLocaleString('vi-VN');
+    if (lblTongTien) lblTongTien.innerText = tongTien.toLocaleString('vi-VN') + ' đ';
+}
+
+
+// ==========================================
+// HÀM LƯU TOÀN BỘ PHIẾU (ĐÃ FIX ÉP KIỂU JSON)
+// ==========================================
+function hoanTatPhieu() {
+    const khoId = document.getElementById('hdfKhoId')?.value;
+    const nccId = document.getElementById('hdfNhaCungCapId')?.value;
+    let ngayNhap = document.getElementById('hdfNgayNhap')?.value;
+    const ghiChu = document.getElementById('hdfGhiChu')?.value || "";
+
+    if (!khoId || !nccId || !ngayNhap) {
+        showToast('Lỗi: Không tìm thấy thông tin Header (Kho, NCC, Ngày)!', 'error');
         return;
     }
 
-    // 2. Lấy thông tin chung của phiếu (Header)
-    // Lưu ý: Bạn cần kiểm tra xem ID các thẻ HTML này có khớp với file View của bạn không nhé!
-    const txtMaPhieu = document.getElementById('txtMaPhieu') ? document.getElementById('txtMaPhieu').value : "";
-    const txtNgayNhap = document.getElementById('txtNgayNhap') ? document.getElementById('txtNgayNhap').value : new Date().toISOString();
-    const cboKho = document.getElementById('cboKhoId');
-    const cboNhaCungCap = document.getElementById('cboNhaCungCapId');
-    const txtGhiChu = document.getElementById('txtGhiChu');
+    // --- FIX LỖI "One or more validation errors" ---
+    // Đảm bảo định dạng ngày gửi lên C# BẮT BUỘC phải là yyyy-MM-dd
+    let datePart = ngayNhap.split(' ')[0]; // Cắt bỏ phần giờ (nếu có)
+    if (datePart.includes('/')) {
+        // Nếu là dd/MM/yyyy thì lật ngược lại thành yyyy-MM-dd
+        const parts = datePart.split('/');
+        if (parts.length === 3) {
+            ngayNhap = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+    } else {
+        ngayNhap = datePart;
+    }
+    // -----------------------------------------------
 
-    if (!cboKho || !cboKho.value || !cboNhaCungCap || !cboNhaCungCap.value) {
-        alert("Vui lòng chọn đầy đủ Kho nhập và Nhà cung cấp ở phần thông tin chung!");
+    const chiTiets = [];
+    const tbody = document.getElementById('chiTietBody');
+    const rows = tbody ? tbody.querySelectorAll('tr') : [];
+    let hasError = false;
+
+    rows.forEach((tr, index) => {
+        if (tr.id === 'emptyRow') return;
+
+        let vatTuId = tr.getAttribute('data-id');
+        if (!vatTuId) {
+            const hiddenId = tr.querySelector('input[type="hidden"].vat-tu-id');
+            if (hiddenId) vatTuId = hiddenId.value;
+        }
+
+        let sl = 0;
+        let gia = 0;
+
+        let inputSL = tr.querySelector('input[type="hidden"].so-luong') || tr.querySelector('input.so-luong');
+        let inputGia = tr.querySelector('input[type="hidden"].don-gia') || tr.querySelector('input.don-gia');
+
+        if (inputSL && inputGia) {
+            sl = parseFloat(String(inputSL.value || "0").replace(/,/g, ''));
+            gia = parseFloat(String(inputGia.value || "0").replace(/,/g, ''));
+        } else {
+            const tdSL = tr.querySelector('.num-soluong');
+            const tdGia = tr.querySelector('.num-dongia');
+            if (tdSL && tdGia) {
+                sl = parseFloat(tdSL.getAttribute('data-value') || "0");
+                gia = parseFloat(tdGia.getAttribute('data-value') || "0");
+            }
+        }
+
+        if (vatTuId && sl > 0 && gia >= 0) {
+            chiTiets.push({
+                VatTuId: parseInt(vatTuId),
+                SoLuong: Math.round(sl), // Ép tròn thành int cho C#
+                DonGia: gia // Decimal
+            });
+        } else {
+            hasError = true;
+        }
+    });
+
+    if (chiTiets.length === 0) {
+        showToast('Lỗi: Lưới không có vật tư hoặc dữ liệu bị trống!', 'error');
         return;
     }
 
-    // 3. Đóng gói toàn bộ thành 1 cục dữ liệu (Khớp với PhieuNhapToanBoDto bên C#)
+    if (hasError) {
+        showToast('Số lượng và Đơn giá phải lớn hơn 0!', 'error');
+        return;
+    }
+
     const payload = {
-        MaPhieu: txtMaPhieu,
-        NgayNhap: txtNgayNhap,
-        KhoId: parseInt(cboKho.value),
-        NhaCungCapId: parseInt(cboNhaCungCap.value),
-        GhiChu: txtGhiChu ? txtGhiChu.value : "",
-        ChiTiets: arrChiTiet
+        KhoId: parseInt(khoId),
+        NhaCungCapId: parseInt(nccId),
+        NgayNhap: ngayNhap, // Đã được ép chuẩn yyyy-MM-dd
+        GhiChu: ghiChu,
+        ChiTiets: chiTiets
     };
 
-    // 4. Gửi một lần duy nhất lên Server
+    console.log("Chuẩn bị gửi:", payload);
+
     fetch('/PhieuNhap/LuuToanBoPhieu', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-        .then(response => {
-            if (!response.ok) throw new Error("Lỗi mạng hoặc Server từ chối!");
-            return response.json();
+        .then(async response => {
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (err) {
+                throw new Error(`Mã lỗi Server ${response.status}: Vui lòng kiểm tra Console (F12)`);
+            }
+
+            if (!response.ok) {
+                // Bóc tách chi tiết lỗi Validation từ ASP.NET Core để in ra màn hình
+                let errMsg = data.message || data.title || 'Lỗi dữ liệu từ Server!';
+                if (data.errors) {
+                    const validationErrors = Object.values(data.errors).flat().join('; ');
+                    errMsg += '\nChi tiết: ' + validationErrors;
+                }
+                throw new Error(errMsg);
+            }
+            return data;
         })
         .then(data => {
             if (data.success) {
-                // Chuyển hướng về trang danh sách nếu thành công
-                window.location.href = data.redirectUrl || '/PhieuNhap/PhieuNhap';
+                showToast('Lưu toàn bộ phiếu thành công!', 'success');
+                setTimeout(() => {
+                    if (data.redirectUrl) window.location.href = data.redirectUrl;
+                    else window.location.href = '/PhieuNhap/';
+                }, 1500);
             } else {
-                alert("Lưu thất bại: " + data.message);
+                showToast(data.message || 'Lỗi logic C#!', 'error');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("Có lỗi xảy ra khi lưu phiếu. Vui lòng xem Console (F12) để biết chi tiết.");
+        .catch(err => {
+            console.error('Lỗi Fetch:', err);
+            showToast(err.message, 'error'); // Hiện rõ chi tiết lỗi lên Toast đỏ
         });
-}
-// =========================================================================
-// HÀM 2: TÍNH TỔNG TIỀN VÀ SỐ LƯỢNG MẶT HÀNG
-// =========================================================================
-function tinhTongTien() {
-    let tongSL = 0, tongTien = 0, tongMatHang = 0;
-
-    document.querySelectorAll('#chiTietBody tr:not(#emptyRow)').forEach(row => {
-        tongMatHang++;
-        let slText = row.querySelector('.num-soluong')?.innerText.replace(/,/g, '') || "0";
-        tongSL += parseInt(slText);
-
-        let tienThuc = row.querySelector('.num-thanhtien')?.getAttribute('data-value') || "0";
-        tongTien += parseFloat(tienThuc);
-    });
-
-    const lblMH = document.getElementById('lblTongMatHang');
-    const lblSL = document.getElementById('lblTongSoLuong');
-    const lblTien = document.getElementById('lblTongTien');
-
-    if (lblMH) lblMH.innerText = tongMatHang;
-    if (lblSL) lblSL.innerText = tongSL.toLocaleString();
-    if (lblTien) lblTien.innerText = tongTien.toLocaleString() + ' ₫';
 }
 
 // =========================================================================
 // KHI TRÌNH DUYỆT TẢI XONG TRANG
 // =========================================================================
 document.addEventListener('DOMContentLoaded', function () {
-
+    const btn = document.getElementById('btnSave');
+    if (btn) {
+        btn.addEventListener('click', hoanTatPhieu);
+    }
     tinhTongTien();
 
     const btnThemVatTu = document.getElementById('btnThemVatTu');
 
     if (btnThemVatTu) {
+        // Lắng nghe sự kiện click vào nút Thêm Vật Tư
         btnThemVatTu.addEventListener('click', function (e) {
+            // Ngăn chặn form tự động tải lại trang khi bấm nút
             e.preventDefault();
 
-            const cbo = document.getElementById('cboVatTu');
-            const txtSL = document.getElementById('txtSoLuong');
-            const txtGia = document.getElementById('txtDonGia');
-            const tbody = document.getElementById('chiTietBody');
+            // Lấy các thẻ HTML trên giao diện form nhỏ
+            const cbo = document.getElementById('cboVatTu'); // Dropdown chọn vật tư
+            const txtSL = document.getElementById('txtSoLuong'); // Ô nhập số lượng
+            const txtGia = document.getElementById('txtDonGia'); // Ô nhập đơn giá
+            const tbody = document.getElementById('chiTietBody'); // Phần thân của bảng chi tiết
 
+            // Cắt bỏ khoảng trắng dư thừa ở 2 đầu chữ
             const sl = txtSL.value.trim();
             const gia = txtGia.value.trim();
 
+            // Kiểm tra: Nếu chưa chọn vật tư hoặc chưa nhập đủ số liệu thì cảnh báo và dừng lại
             if (!cbo.value || sl === '' || gia === '') {
                 alert("Vui lòng chọn vật tư, nhập đủ số lượng và đơn giá!");
                 return;
             }
 
             // ĐỌC DỮ LIỆU TỪ DROPDOWN VẬT TƯ
-            const selectedOption = cbo.options[cbo.selectedIndex];
-            const vatTuId = cbo.value;
-            const maVatTu = selectedOption.getAttribute('data-code') || "---";
-            const donViTinh = selectedOption.getAttribute('data-dvt') || "---"; 
-            const tenVatTu = selectedOption.text;
+            const selectedOption = cbo.options[cbo.selectedIndex]; // Lấy dòng đang được chọn trong Dropdown
+            const vatTuId = cbo.value; // Lấy ID vật tư (giá trị value của option)
+            const maVatTu = selectedOption.getAttribute('data-code') || "---"; // Lấy mã vật tư
+            const donViTinh = selectedOption.getAttribute('data-dvt') || "---"; // Lấy đơn vị tính
+            const tenVatTu = selectedOption.text; // Lấy tên vật tư
 
+            // Ép kiểu chữ thành số nguyên (Số lượng) và số thực (Đơn giá)
             const soLuong = parseInt(sl);
             const donGia = parseFloat(gia);
+            // Tính thành tiền
             const thanhTien = soLuong * donGia;
 
+            // Xóa dòng chữ "Chưa có vật tư nào..." nếu nó đang tồn tại
             const emptyRow = document.getElementById('emptyRow');
             if (emptyRow) emptyRow.remove();
 
+            // Tính số thứ tự tự động dựa trên số dòng đang có trong bảng
             const stt = tbody.querySelectorAll('tr').length + 1;
+
+            // Tạo ra một thẻ <tr> (dòng) mới
             const tr = document.createElement('tr');
 
-            tr.innerHTML = `
-                <td class="text-center">${stt}</td>
-                <td>${maVatTu}</td>
-                <td class="td-vattu" data-id="${vatTuId}">${tenVatTu}</td>
-                <td class="text-center">${donViTinh}</td>
-                <td class="text-center num-soluong">${soLuong.toLocaleString()}</td>
-                <td class="text-center num-dongia" data-value="${donGia}">${donGia.toLocaleString()} ₫</td>
-                <td class="text-center num-thanhtien" data-value="${thanhTien}" style="font-weight: 700; color: #e11d48;">${thanhTien.toLocaleString()} ₫</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-danger btn-sm btn-delete-row" style="padding: 6px 10px;">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </td>
+            // SỬA LỖI 1: Gắn trực tiếp data-id chứa ID Vật tư vào thẻ tr để hàm Lưu Phiếu nhận diện được
+            tr.setAttribute('data-id', vatTuId);
+
+            // SỬA LỖI 2: Tạo HTML cho dòng. Thêm các thẻ <input type="hidden"> vào cột Số lượng và Đơn giá.
+            // Điều này giúp trên màn hình vẫn hiển thị chữ đẹp (có dấu phẩy), 
+            // nhưng bên dưới có thẻ input ngầm (class so-luong, don-gia) để JS móc dữ liệu gửi lên Server.
+            tr.innerHTML = `              
+                <td class="text-center">${stt}</td>              
+                <td>${maVatTu}</td>              
+                <td class="td-vattu">${tenVatTu}</td>              
+                <td class="text-center">${donViTinh}</td>              
+                <td class="text-center num-soluong">
+                    ${soLuong.toLocaleString()}
+                    <input type="hidden" class="so-luong" value="${soLuong}" />
+                </td>              
+                <td class="text-center num-dongia">
+                    ${donGia.toLocaleString()} ₫
+                    <input type="hidden" class="don-gia" value="${donGia}" />
+                </td>              
+                <td class="text-center num-thanhtien" style="font-weight: 700; color: #e11d48;">
+                    ${thanhTien.toLocaleString()} ₫
+                </td>              
+                <td class="text-center">                  
+                    <button type="button" class="btn btn-danger btn-sm btn-delete-row" style="padding: 6px 10px;">                      
+                        <i class="fa fa-trash"></i>                  
+                    </button>              
+                </td>          
             `;
 
+            // Đẩy dòng <tr> vừa tạo xong vào trong bảng hiển thị
             tbody.appendChild(tr);
 
+            // Gắn sự kiện Xóa cho cái nút thùng rác màu đỏ vừa được sinh ra ở trên
             tr.querySelector('.btn-delete-row').addEventListener('click', function () {
-                tr.remove();
-                tinhTongTien();
+                tr.remove(); // Xóa dòng này khỏi màn hình
+                tinhTongTien(); // Gọi hàm tính lại tổng tiền
+                // Nếu xóa xong mà bảng trống trơn, thì in lại dòng thông báo "Chưa có vật tư"
                 if (tbody.querySelectorAll('tr').length === 0) {
                     tbody.innerHTML = `<tr id="emptyRow"><td colspan="8" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!</td></tr>`;
                 }
             });
 
+            // Sau khi thêm xong, làm trống 2 ô nhập liệu để người dùng nhập tiếp vật tư khác
             txtSL.value = '';
             txtGia.value = '';
+
+            // Gọi hàm tính lại tổng tiền ở góc dưới cùng màn hình
             tinhTongTien();
         });
     }

@@ -2,6 +2,14 @@
 @model IEnumerable<QuanLyVatTu.Models.PhieuNhap>
 @{
     ViewData["Title"] = "Quản Lý Phiếu Nhập";
+    var now = DateTime.Now;
+    // Giả sử Model là IEnumerable<PhieuNhap> và property trạng thái là DaDuyet (bool).
+    var giaNhapTrongKy = Model != null
+        ? Model.Where(m => m.TrangThai == TrangThaiPhieuNhap.DaDuyet
+                           && m.NgayNhap.Month == now.Month
+                           && m.NgayNhap.Year == now.Year)
+               .Sum(m => (decimal?)m.TongGiaTri) ?? 0
+        : 0;
 }
 
 <link rel="stylesheet" href="~/css/nhap.css" asp-append-version="true" />
@@ -34,7 +42,7 @@
         <div class="stat-info">
             <h4>Giá trị nhập trong kỳ</h4>
             <div class="value">
-                @(Model != null ? Model.Where(m => m.NgayNhap.Month == DateTime.Now.Month).Sum(m => m.TongGiaTri).ToString("N0") : "0") VNĐ
+                @giaNhapTrongKy.ToString("N0") VNĐ
             </div>
         </div>
         <div class="stat-icon icon-green"><i class="fa-solid fa-credit-card"></i></div>
