@@ -237,57 +237,29 @@ namespace QuanLyVatTu.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetNhaCungCapById(int id)
+        public async Task<IActionResult> GetNhaCungCap(int id)
         {
-            var item = await _context.NhaCungCaps
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
-            if (item == null)
+            var ncc = await _context.NhaCungCaps.FindAsync(id);
+            if (ncc == null)
             {
-                return Json(new { success = false, message = "Không tìm thấy nhà cung cấp." });
+                return Json(new { success = false, message = "Không tìm thấy nhà cung cấp này!" });
             }
 
-            return Json(new
-            {
-                success = true,
-                data = new
-                {
-                    id = item.Id,
-                    maNCC = item.MaNCC,
-                    tenNhaCungCap = item.TenNhaCungCap,
-                    diaChi = item.DiaChi,
-                    soDienThoai = item.SoDienThoai,
-                    email = item.Email,
-                    trangThai = (int)item.TrangThai
-                }
-            });
+            // Phải bọc trong thuộc tính 'data' để khớp với JS
+            return Json(new { success = true, data = ncc });
         }
 
         [HttpPost]
         public async Task<IActionResult> XoaNhaCungCap(int id)
         {
-            try
-            {
-                var item = await _context.NhaCungCaps.FindAsync(id);
-                if (item == null)
-                {
-                    return Json(new { success = false, message = "Không tìm thấy nhà cung cấp cần xóa." });
-                }
+            var ncc = await _context.NhaCungCaps.FindAsync(id);
+            if (ncc == null) return Json(new { success = false, message = "Dữ liệu không tồn tại!" });
 
-                var hasPhieuNhap = await _context.PhieuNhaps.AnyAsync(x => x.NhaCungCapId == id);
-                if (hasPhieuNhap)
-                {
-                    return Json(new { success = false, message = "Không thể xóa nhà cung cấp đã phát sinh phiếu nhập." });
-                }
+            // Cảnh báo: Nếu Nhà Cung Cấp này đã có Phiếu Nhập, bạn không nên xóa mà chỉ nên đổi Trạng thái về 0
+            _context.NhaCungCaps.Remove(ncc);
+            await _context.SaveChangesAsync();
 
-                _context.NhaCungCaps.Remove(item);
-                await _context.SaveChangesAsync();
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Lỗi hệ thống khi xóa: " + ex.Message });
-            }
+            return Json(new { success = true });
         }
 
         private static string? NormalizeOptional(string? value)

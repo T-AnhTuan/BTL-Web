@@ -1,103 +1,141 @@
-﻿// Bọc toàn bộ code trong DOMContentLoaded để đảm bảo HTML đã tải xong hết mới chạy JS
-document.addEventListener('DOMContentLoaded', function () {
+﻿/// 1. Hàm Xử lý khi click "Toàn Quyền"
+function toggleAll(btnNode) {
+    var row = btnNode.closest('tr');
+    var childChecks = row.querySelectorAll('.chk-child');
 
-    // =========================================================
-    // 1. XỬ LÝ CHỨC NĂNG "TOÀN QUYỀN" (CHỌN TẤT CẢ)
-    // =========================================================
+    childChecks.forEach(function (chk) {
+        if (chk.checked !== btnNode.checked) {
+            chk.checked = btnNode.checked;
+            chk.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    });
+}
 
-    // Bước 1: Lấy danh sách tất cả các thẻ <tr> (Các hàng) nằm trong phần thân của bảng (tbody)
-    const rows = document.querySelectorAll('.permissions-table tbody tr');
+// 2. Hàm Xử lý khi click các ô quyền con
+function checkChild(chkNode) {
+    var row = chkNode.closest('tr');
+    var childChecks = row.querySelectorAll('.chk-child');
+    var checkAllBtn = row.querySelector('.chk-all-row');
 
-    // Bước 2: Dùng vòng lặp forEach duyệt qua từng hàng một
-    rows.forEach(row => {
-        // Trên hàng hiện tại đang xét, đi tìm cái Checkbox có class 'chk-all-row' (Ô Toàn quyền)
-        const checkAllBtn = row.querySelector('.chk-all-row');
-
-        // Nếu hàng này không có ô Toàn quyền (ví dụ hàng báo lỗi trống), thì thoát khỏi vòng lặp, bỏ qua
-        if (!checkAllBtn) return;
-
-        // Trên cùng hàng đó, tìm TẤT CẢ các ô Checkbox có class 'chk-child' (Đó là 4 ô: Xem, Thêm, Sửa, Xóa)
-        const childChecks = row.querySelectorAll('.chk-child');
-
-        // Bước 3: Tạo một hàm nhỏ tên là 'evaluateCheckAll' để đánh giá xem có nên bật ô Toàn quyền hay không
-        const evaluateCheckAll = () => {
-            // Hàm every() sẽ đi hỏi 4 ô con: "Có phải tất cả các em đều đang được tích (.checked) không?". Trả về true/false
-            const allChecked = Array.from(childChecks).every(c => c.checked);
-            // Lấy kết quả true/false đó gán cho ô Toàn Quyền
-            checkAllBtn.checked = allChecked;
-        };
-
-        // Vừa mở trang lên, gọi hàm này chạy 1 lần để máy tính kiểm tra ngay dữ liệu từ Database
-        evaluateCheckAll();
-
-        // Bước 4: Bắt sự kiện khi người dùng DÙNG CHUỘT BẤM VÀO ô "Toàn quyền"
-        checkAllBtn.addEventListener('change', function () {
-            // Lấy trạng thái của ô Toàn quyền lúc này (đang tích hay bị gỡ tích)
-            const isChecked = this.checked;
-
-            // Đi bắt 4 ô con, ép chúng nó phải có trạng thái giống y hệt ô Toàn quyền
-            childChecks.forEach(chk => {
-                chk.checked = isChecked;
-            });
-        });
-
-        // Bước 5: Bắt sự kiện khi người dùng DÙNG CHUỘT BẤM VÀO 1 ô con bất kỳ (Xem, Thêm, Sửa hoặc Xóa)
-        childChecks.forEach(chk => {
-            // Cứ mỗi khi ô con bị thay đổi, lại gọi hàm 'evaluateCheckAll' để xét xem có đủ 4 ô chưa, nếu đủ thì tự bật ô Toàn quyền
-            chk.addEventListener('change', evaluateCheckAll);
-        });
+    var isAllChecked = Array.from(childChecks).every(function (chk) {
+        return chk.checked === true;
     });
 
+    if (checkAllBtn) {
+        checkAllBtn.checked = isAllChecked;
+    }
+}
 
-    // =========================================================
-    // 2. XỬ LÝ POPUP (MODAL) THÊM VAI TRÒ
-    // =========================================================
-
-    // Tìm các thẻ HTML của Modal dựa vào ID
+// 3. Xử lý UI Modal và Khởi tạo
+document.addEventListener('DOMContentLoaded', function () {
+    const btnOpenRole = document.getElementById('btnOpenAddRole');
     const roleModal = document.getElementById('addRoleModal');
-    const btnOpenRole = document.getElementById('btnOpenRoleModal'); // Nút "Thêm vai trò" ở ngoài giao diện
-    const btnCloseRole = document.getElementById('btnCloseRoleModal'); // Nút (X) góc trên
-    const btnCancelRole = document.getElementById('btnCancelRole'); // Nút "Hủy Bỏ"
-    const btnSaveRole = document.getElementById('btnSaveRole'); // Nút "Lưu Vai Trò"
+    const btnCloseRole = document.getElementById('btnCloseRoleModal');
+    const btnCancelRole = document.getElementById('btnCancelRole');
+    const btnSaveRole = document.getElementById('btnSaveRole');
 
-    // Hàm Mở Modal: Gán display = 'flex' để hộp thoại hiện ra giữa màn hình
+    // Mở Modal
     if (btnOpenRole) {
         btnOpenRole.addEventListener('click', function () {
             roleModal.style.display = 'flex';
         });
     }
 
-    // Hàm Đóng Modal: Gán display = 'none' để giấu hộp thoại đi
+    // Đóng Modal
     const closeRoleModal = () => {
         if (roleModal) roleModal.style.display = 'none';
     };
 
-    // Gắn sự kiện click cho 2 nút Đóng và Hủy để gọi hàm giấu hộp thoại
     if (btnCloseRole) btnCloseRole.addEventListener('click', closeRoleModal);
     if (btnCancelRole) btnCancelRole.addEventListener('click', closeRoleModal);
 
-    // Sự kiện đặc biệt: Đóng modal khi user bấm chuột ra ngoài vùng viền đen tối của Modal
+    window.addEventListener('click', function (e) {
+        if (e.target == roleModal) closeRoleModal();
+    });
+
+    // SỰ KIỆN: Bấm nút "Lưu Vai Trò" (Đã được khôi phục)
+    if (btnSaveRole) {
+        btnSaveRole.addEventListener('click', function () {
+            const newRoleName = document.getElementById('newRoleName').value.trim();
+            const newRoleDesc = document.getElementById('newRoleDesc') ? document.getElementById('newRoleDesc').value.trim() : '';
+
+            if (newRoleName === "") {
+                alert("Vui lòng nhập tên vai trò!");
+                return;
+            }
+
+            // Gọi API Thêm vai trò
+            fetch('/QuanTri/ThemVaiTro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ TenVaiTro: newRoleName, MoTa: newRoleDesc })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload(); // Load lại trang để thấy vai trò mới
+                    } else {
+                        alert(data.message || "Có lỗi xảy ra khi thêm vai trò!");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Lỗi kết nối đến máy chủ!");
+                });
+        });
+    }
+
+    // 4. Tự động kiểm tra: Nếu 4 quyền con đã tích, bật luôn ô Toàn quyền
+    var rows = document.querySelectorAll('.matrix-table tbody tr');
+    rows.forEach(function (row) {
+        var childChecks = row.querySelectorAll('.chk-child');
+        if (childChecks.length > 0) {
+            var checkAllBtn = row.querySelector('.chk-all-row');
+            var isAllChecked = Array.from(childChecks).every(chk => chk.checked === true);
+            if (checkAllBtn) checkAllBtn.checked = isAllChecked;
+        }
+    });
+});
+// 3. Xử lý UI các nút bật tắt Modal (Thêm Vai trò)
+document.addEventListener('DOMContentLoaded', function () {
+    const btnOpenRole = document.getElementById('btnOpenAddRole');
+    const roleModal = document.getElementById('addRoleModal');
+    const btnCloseRole = document.getElementById('btnCloseRoleModal');
+    const btnCancelRole = document.getElementById('btnCancelRole');
+
+    // Mở Modal
+    if (btnOpenRole) {
+        btnOpenRole.addEventListener('click', function () {
+            roleModal.style.display = 'flex';
+        });
+    }
+
+    // Đóng Modal
+    const closeRoleModal = () => {
+        if (roleModal) roleModal.style.display = 'none';
+    };
+
+    if (btnCloseRole) btnCloseRole.addEventListener('click', closeRoleModal);
+    if (btnCancelRole) btnCancelRole.addEventListener('click', closeRoleModal);
+
+    // Đóng khi click ngoài vùng modal
     window.addEventListener('click', function (e) {
         if (e.target == roleModal) {
             closeRoleModal();
         }
     });
 
-    // Sự kiện: Bấm nút "Lưu Vai Trò"
-    if (btnSaveRole) {
-        btnSaveRole.addEventListener('click', function () {
-            // Lấy dữ liệu người dùng nhập ở ô Tên vai trò
-            const newRoleName = document.getElementById('newRoleName').value.trim();
-
-            // Kiểm tra rỗng
-            if (newRoleName === "") {
-                alert("Vui lòng nhập tên vai trò!");
-                return;
+    // 4. CHẠY MỘT LẦN KHI LOAD TRANG: 
+    // Quét toàn bộ bảng xem hàng nào đã đủ 4 quyền thì bật ô "Toàn quyền" lên
+    var rows = document.querySelectorAll('.matrix-table tbody tr');
+    rows.forEach(function (row) {
+        var childChecks = row.querySelectorAll('.chk-child');
+        if (childChecks.length > 0) { // Bỏ qua nếu là dòng "Chưa khởi tạo chức năng"
+            var checkAllBtn = row.querySelector('.chk-all-row');
+            var isAllChecked = Array.from(childChecks).every(chk => chk.checked === true);
+            if (checkAllBtn) {
+                checkAllBtn.checked = isAllChecked;
             }
-
-            // Tạm thời thông báo, tính năng gửi Ajax lưu vào Database sẽ phát triển sau
-            alert("Tính năng thêm mới Vai trò đang được nâng cấp!");
-            closeRoleModal();
-        });
-    }
+        }
+    });
 });

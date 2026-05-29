@@ -64,38 +64,44 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.VaiTroDangChon.PhanQuyens != null && Model.VaiTroDangChon.PhanQuyens.Any())
-                    {
-                        var listQuyen = Model.VaiTroDangChon.PhanQuyens.OrderBy(q => q.Id).ToList();
-                        for (int i = 0; i < listQuyen.Count; i++)
-                        {
-                          
-                            <tr>
-                                <td>@listQuyen[i].MaChucNang</td>
-                                <td>
-                                    @listQuyen[i].TenChucNang
-                                    <input type="hidden" name="PhanQuyens[@i].Id" value="@listQuyen[i].Id" />
-                                </td>                               
+                    @{
+                        // Lấy danh sách quyền của Vai trò đang chọn và ép sang List để dùng vòng lặp for
+                        var dsQuyen = Model.VaiTroDangChon?.PhanQuyens?.ToList();
+                    }
 
-                                <!-- Kỹ thuật binding Checkbox an toàn trong MVC -->
-                                <td class="text-center">
-                                    <input type="checkbox" class="form-check-input" name="PhanQuyens[@i].CoQuyenXem" value="true" @(listQuyen[i].CoQuyenXem ? "checked" : "") />
-                                    <input type="hidden" name="PhanQuyens[@i].CoQuyenXem" value="false" />
+                    @if (dsQuyen != null && dsQuyen.Any())
+                    {
+                        // BẮT BUỘC dùng vòng lặp for để sinh ra index (ví dụ: dsQuyen[0], dsQuyen[1])
+                        for (int i = 0; i < dsQuyen.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    @dsQuyen[i].MaChucNang
+                                    <!-- Chứa ID để Controller biết đang update dòng nào -->
+                                    <input type="hidden" name="dsQuyen[@i].Id" value="@dsQuyen[i].Id" />
+                                </td>
+                                <td>
+                                    @dsQuyen[i].TenChucNang
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="form-check-input" name="PhanQuyens[@i].CoQuyenThem" value="true" @(listQuyen[i].CoQuyenThem ? "checked" : "") />
-                                    <input type="hidden" name="PhanQuyens[@i].CoQuyenThem" value="false" />
+                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenXem" value="true" @(dsQuyen[i].CoQuyenXem ? "checked" : "") onchange="checkChild(this)" />
+                                    <input type="hidden" name="dsQuyen[@i].CoQuyenXem" value="false" /> 
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="form-check-input" name="PhanQuyens[@i].CoQuyenSua" value="true" @(listQuyen[i].CoQuyenSua ? "checked" : "") />
-                                    <input type="hidden" name="PhanQuyens[@i].CoQuyenSua" value="false" />
+                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenThem" value="true" @(dsQuyen[i].CoQuyenThem ? "checked" : "") onchange="checkChild(this)" />
+                                    <input type="hidden" name="dsQuyen[@i].CoQuyenThem" value="false" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="form-check-input" name="PhanQuyens[@i].CoQuyenXoa" value="true" @(listQuyen[i].CoQuyenXoa ? "checked" : "") />
-                                    <input type="hidden" name="PhanQuyens[@i].CoQuyenXoa" value="false" />
+                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenSua" value="true" @(dsQuyen[i].CoQuyenSua ? "checked" : "") onchange="checkChild(this)" />
+                                    <input type="hidden" name="dsQuyen[@i].CoQuyenSua" value="false" />
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="form-check-input chk-all-row" title="Chọn tất cả quyền cho chức năng này" />
+                                    <input type="checkbox" class="chk-child" name="dsQuyen[@i].CoQuyenXoa" value="true" @(dsQuyen[i].CoQuyenXoa ? "checked" : "") onchange="checkChild(this)" />
+                                    <input type="hidden" name="dsQuyen[@i].CoQuyenXoa" value="false" />
+                                </td>
+                                <td class="text-center" style="border-left: 2px solid #e2e8f0;">
+                                    <!-- Nút này chỉ dùng gọi sự kiện JS, không cần name -->
+                                    <input type="checkbox" class="chk-all-row" onchange="toggleAll(this)" />
                                 </td>
                             </tr>
                         }
@@ -103,7 +109,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="7" class="text-center">Vai trò này chưa được khởi tạo danh sách chức năng.</td>
+                            <td colspan="6" class="text-center">Vai trò này chưa được khởi tạo danh sách chức năng.</td>
                         </tr>
                     }
                 </tbody>
