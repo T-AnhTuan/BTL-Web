@@ -177,18 +177,19 @@
                             }
                         </td>
                         <td class="text-center" style="display: flex; justify-content: center;">
-                            <button asp-controller="NhapXuat" asp-action="ChiTietPhieuNhap" asp-route-id="@item.Id" class="btn btn-sm" style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Xem chi tiết">
+                            <form asp-controller="PhieuNhap" asp-action="ChiTietPhieuNhap" asp-route-id="@item.Id" class="btn btn-sm"
+                                    style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Xem chi tiết">
                                 <i class="fa-solid fa-eye"></i>
-                            </button>
+                            </form>
                             @if (item.TrangThai == TrangThaiPhieuNhap.ChoDuyet)
                             {
-                                <form asp-action="DuyetPhieuNhap" asp-controller="NhapXuat" method="post" style="display:inline;">
+                                <form asp-action="DuyetPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline;">
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <button type="submit" class="btn btn-sm" style="background: #dcfce3; color: #166534; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Duyệt phiếu nhập" onclick="return confirm('Bạn có chắc muốn duyệt phiếu nhập này? Hệ thống sẽ cập nhật tồn kho và giá vốn.');">
                                         <i class="fa-solid fa-check"></i>
                                     </button>
                                 </form>
-                                <form asp-action="HuyPhieuNhap" asp-controller="NhapXuat" method="post" style="display:inline;">
+                                <form asp-action="XoaPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline;">
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Hủy phiếu nhập" onclick="return confirm('Bạn có chắc muốn hủy phiếu nhập này?');">
                                         <i class="fa-solid fa-xmark"></i>
@@ -212,7 +213,7 @@
 <!-- Modal Bọc bằng Form chuẩn MVC -->
 <div id="addReceiptModal" class="modal-overlay">
     <div class="modal-box">
-        <form asp-action="ChiTietPhieuNhap" asp-controller="NhapXuat" method="post">
+        <form asp-action="ChuyenTiepChiTiet" asp-controller="PhieuNhap" method="post">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-file-circle-plus" style="color:#2563eb; margin-right:8px;"></i> TẠO PHIẾU NHẬP MỚI</h3>
                 <button type="button" id="btnCloseModal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
@@ -225,7 +226,7 @@
                         <input type="text" name="MaPhieu" placeholder="VD: PN-00123">
                     </div>
                     <div class="filter-group">
-                        <label>Ngày Nhập <span style="color:red">*</span></label>
+                        <label>Ngày nhập <span style="color:red">*</span></label>
                         <input type="date" name="NgayNhap" required value="@DateTime.Now.ToString("yyyy-MM-dd")">
                     </div>
                 </div>
@@ -260,7 +261,7 @@
                 </div>
 
                 <div class="filter-group">
-                    <label>Ghi Chú</label>
+                    <label>Ghi chú</label>
                     <textarea name="GhiChu" rows="2" style="resize: none;overflow: auto;padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; font-family: inherit;" placeholder="Nhập ghi chú cho phiếu nhập này..."></textarea>
                 </div>
 
@@ -271,9 +272,9 @@
 
             <div class="modal-footer">
                 <button type="button" id="btnCancel" class="btn btn-cancel">Hủy bỏ</button>
-                <button asp-controller="NhapXuat" asp-action="ChiTietPhieuNhap" type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-arrow-right"></i>
-                    Tiếp Tục Thêm Vật Tư</button>
+                    Thêm vật tư nhập</button>
             </div>
         </form>
     </div>

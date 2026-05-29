@@ -7,33 +7,40 @@
 
 <div class="page-header">
     <div style="display: flex; align-items: center; gap: 15px;">
-        <a asp-controller="NhapXuat" asp-action="PhieuNhap" class="btn btn-secondary" title="Quay lại" style="text-decoration: none;"><i class="fa-solid fa-arrow-left"></i></a>
+        <a asp-controller="PhieuNhap" asp-action="PhieuNhap" class="btn btn-secondary" title="Quay lại" style="text-decoration: none;"><i class="fa-solid fa-arrow-left"></i></a>
         <h1 class="page-title">Chi tiết phiếu nhập</h1>
     </div>
     <div style="display: flex; gap: 10px;">
-        <button class="btn btn-secondary"><i class="fa-solid fa-print"></i> In Phiếu (Nháp)</button>
-        <button class="btn btn-success" onclick="hoanTatPhieu()"><i class="fa-solid fa-check"></i> Hoàn Tất Lưu Phiếu</button>
+        <button class="btn btn-secondary"><i class="fa-solid fa-print"></i> In phiếu</button>
+        <button class="btn btn-success" onclick="hoanTatPhieu()"><i class="fa-solid fa-check"></i> Hoàn tất phiếu</button>
     </div>
 </div>
 
 <div class="section-card">
     <div class="section-title"><i class="fa-solid fa-circle-info" style="color:#3b82f6;"></i> THÔNG TIN PHIẾU NHẬP</div>
     <div class="input-row">
+        <!-- CÁC THẺ ẨN CHỨA DỮ LIỆU TẠM THỜI -->
+        <input type="hidden" id="hdfPhieuNhapId" value="@Model.Id" />
+        <input type="hidden" id="hdfNgayNhap" value="@Model.NgayNhap.ToString("dd/MM/yyyy HH:mm")" />
+        <input type="hidden" id="hdfKhoId" value="@Model.KhoId" />
+        <input type="hidden" id="hdfNhaCungCapId" value="@Model.NhaCungCapId" />
+        <input type="hidden" id="hdfGhiChu" value="@Model.GhiChu" />
+
         <div class="form-group">
             <label>Mã phiếu</label>
-            <input @Model.MaPhieu readonly>
+            <input id="txtMaPhieu" value="@Model.MaPhieu" readonly class="form-control" style="background-color: #f8fafc;">
         </div>
         <div class="form-group">
             <label>Ngày nhập</label>
-            <input @Model.NgayNhap.ToString("dd/MM/yyyy HH:mm") readonly>
+            <input value="@Model.NgayNhap.ToString("dd/MM/yyyy HH:mm")" readonly class="form-control" style="background-color: #f8fafc;">
+        </div>
+        <div class="form-group">
+            <label>Kho Nhập</label>
+            <input value="@Model.Kho?.TenKho" readonly class="form-control" style="background-color: #f8fafc;">
         </div>
         <div class="form-group">
             <label>Nhà cung cấp</label>
-            <input @Model.NhaCungCap?.TenNhaCungCap readonly>
-        </div>
-        <div class="form-group">
-            <label>Kho nhập</label>
-            <input @Model.Kho?.TenKho" readonly>
+            <input value="@Model.NhaCungCap?.TenNhaCungCap" readonly class="form-control" style="background-color: #f8fafc;">
         </div>
     </div>
 </div>
@@ -49,7 +56,7 @@
                 {
                     foreach (var vt in ViewBag.VatTus)
                     {
-                        <option value="@vt.Id" data-dvt="@vt.DonViTinh">
+                        <option value="@vt.Id" data-dvt="@vt.DonViTinh" data-code="@vt.MaVatTu">
                             [@vt.MaVatTu] - @vt.TenVatTu
                         </option>
                     }
@@ -57,15 +64,16 @@
             </select>
         </div>
         <div class="form-group" style="flex: 0.5;">
-            <label>Số Lượng <span style="color:red">*</span></label>
-            <input type="number" id="txtSoLuong" value="1" min="1">
+            <label>Số lượng <span style="color:red">*</span></label>
+            <input type="number" id="txtSoLuong" min="1" placeholder="Nhập số lượng...">
         </div>
         <div class="form-group" style="flex: 1;">
-            <label>Đơn Giá Nhập (VNĐ) <span style="color:red">*</span></label>
-            <input type="number" id="txtDonGia" value="0" min="0">
+            <label>Đơn giá nhập (VNĐ) <span style="color:red">*</span></label>
+            <input type="number" id="txtDonGia" min="0" placeholder="Nhập đơn giá...">
         </div>
         <div class="form-group" style="flex: 0;">
-            <button class="btn btn-primary" onclick="themVatTuVaoBang()"><i class="fa-solid fa-arrow-down"></i> Thêm Xuống Lưới</button>
+            <button type="button" id="btnThemVatTu" class="btn btn-primary">
+                <i class="fa-solid fa-arrow-down"></i> Thêm xuống lưới</button>
         </div>
     </div>
 </div>
@@ -77,12 +85,12 @@
             <thead>
                 <tr>
                     <th class="text-center" style="width: 50px;">STT</th>
-                    <th>Mã VT</th>
-                    <th>Tên Vật Tư</th>
+                    <th class="text-center">Mã vật tư</th>
+                    <th class="text-center">Tên vật tư</th>
                     <th class="text-center">ĐVT</th>
-                    <th class="text-right">Số Lượng</th>
-                    <th class="text-right">Đơn Giá Nhập</th>
-                    <th class="text-right">Thành Tiền</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-center">Đơn giá</th>
+                    <th class="text-center">Thành tiền</th>
                     <th class="text-center" style="width: 60px;">Xóa</th>
                 </tr>
             </thead>
@@ -91,19 +99,20 @@
             <tbody id="chiTietBody">
                 @if (Model.ChiTietPhieuNhaps != null && Model.ChiTietPhieuNhaps.Any())
                 {
+                    int stt = 1;
                     foreach (var item in Model.ChiTietPhieuNhaps)
                     {
                         <tr>
-                            <td class="text-center">@item.VatTu?.MaVatTu</td>
+                            <td class="text-center">@(stt++)</td>
+                            <td>@item.VatTu?.MaVatTu</td>
                             <td>@item.VatTu?.TenVatTu</td>
                             <td class="text-center">@item.VatTu?.DonViTinh</td>
-                            <td class="text-right num-soluong">@item.SoLuong.ToString("N0")</td>
-                            <td class="text-right">@item.DonGia.ToString("N0") ₫</td>
-                            <td class="text-right num-thanhtien" data-value="@item.ThanhTien" style="font-weight: 700; color: #e11d48;">
+                            <td class="text-center num-soluong" data="@item.SoLuong">@item.SoLuong.ToString("N0")</td>
+                            <td class="text-center" data="@item.DonGia">@item.DonGia.ToString("N0") ₫</td>
+                            <td class="text-center num-thanhtien" data-value="@item.ThanhTien" style="font-weight: 700; color: #e11d48;">
                                 @item.ThanhTien.ToString("N0") ₫
                             </td>
                             <td class="text-center">
-                                <!-- Nút Xóa lưu giữ data-id để gửi cho Javascript -->
                                 <button class="btn btn-danger btn-delete-row" data-id="@item.Id" style="padding: 6px 10px;">
                                     <i class="fa fa-trash"></i>
                                 </button>
