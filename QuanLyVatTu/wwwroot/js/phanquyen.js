@@ -36,3 +36,10 @@ btnSaveRole.onclick = () => {
 
     closeRoleModal();
 }
+document.querySelectorAll('.chk-toan-quyen').forEach(chk => {
+    chk.addEventListener('change', function () {
+        let row = this.closest('tr');
+        let checkboxes = row.querySelectorAll('input[type="checkbox"]:not(.chk-toan-quyen)');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+});

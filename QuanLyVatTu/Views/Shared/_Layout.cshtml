@@ -1,7 +1,33 @@
 ﻿@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@inject QuanLyVatTu.Data.AppDbContext _context
 @{
-    var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Khách";
-    var roleName = User.FindFirst(ClaimTypes.Role)?.Value ?? "Chưa phân quyền";
+    // 1. Lấy Tên đăng nhập (Username) từ Cookie. Cái này không bao giờ đổi nên lấy từ Cookie là an toàn.
+    var currentUsername = User.Identity?.Name;
+
+    // 2. Gán giá trị mặc định ban đầu nếu người dùng chưa đăng nhập
+    var fullName = "Khách";
+    var roleName = "Chưa phân quyền";
+
+    // 3. Kiểm tra xem nếu đã đăng nhập thì móc dữ liệu MỚI NHẤT từ CSDL ra
+    if (!string.IsNullOrEmpty(currentUsername))
+    {
+        // Truy vấn bảng TaiKhoan, nối (Include) bảng NhanVien và VaiTro để lấy Tên và Quyền mới nhất
+        var userInDb = _context.TaiKhoans
+            .Include(t => t.NhanVien)
+            .Include(t => t.VaiTro)
+            .FirstOrDefault(t => t.TenDangNhap == currentUsername);
+
+        // Nếu tìm thấy tài khoản trong CSDL
+        if (userInDb != null)
+        {
+            // Lấy Họ tên mới nhất từ bảng NhanVien. Nếu không có (null) thì lấy Tên đăng nhập làm tạm.
+            fullName = userInDb.NhanVien?.HoTen ?? currentUsername;
+
+            // Lấy Tên vai trò mới nhất từ bảng VaiTro
+            roleName = userInDb.VaiTro?.TenVaiTro ?? "Chưa phân quyền";
+        }
+    }
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -79,7 +105,10 @@
                         <a asp-controller="NguoiDung" asp-action="TaiKhoanCaNhan"><i class="fa-regular fa-user"></i> Tài khoản cá nhân</a>
                         <a asp-controller="NguoiDung" asp-action="TaiKhoanCaNhan"><i class="fa-solid fa-lock"></i> Đổi mật khẩu</a>
                         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
-                        <a asp-controller="NguoiDung" asp-action="DangNhap" style="color: #ef4444;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a>
+                        <form id="logoutForm" asp-controller="NguoiDung" asp-action="DangXuat" method="post"></form>
+                        <a style="color: #ef4444; cursor: pointer;" href="javascript:document.getElementById('logoutForm').submit();">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+                        </a>
                     </div>
                 </div>
             </div>

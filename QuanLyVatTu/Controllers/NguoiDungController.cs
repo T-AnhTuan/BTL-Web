@@ -228,14 +228,21 @@ namespace QuanLyVatTu.Controllers
         [ValidateAntiForgeryToken] // Nên có để bảo mật
         public async Task<IActionResult> DangXuat()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Lấy thông tin user để ghi log trước khi xóa phiên
+            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdString, out int userId))
             {
                 await LogActionAsync(userId, "Đăng xuất khỏi hệ thống");
             }
 
+            // Xóa cookie xác thực
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction(nameof(DangNhap));
+
+            // Xóa toàn bộ Session/TempData nếu có (tùy chọn)
+            HttpContext.Session.Clear();
+
+            // Chuyển hướng về trang Đăng nhập
+            return RedirectToAction("DangNhap", "NguoiDung");
         }
 
         // ================================================================

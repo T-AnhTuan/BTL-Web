@@ -11,8 +11,11 @@
 <div class="page-header">
     <h1 class="page-title">DANH SÁCH VẬT TƯ</h1>
     <div class="action-buttons">
-        <button id="btnOpenAddModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm Vật Tư Mới</button>
-        <button class="btn btn-primary"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
+        <button id="btnOpenAddModal" class="btn btn-primary" style="background:#2563eb"><i class="fa-solid fa-plus"></i> Thêm vật tư mới</button>
+        <button class="btn btn-primary" href="/Home/BaoTri"
+                style="background-color: white;border: 1px solid #cbd5e1; color: #475569;">
+            <i class="fa-solid fa-file-excel"></i> Xuất Excel
+        </button>
     </div>
 </div>
 
@@ -25,7 +28,6 @@
             {
                 foreach (var dm in ViewBag.DanhMucs)
                 {
-                    <!-- SỬA Ở ĐÂY: Đổi value từ dm.MaDanhMuc sang dm.Id -->
                     <option value="@dm.Id" selected="@(selectedDanhMucId == dm.Id ? "selected" : null)">@dm.TenDanhMuc</option>
                 }
             }
@@ -40,15 +42,15 @@
 
 <div class="table-container">
     <table class="data-table">
-        <thead>
+        <thead style="text-align: center;">
             <tr>
-                <th>Mã Vật Tư</th>
-                <th>Tên Vật Tư</th>
-                <th>Danh Mục</th>
-                <th>Đơn Vị Tính</th>
-                <th>Tồn Kho Hiện Tại</th>
-                <th>Giá Vốn Bình Quân</th>
-                <th class="text-center">Hành Động</th>
+                <th>Mã vật tư</th>
+                <th>Tên vật tư</th>
+                <th>Danh mục</th>
+                <th>Đơn vị tính</th>
+                <th>Tồn kho</th>
+                <th>Giá vốn Bình quân</th>
+                <th class="text-center">Hành động</th>
             </tr>
         </thead>
         <tbody id="vattuTableBody">
@@ -57,18 +59,15 @@
                 foreach (var item in Model)
                 {
                     <tr>
-                        <td>@item.MaVatTu</td>
+                        <td style="text-align: center;">@item.MaVatTu</td>
                         <td style="font-weight: 500;">@item.TenVatTu</td>
-
-                        <!-- SỬA Ở ĐÂY: Lấy Tên Danh Mục thông qua Khóa Ngoại -->
                         <td>@(item.DanhMuc != null ? item.DanhMuc.TenDanhMuc : "Không xác định")</td>
-
-                        <td>@item.DonViTinh</td>
-                        <td>@item.TonKhoHienTai</td>
-                        <td>@item.GiaVonBinhQuan.ToString("N0") VNĐ</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-primary btn-edit" data-id="@item.Id"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
-                            <button class="btn btn-sm btn-danger btn-delete" data-id="@item.Id"><i class="fa-solid fa-trash"></i> Xóa</button>
+                        <td style="text-align: center;">@item.DonViTinh</td>
+                        <td style="text-align: center;">@item.TonKhoHienTai</td>
+                        <td style="text-align: center;">@item.GiaVonBinhQuan.ToString("N0") VNĐ</td>
+                        <td class="text-center" style="justify-content: center; gap: 10px; display: flex;">
+                            <button class="btn btn-sm btn-primary btn-edit" data-id="@item.Id" style="background: green;"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
+                            <button class="btn btn-sm btn-danger btn-delete" data-id="@item.Id" style="background: red;"><i class="fa-solid fa-trash"></i> Xóa</button>
                         </td>
                     </tr>
                 }

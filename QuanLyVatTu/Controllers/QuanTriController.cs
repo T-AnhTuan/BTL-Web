@@ -172,29 +172,40 @@ namespace QuanLyVatTu.Controllers
         [HttpGet]
         public async Task<IActionResult> PhanQuyen(int? vaiTroId)
         {
-            // Sử dụng đúng tên class PhanQuyenVM từ file của bạn
-            var model = new PhanQuyenVM
-            {
-                DanhSachVaiTro = await _context.VaiTros.OrderBy(v => v.TenVaiTro).ToListAsync()
-            };
+            var danhSachVaiTro = await _context.VaiTros
+                .Include(v => v.PhanQuyens)
+                .OrderBy(v => v.Id)
+                .ToListAsync();
 
-            if (vaiTroId.HasValue)
-            {
-                var vaiTro = await _context.VaiTros
-                    .Include(v => v.PhanQuyens)
-                    .FirstOrDefaultAsync(v => v.Id == vaiTroId.Value);
+            // 1. Kiểm tra nếu DB chưa có vai trò nào
+            if (danhSachVaiTro == null || !danhSachVaiTro.Any())
+                return View(new PhanQuyenVM { DanhSachVaiTro = new List<VaiTro>() });
 
-                if (vaiTro != null)
+            // 2. Chọn vai trò: Nếu có ID thì tìm, không có thì lấy vai trò đầu tiên
+            var vaiTroDangChon = vaiTroId.HasValue
+                ? danhSachVaiTro.FirstOrDefault(v => v.Id == vaiTroId.Value)
+                : danhSachVaiTro.FirstOrDefault();
+
+            // 3. Nếu ID truyền vào sai (không tìm thấy), mặc định lấy vai trò đầu tiên
+            if (vaiTroDangChon == null) vaiTroDangChon = danhSachVaiTro.First();
+
+            // 4. Logic tự động sinh quyền (Giữ nguyên logic của bạn)
+            if (vaiTroDangChon.PhanQuyens == null || !vaiTroDangChon.PhanQuyens.Any())
+            {
+                var danhSachModule = new List<string> { "Quản lý Danh mục", "Quản lý Vật tư", "Phiếu Nhập", "Phiếu Xuất", "Báo cáo", "Quản trị" };
+                foreach (var module in danhSachModule)
                 {
-                    // Sử dụng đúng thuộc tính VaiTroDangChon từ file của bạn
-                    model.VaiTroDangChon = vaiTro;
+                    _context.PhanQuyens.Add(new PhanQuyen { VaiTroId = vaiTroDangChon.Id, TenChucNang = module });
                 }
+                await _context.SaveChangesAsync();
+                vaiTroDangChon = await _context.VaiTros.Include(v => v.PhanQuyens).FirstOrDefaultAsync(v => v.Id == vaiTroDangChon.Id);
             }
-            return View(model);
-        }
 
+            return View(new PhanQuyenVM { DanhSachVaiTro = danhSachVaiTro, VaiTroDangChon = vaiTroDangChon });
+        }
+        // PHÂN QUYỀN - POST (Lưu dữ liệu cấu hình)
+        // ==========================================
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyen> PhanQuyens)
         {
             try
@@ -205,6 +216,7 @@ namespace QuanLyVatTu.Controllers
 
                 if (vaiTro == null) return NotFound();
 
+                // Cập nhật lại các cờ Checkbox vào Database
                 foreach (var quyenMoi in PhanQuyens)
                 {
                     var quyenCu = vaiTro.PhanQuyens.FirstOrDefault(q => q.Id == quyenMoi.Id);
@@ -218,7 +230,7 @@ namespace QuanLyVatTu.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Lưu cấu hình phân quyền thành công!";
+                TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!";
                 return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId });
             }
             catch (Exception ex)

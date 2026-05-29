@@ -77,7 +77,7 @@
                 foreach (var item in Model.DanhSachChiTiet)
                 {
                     <tr>
-                        <td>@item.VatTuId</td>
+                        <td class="text-center fw-bold text-secondary">@item.VatTuId</td>
                         <td class="text-center fw-bold text-secondary">@item.MaVatTu</td>
                         <td>@item.TenVatTu</td>
                         <td class="text-center">@item.DonViTinh</td>
@@ -115,15 +115,15 @@
         {
             <tfoot class="table-light fw-bold">
                 <tr>
-                    <td colspan="4" class="text-center text-uppercase">Tổng Cộng</td>
+                    <td colspan="4" class="text-center text-uppercase">Tổng cộng</td>
                     <td class="text-end">@Model.TongTonDauSoLuong.ToString("N0")</td>
-                    <td class="text-end">@Model.TongTonDauGiaTri.ToString("N0")</td>
+                    <td class="text-end">@Model.TongTonDauGiaTri.ToString("N0") VNĐ</td>
                     <td class="text-end text-success">@Model.TongNhapSoLuong.ToString("N0")</td>
-                    <td class="text-end text-success">@Model.TongNhapGiaTri.ToString("N0")</td>
+                    <td class="text-end text-success">@Model.TongNhapGiaTri.ToString("N0") VNĐ</td>
                     <td class="text-end text-danger">@Model.TongXuatSoLuong.ToString("N0")</td>
-                    <td class="text-end text-danger">@Model.TongXuatGiaTri.ToString("N0")</td>
+                    <td class="text-end text-danger">@Model.TongXuatGiaTri.ToString("N0") VNĐ</td>
                     <td class="text-end text-primary fs-6">@Model.TongTonCuoiSoLuong.ToString("N0")</td>
-                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiGiaTri.ToString("N0")</td>
+                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiGiaTri.ToString("N0") VNĐ</td>
                 </tr>
             </tfoot>
         }

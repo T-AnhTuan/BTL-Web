@@ -1,6 +1,6 @@
 @model QuanLyVatTu.ViewModels.PhanQuyenVM
 @{
-    ViewData["Title"] = "Quản Lý Vai Trò và Phân Quyền";
+    ViewData["Title"] = "Phân quyền người dùng";
 }
 <head>
     <link rel="stylesheet" href="~/css/phanquyen.css" asp-append-version="true">
@@ -8,10 +8,9 @@
 
 <div class="page-header">
     <h1 class="page-title">Quản lý vai trò và Phân quyền</h1>
-    <!-- Bấm nút này sẽ submit form bên dưới -->
     <div style="display: flex; gap: 10px;">
         <button type="submit" form="frmPhanQuyen" class="btn btn-dark"><i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Phân Quyền</button>
-        <a href="@Url.Action("PhanQuyen")" class="btn btn-outline">Hủy bỏ</a>
+        <a href="@Url.Action("PhanQuyen", "QuanTri")" class="btn btn-outline">Hủy bỏ</a>
     </div>
 </div>
 
@@ -33,7 +32,7 @@
                 // Thêm class active nếu vai trò này đang được chọn
                 var activeClass = (role.Id == Model.VaiTroDangChon.Id) ? "active" : "";
                 <li class="@activeClass">
-                    <a href="@Url.Action("PhanQuyen", "NguoiDung", new { vaiTroId = role.Id })" style="text-decoration:none; color:inherit; display:block;">
+                    <a href="@Url.Action("PhanQuyen", "QuanTri", new { vaiTroId = role.Id })" style="text-decoration:none; color:inherit; display:block;">
                         @role.TenVaiTro
                     </a>
                 </li>
@@ -126,13 +125,3 @@
 </div>
 
 <script src="~/js/phanquyen.js" asp-append-version="true"></script>
-<script>
-    // JS Nhỏ hỗ trợ tick nút "Toàn quyền"
-    document.querySelectorAll('.chk-toan-quyen').forEach(chk => {
-        chk.addEventListener('change', function() {
-            let row = this.closest('tr');
-            let checkboxes = row.querySelectorAll('input[type="checkbox"]:not(.chk-toan-quyen)');
-            checkboxes.forEach(cb => cb.checked = this.checked);
-        });
-    });
-</script>
