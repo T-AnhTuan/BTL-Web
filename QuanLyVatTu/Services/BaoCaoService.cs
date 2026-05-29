@@ -43,11 +43,14 @@ namespace QuanLyVatTu.Services
             // ========================================================
             var queryNhap = _context.ChiTietPhieuNhaps
                 .Include(c => c.PhieuNhap)
-                .Where(c => c.PhieuNhap.TrangThai == TrangThaiPhieuNhap.DaDuyet);
+                .Where(c => c.PhieuNhap.TrangThai == TrangThaiPhieuNhap.DaDuyet
+                && c.PhieuNhap.NgayNhap <= denNgayCuoiNgay);
 
             var queryXuat = _context.ChiTietPhieuXuats
                 .Include(c => c.PhieuXuat)
-                .Where(c => c.PhieuXuat.TrangThai == TrangThaiPhieuXuat.DaDuyet);
+                .Where(c => c.PhieuXuat.TrangThai == TrangThaiPhieuXuat.DaDuyet
+                 && c.PhieuXuat.NgayXuat <= denNgayCuoiNgay);
+
 
             if (khoId.HasValue && khoId.Value > 0)
             {

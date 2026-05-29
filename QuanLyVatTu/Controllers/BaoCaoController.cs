@@ -24,24 +24,27 @@ namespace QuanLyVatTu.Controllers
         // TRANG CHỦ BÁO CÁO: TỔNG HỢP XUẤT - NHẬP - TỒN
         // =========================================================================
         [HttpGet]
-        // SỬA LỖI 3: Dùng thẳng BaoCaoVM làm parameter để map tự động với Form
-        public async Task<IActionResult> Index(BaoCaoVM filter)
+        public async Task<IActionResult> Index([FromQuery] BaoCaoVM filter)
         {
             try
             {
                 ViewBag.DanhSachKho = new SelectList(await _context.DanhMucKhos.ToListAsync(), "Id", "TenKho", filter.KhoId);
 
-                // Thiết lập ngày mặc định nếu người dùng chưa chọn
-                DateTime fromDate = filter.TuNgay ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                DateTime toDate = filter.DenNgay ?? DateTime.Now.Date;
+                // Giá trị hiển thị cho form (ngày nguyên)
+                DateTime? uiFrom = filter.TuNgay?.Date;
+                DateTime? uiTo = filter.DenNgay?.Date;
 
-                // Gọi Service lấy dữ liệu
-                var viewModel = await _baoCaoService.LayBaoCaoNhapXuatTonAsync(filter.KhoId, fromDate, toDate, filter.TuKhoa);
+                // Giá trị dùng cho truy vấn (toDate inclusive = end of day)
+                DateTime fromDate = uiFrom ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                DateTime toDateInclusive = (uiTo ?? DateTime.Now.Date).AddDays(1).AddTicks(-1);
 
-                // Quan trọng: Gắn lại các giá trị lọc vào ViewModel để giao diện không bị mất giá trị khi load lại
+                var viewModel = await _baoCaoService.LayBaoCaoNhapXuatTonAsync(filter.KhoId, fromDate, toDateInclusive, filter.TuKhoa)
+                                 ?? new BaoCaoVM();
+
+                // Gán lại giá trị hiển thị (nguyên ngày) để form giữ trạng thái
                 viewModel.KhoId = filter.KhoId;
-                viewModel.TuNgay = fromDate;
-                viewModel.DenNgay = toDate;
+                viewModel.TuNgay = uiFrom;
+                viewModel.DenNgay = uiTo;
                 viewModel.TuKhoa = filter.TuKhoa;
 
                 return View(viewModel);
@@ -52,10 +55,11 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
+
         // =========================================================================
         // TRANG THẺ KHO: Lấy dữ liệu chi tiết Nhập - Xuất
         // =========================================================================
-        [HttpGet]
+        /*[HttpGet]
         public async Task<IActionResult> Kho(int? vatTuId, DateTime? tuNgay, DateTime? denNgay)
         {
             // Code hàm Kho giữ nguyên như bạn đã viết
@@ -146,7 +150,6 @@ namespace QuanLyVatTu.Controllers
             {
                 Console.WriteLine("Lỗi load thẻ kho: " + ex.Message);
                 return View(new KhoVM());
-            }
-        }
+            }*/
     }
 }

@@ -7,18 +7,18 @@
 
 <h1 class="page-title">Báo Cáo Xuất-Nhập-Tồn Vật Tư</h1>
 
-<div class="filter-toolbar">
+<form id="filterForm" method="get" asp-action="Index" asp-controller="BaoCao" class="filter-toolbar">
     <div class="filter-group-wrapper">
         <div class="filter-box">
             <label>Kho</label>
-            <select class="input-control" asp-for="KhoId" asp-items="@(ViewBag.DanhSachKho ?? ViewBag.DanhMucKhos)">
+            <select id="KhoId" name="KhoId" class="input-control" asp-for="KhoId" asp-items="@(ViewBag.DanhSachKho)">
                 <option value="">-- Tất cả các kho --</option>
             </select>
         </div>
 
         <div class="filter-box">
             <label>Từ Ngày</label>
-            <input type="date" asp-for="TuNgay" class="input-control">
+            <input type="date" asp-for="TuNgay" class="input-control" />
         </div>
 
         <div class="filter-box" style="justify-content: center; padding-top: 25px;">
@@ -27,24 +27,25 @@
 
         <div class="filter-box">
             <label>Đến Ngày</label>
-            <input type="date" asp-for="DenNgay" class="input-control">
+            <input type="date" asp-for="DenNgay" class="input-control" />
         </div>
 
         <div class="filter-box">
             <label>Tên/Mã VT</label>
-            <input type="text" asp-for="TuKhoa" class="input-control" placeholder="Nhập để tìm kiếm...">
+            <input type="text" asp-for="TuKhoa" class="input-control" placeholder="Nhập để tìm kiếm..." />
         </div>
 
         <div class="filter-box" style="justify-content: flex-end;">
             <button type="submit" class="btn btn-primary">Xem báo cáo</button>
         </div>
-    </div>
-
+    </div> 
     <div class="action-group">
         <button asp-controller="Home" asp-action="BaoTri" class="btn btn-outline"><i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Xuất Excel</button>
-        <button asp-controller ="Home" asp-action="BaoTri" class="btn btn-outline"><i class="fa-solid fa-print"></i> In</button>
+        <button asp-controller="Home" asp-action="BaoTri" class="btn btn-outline"><i class="fa-solid fa-print"></i> In</button>
     </div>
-</div>
+</form>
+
+   
 
 <div class="table-container">
     <table class="data-table">
@@ -74,10 +75,12 @@
         <tbody>
             @if (Model != null && Model.DanhSachChiTiet != null && Model.DanhSachChiTiet.Any())
             {
+                var stt = 0;
                 foreach (var item in Model.DanhSachChiTiet)
                 {
+                    stt++;
                     <tr>
-                        <td class="text-center fw-bold text-secondary">@item.VatTuId</td>
+                        <td class="text-center fw-bold text-secondary">@stt</td>
                         <td class="text-center fw-bold text-secondary">@item.MaVatTu</td>
                         <td>@item.TenVatTu</td>
                         <td class="text-center">@item.DonViTinh</td>
@@ -103,7 +106,7 @@
             else
             {
                 <tr>
-                    <td colspan="11" class="text-center py-5 text-muted">
+                    <td colspan="12" class="text-center py-5 text-muted">
                         <i class="fa-solid fa-box-open fs-1 mb-3 text-light"></i><br />
                         Không tìm thấy dữ liệu báo cáo trong khoảng thời gian này.
                     </td>
@@ -129,3 +132,4 @@
         }
     </table>
 </div>
+<script src="~/js/baocao.js" asp-append-version="true"></script>
