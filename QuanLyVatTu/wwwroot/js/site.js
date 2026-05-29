@@ -1,56 +1,120 @@
-﻿// 1. BIỂU ĐỒ ĐƯỜNG (XU HƯỚNG NHẬP XUẤT)
-const ctxTrend = document.getElementById('trendChart').getContext('2d');
-const trendChart = new Chart(ctxTrend, {
-    type: 'line',
-    data: {
-        // BACK-END: Truyền mảng các ngày trong tháng vào đây (VD: ['01/02', '02/02', ...])
-        labels: ['(Trống)', '(Trống)', '(Trống)', '(Trống)', '(Trống)'],
-        datasets: [
-            {
-                label: 'Nhập Kho',
-                // BACK-END: Truyền mảng số lượng nhập tương ứng vào đây
-                data: [0, 0, 0, 0, 0],
-                borderColor: '#3b82f6', // Màu xanh dương
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4
-            },
-            {
-                label: 'Xuất Kho',
-                // BACK-END: Truyền mảng số lượng xuất tương ứng vào đây
-                data: [0, 0, 0, 0, 0],
-                borderColor: '#10b981', // Màu xanh lá
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                fill: true,
-                tension: 0.4
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: true } }
-    }
-});
+﻿document.addEventListener("DOMContentLoaded", function () {
+    try {
+        // LƯU Ý: Không được chứa bất kỳ chữ @Html.Raw nào ở file này!
+        // Các biến trendLabels, trendIn, lowStockData... đã được khai báo ở Index.cshtml
 
-// 2. BIỂU ĐỒ TRÒN (CƠ CẤU DANH MỤC)
-const ctxCategory = document.getElementById('categoryChart').getContext('2d');
-const categoryChart = new Chart(ctxCategory, {
-    type: 'pie',
-    data: {
-        // BACK-END: Truyền danh sách tên các danh mục vào đây
-        labels: ['Chưa có dữ liệu'],
-        datasets: [{
-            // BACK-END: Truyền số lượng/giá trị tồn kho theo danh mục vào đây
-            data: [100], // Để 100% màu xám cho biểu đồ trống
-            backgroundColor: ['#e2e8f0', '#3b82f6', '#f59e0b', '#10b981', '#6366f1'],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { position: 'right' }
+        // ==========================================
+        // 1. VẼ BIỂU ĐỒ ĐƯỜNG (Chart.js)
+        // ==========================================
+        const canvasTrend = document.getElementById('trendChart');
+        if (canvasTrend && typeof trendLabels !== 'undefined' && trendLabels.length > 0) {
+            new Chart(canvasTrend.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        {
+                            label: 'Nhập Kho',
+                            data: trendIn,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Xuất Kho',
+                            data: trendOut,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
         }
+        // ==========================================
+        // 2. VẼ BIỂU ĐỒ TRÒN (Phân bổ danh mục) - THÊM MỚI
+        // ==========================================
+        const canvasCategory = document.getElementById('categoryChart');
+        if (canvasCategory && typeof categoryLabels !== 'undefined' && categoryLabels.length > 0) {
+            new Chart(canvasCategory.getContext('2d'), {
+                type: 'doughnut', // Dạng vành khuyên nhìn hiện đại hơn
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryValues,
+                        backgroundColor: [
+                            '#0d6efd', // Xanh dương
+                            '#198754', // Xanh lá
+                            '#ffc107', // Vàng
+                            '#dc3545', // Đỏ
+                            '#6f42c1', // Tím
+                            '#0dcaf0'  // Xanh nhạt
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom', // Đưa chú thích xuống dưới cho cân đối
+                        }
+                    }
+                }
+            });
+        }
+        // ==========================================
+        // 2. HIỂN THỊ CẢNH BÁO TỒN KHO
+        // ==========================================
+        const tbodyLowStock = document.getElementById('lowStockBody');
+        if (tbodyLowStock && typeof lowStockData !== 'undefined') {
+            if (lowStockData.length > 0) {
+                tbodyLowStock.innerHTML = lowStockData.map(item => `
+                    <tr>
+                        <td>${item.MaVatTu || 'N/A'}</td>
+                        <td>${item.TenVatTu || 'N/A'}</td>
+                        <td style="color: #dc3545; font-weight: bold;">${item.SoLuong || 0}</td>
+                        <td>${item.DinhMuc || 0}</td>
+                        <td class="text-center"><span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Sắp hết</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                tbodyLowStock.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #198754; padding: 20px;">Kho đang an toàn, không có vật tư sắp hết!</td></tr>`;
+            }
+        }
+
+        // ==========================================
+        // 3. HIỂN THỊ THÔNG BÁO HOẠT ĐỘNG
+        // ==========================================
+        const tbodyActivity = document.getElementById('recentActivityBody');
+        if (tbodyActivity && typeof activityData !== 'undefined') {
+            if (activityData.length > 0) {
+                tbodyActivity.innerHTML = activityData.map(item => {
+                    const timeStr = new Date(item.ThoiGian).toLocaleString('vi-VN');
+                    const badgeColor = item.Loai === "Nhập Kho" ? "#198754" : (item.Loai === "Xuất Kho" ? "#dc3545" : "#0dcaf0");
+
+                    return `
+                        <tr>
+                            <td style="color: #6c757d; font-size: 13px;">${timeStr}</td>
+                            <td><span style="background: ${badgeColor}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${item.Loai}</span></td>
+                            <td>${item.NoiDung}</td>
+                            <td><i class="fas fa-user-circle text-muted"></i> ${item.NguoiThucHien || 'Hệ thống'}</td>
+                        </tr>`;
+                }).join('');
+            } else {
+                tbodyActivity.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #6c757d; padding: 20px;">Chưa có hoạt động nào gần đây.</td></tr>`;
+            }
+        }
+
+    } catch (error) {
+        console.error("Lỗi khi load dữ liệu Dashboard:", error);
     }
 });

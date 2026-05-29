@@ -1,231 +1,115 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuanLyVatTu.Data;
-using QuanLyVatTu.Models;
-using QuanLyVatTu.Services;
-
-namespace QuanLyVatTu.Controllers
-{
-    public class PhieuNhapController : Controller
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Dashboard";
+    
+    // Đóng gói số liệu thống kê tổng quan
+    var statsObj = new
     {
-        private readonly INhapXuatService _nhapXuatService;
-        private readonly ITinhGiaVonService _tinhGiaVonService;
-        private readonly AppDbContext _context;
-        private readonly ILogger<PhieuNhapController> _logger;
-        public PhieuNhapController(
-            INhapXuatService nhapXuatService,
-            ITinhGiaVonService tinhGiaVonService,
-            AppDbContext context,
-            ILogger<PhieuNhapController> logger
-            )
-        {
-            _nhapXuatService = nhapXuatService;
-            _tinhGiaVonService = tinhGiaVonService;
-            _context = context; 
-            _logger = logger;
-        }
-
-        // === 1. GET: DANH SÁCH ===
-        [HttpGet]
-        public async Task<IActionResult> PhieuNhap(DateTime? tuNgay, DateTime? denNgay, int? khoId, int? nhaCungCapId)
-        {
-            ViewBag.NhaCungCaps = await _context.NhaCungCaps.Where(n => n.TrangThai == TrangThaiNhaCungCap.Active).ToListAsync();
-            ViewBag.Khos = await _context.DanhMucKhos.ToListAsync();
-            ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
-            ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
-            ViewBag.KhoId = khoId;
-            ViewBag.NhaCungCapId = nhaCungCapId;
-
-            var dsPhieuNhap = await _nhapXuatService.LayDanhSachPhieuNhapAsync(tuNgay, denNgay, khoId, nhaCungCapId);
-            return View(dsPhieuNhap);
-        }
-
-        // === 2. GET: MÀN HÌNH TẠO MỚI CHI TIẾT (Trống) ===
-        [HttpGet]
-        public async Task<IActionResult> ChiTietPhieuNhap()
-        {
-            ViewBag.NhaCungCaps = await _context.NhaCungCaps.Where(n => n.TrangThai == TrangThaiNhaCungCap.Active).ToListAsync();
-            ViewBag.Khos = await _context.DanhMucKhos.ToListAsync();
-            ViewBag.VatTus = await _context.VatTus.ToListAsync(); 
-
-            return View(new PhieuNhap());
-        }
-
-        // === 3. GET: XEM CHI TIẾT PHIẾU ĐÃ LƯU ===
-        [HttpGet]
-        public async Task<IActionResult> XemChiTiet(int id)
-        {
-            var phieuNhap = await _context.PhieuNhaps
-                .Include(p => p.NhaCungCap)
-                .Include(p => p.Kho)
-                .Include(p => p.NguoiLapPhieu)
-                .Include(p => p.NguoiDuyetPhieu)
-                .Include(p => p.ChiTietPhieuNhaps)
-                    .ThenInclude(c => c.VatTu)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (phieuNhap == null)
-            {
-                return NotFound("Không tìm thấy Phiếu Nhập!");
-            }
-
-            return View(phieuNhap);
-        }
-
-        // === 4. LƯU TOÀN BỘ PHIẾU ===
-        [HttpPost]
-        public async Task<IActionResult> LuuToanBoPhieu([FromBody] PhieuNhapToanBoDto model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState); // Báo lỗi chính xác nếu dữ liệu gửi lên bị sai kiểu
-            }
-
-            if (model == null || model.ChiTiets == null || !model.ChiTiets.Any())
-            {
-                return Json(new { success = false, message = "Dữ liệu không hợp lệ hoặc lưới chi tiết trống!" });
-            }
-
-            try
-            {
-                if (model.Id > 0)
-                {
-                    return Json(new { success = false, message = "Cập nhật chưa được hỗ trợ. Vui lòng tạo mới!" });
-                }
-
-                string maPhieuMoi = $"PN-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}";
-
-                var phieuMoi = new PhieuNhap
-                {
-                    MaPhieu = maPhieuMoi,
-                    NgayNhap = model.NgayNhap,
-                    KhoId = model.KhoId,
-                    NhaCungCapId = model.NhaCungCapId,
-                    GhiChu = model.GhiChu,
-                    TrangThai = TrangThaiPhieuNhap.ChoDuyet,
-                    TongGiaTri = 0, 
-                    NguoiLapPhieuId = 1, 
-                    NgayTao = DateTime.Now
-                };
-
-                _context.PhieuNhaps.Add(phieuMoi);
-                await _context.SaveChangesAsync(); 
-
-                decimal tongTien = 0; 
-
-                foreach (var item in model.ChiTiets)
-                {
-                    decimal soLuong = item.SoLuong;
-                    decimal donGia = item.DonGia;
-
-                    if (soLuong <= 0 || donGia <= 0)
-                    {
-                        _context.PhieuNhaps.Remove(phieuMoi);
-                        await _context.SaveChangesAsync();
-                        return Json(new { success = false, message = "Số lượng và đơn giá phải lớn hơn 0!" });
-                    }
-
-                    var chiTiet = new ChiTietPhieuNhap
-                    {
-                        PhieuNhapId = phieuMoi.Id,
-                        VatTuId = item.VatTuId,
-                        SoLuong = soLuong,
-                        DonGiaNhap = donGia
-                    };
-                    _context.ChiTietPhieuNhaps.Add(chiTiet);
-
-                    tongTien += (soLuong * donGia);
-                }
-
-                phieuMoi.TongGiaTri = tongTien;
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMsg"] = $"Đã lưu thành công phiếu nhập {maPhieuMoi}!";
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Lưu phiếu thành công!",
-                    redirectUrl = $"/PhieuNhap/XemChiTiet/{phieuMoi.Id}" 
-                });
-            }
-            catch (Exception ex)
-            {
-                string errInfo = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return BadRequest($"Lỗi hệ thống C#: {errInfo}");
-            }
-        }
-
-        // === 5. CÁC HÀM DUYỆT VÀ TỪ CHỐI ===
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DuyetPhieuNhap(int id)
-        {
-            try
-            {
-                var success = await _nhapXuatService.DuyetPhieuNhapAsync(id);
-                if (success)
-                {
-                    await _tinhGiaVonService.TinhGiaVonBinhQuanLienHoanAsync(id);
-                    TempData["SuccessMsg"] = "Đã duyệt phiếu và cập nhật tồn kho, giá vốn thành công!";
-                }
-                else
-                {
-                    TempData["ErrorMsg"] = "Lỗi khi duyệt phiếu (Phiếu đã duyệt hoặc không tồn tại).";
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMsg"] = "Lỗi hệ thống: " + ex.Message;
-            }
-            return RedirectToAction("XemChiTiet", new { id = id });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TuChoiPhieuNhap(int id)
-        {
-            var success = await _nhapXuatService.TuChoiPhieuNhapAsync(id);
-            if (success)
-                TempData["SuccessMsg"] = "Đã từ chối phiếu nhập!";
-            else
-                TempData["ErrorMsg"] = "Lỗi khi từ chối phiếu.";
-
-            return RedirectToAction("XemChiTiet", new { id = id });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> XoaPhieuNhap(int id)
-        {
-            var success = await _nhapXuatService.XoaPhieuNhapAsync(id);
-            if (success)
-                TempData["SuccessMsg"] = "Đã xóa phiếu nhập kho!";
-            else
-                TempData["ErrorMsg"] = "Không thể xóa phiếu (Chỉ có thể xóa phiếu Chờ Duyệt hoặc Đã Hủy).";
-
-            return RedirectToAction("PhieuNhap");
-        }
-    }
-
-    // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
-    public class PhieuNhapToanBoDto
-    {
-        public int Id { get; set; }
-        public string? MaPhieu { get; set; }
-        public DateTime NgayNhap { get; set; }
-        public int KhoId { get; set; }
-        public int NhaCungCapId { get; set; }
-        public string? GhiChu { get; set; }
-
-        public List<ItemVatTuDto> ChiTiets { get; set; } = new List<ItemVatTuDto>();
-    }
-
-    public class ItemVatTuDto
-    {
-        public int VatTuId { get; set; }
-        public decimal SoLuong { get; set; } // THỦ PHẠM CHÍNH LÀ ĐÂY: Đã đổi thành decimal
-        public decimal DonGia { get; set; }
-    }
+        totalItems = (int?)(ViewBag.TongLoaiVatTu ?? 0) ?? 0,
+        totalValue = (decimal?)(ViewBag.TongGiaTriKho ?? 0m) ?? 0m,
+        receiptsWeek = (int?)(ViewBag.PhieuNhapChoPheDuyet ?? 0) ?? 0,
+        issuesWeek = (int?)(ViewBag.PhieuXuatChoPheDuyet ?? 0) ?? 0
+    };
+    var statsJson = JsonSerializer.Serialize(statsObj, new JsonSerializerOptions { PropertyNamingPolicy = null });
 }
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+
+<h1 class="page-title">TỔNG QUAN HỆ THỐNG</h1>
+
+<!-- Khối Thống kê ngắn gọn -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-orange"><i class="fa-solid fa-box-open"></i></div>
+        <div class="stat-info">
+            <div class="stat-title">Tổng loại vật tư</div>
+            <div class="stat-value" id="totalTypesVal">@statsObj.totalItems</div>
+        </div>
+    </div>
+    <!-- Bạn có thể thêm các stat-card khác ở đây cho đủ 4 ô -->
+</div>
+
+<!-- Khối Biểu đồ (Chia làm 2 cột: Đường và Tròn) -->
+<div class="dashboard-tables-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; margin-bottom: 20px;">
+    <!-- Biểu đồ Đường -->
+    <div class="table-card" style="margin: 0;">
+        <div class="chart-header"><i class="fas fa-chart-line" style="padding-right: 5px;"></i>Biểu đồ Nhập/Xuất kho</div>
+        <!-- Vẫn giữ position: relative để chống treo máy -->
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Biểu đồ Tròn (Thêm mới) -->
+    <div class="table-card" style="margin: 0;">
+        <div class="chart-header"><i class="fas fa-chart-pie" style="padding-right: 5px;"></i>Phân bổ danh mục</div>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Khối Bảng biểu: Cảnh báo & Thông báo -->
+<div class="dashboard-tables-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Cảnh báo tồn kho -->
+    <div class="table-card">
+        <div class="chart-header"><i class="fas fa-exclamation-triangle text-danger" style="padding-right: 5px;"></i>Cảnh báo sắp hết hàng</div>
+        <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Mã VT</th>
+                        <th>Tên Vật Tư</th>
+                        <th>Số Lượng</th>
+                        <th>Định Mức</th>
+                        <th class="text-center">Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody id="lowStockBody">
+                    <tr><td colspan="5" class="text-center text-muted">Đang cập nhật...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Thông báo hoạt động -->
+    <div class="table-card">
+        <div class="chart-header"><i class="fas fa-history" style="padding-right: 5px;"></i>Thông báo hoạt động gần đây</div>
+        <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Loại</th>
+                        <th>Nội dung</th>
+                        <th>Người thực hiện</th>
+                    </tr>
+                </thead>
+                <tbody id="recentActivityBody">
+                    <tr><td colspan="4" class="text-center text-muted">Đang cập nhật...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bơm dữ liệu từ C# sang JS an toàn -->
+<script>
+    const statsData = @Html.Raw(statsJson ?? "{}");
+    
+    // Dữ liệu biểu đồ đường
+    const trendLabels = @Html.Raw(ViewBag.TrendLabelsJson ?? "[]");
+    const trendIn = @Html.Raw(ViewBag.TrendInJson ?? "[]");
+    const trendOut = @Html.Raw(ViewBag.TrendOutJson ?? "[]");
+    
+    // Dữ liệu biểu đồ tròn (Thêm mới)
+    const categoryLabels = @Html.Raw(ViewBag.CategoryLabelsJson ?? "[]");
+    const categoryValues = @Html.Raw(ViewBag.CategoryValuesJson ?? "[]");
+    
+    // Dữ liệu bảng
+    const lowStockData = @Html.Raw(ViewBag.LowStockJson ?? "[]");
+    const activityData = @Html.Raw(ViewBag.ActivitiesJson ?? "[]");
+</script>
+
+<script src="~/js/site.js" asp-append-version="true"></script>

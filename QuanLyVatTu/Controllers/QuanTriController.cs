@@ -199,6 +199,7 @@ namespace QuanLyVatTu.Controllers
             {
                 var cacModuleMacDinh = new List<PhanQuyen>
                 {
+                    new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_VATTU", TenChucNang = "Quản lý Vật Tư", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
                     new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_DANHMUC", TenChucNang = "Quản lý Danh Mục Vật Tư", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
                     new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_NHAPKHO", TenChucNang = "Quản lý Phiếu Nhập Kho", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },
                     new PhanQuyen { VaiTroId = vaiTroDangChon.Id, MaChucNang = "QL_XUATKHO", TenChucNang = "Quản lý Phiếu Xuất Kho", CoQuyenXem=false, CoQuyenThem=false, CoQuyenSua=false, CoQuyenXoa=false },

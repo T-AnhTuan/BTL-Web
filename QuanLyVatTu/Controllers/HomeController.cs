@@ -4,11 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
+using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuanLyVatTu.Controllers
 {
-    [Authorize] // Bắt buộc đăng nhập mới được vào
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly AppDbContext _context;
@@ -21,50 +24,97 @@ namespace QuanLyVatTu.Controllers
             _thongBaoService = thongBaoService;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             try
             {
-                // 1. Lấy ID tài khoản đang đăng nhập từ Cookie Claims
                 var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 int taiKhoanId = string.IsNullOrEmpty(userIdString) ? 0 : int.Parse(userIdString);
+                // Thống kê cơ bản
+                ViewBag.TongLoaiVatTu = await _context.VatTus
+           .AsNoTracking()
+           .Select(v => v.MaVatTu)        // đổi thành trường mã thực tế của bạn
+           .Where(m => !string.IsNullOrEmpty(m))
+           .Distinct()
+           .CountAsync();
 
-                // 2. THỐNG KÊ TỔNG QUAN (Dùng đúng trường TonKhoHienTai và GiaVonBinhQuan)
-                ViewBag.TongLoaiVatTu = await _context.VatTus.CountAsync();
+                // Tính tổng giá trị tồn kho (lấy minimal fields)
+                var totalValuePerCode = await _context.VatTus
+             .AsNoTracking()
+             .GroupBy(v => v.MaVatTu)
+             .Select(g => new
+             {
+                 Code = g.Key,
+                 TotalQty = g.Sum(x => (decimal?)x.TonKhoHienTai) ?? 0m,
+                 TotalValue = g.Sum(x => (decimal?)(x.TonKhoHienTai * x.GiaVonBinhQuan)) ?? 0m
+             })
+             .ToListAsync();
+                var totalInventoryValue = totalValuePerCode.Sum(x => x.TotalValue);
+                ViewBag.TongGiaTriKho = totalInventoryValue;
 
-                var vatTus = await _context.VatTus.ToListAsync();
-                // Tính tổng giá trị kho thực tế
-                ViewBag.TongGiaTriKho = vatTus.Sum(v => v.TonKhoHienTai * v.GiaVonBinhQuan);
-
-                // 3. CẢNH BÁO TỒN KHO & PHIẾU CHỜ DUYỆT (Dùng Enum TrangThaiPhieu)
-                ViewBag.CanhBaoTonKho = await _context.VatTus
+                // Cảnh báo & phiếu chờ
+                ViewBag.CanhBaoTonKho = await _context.VatTus.AsNoTracking()
                     .CountAsync(v => v.TonKhoHienTai <= v.TonToiThieu);
 
-                ViewBag.PhieuNhapChoPheDuyet = await _context.PhieuNhaps
+                ViewBag.PhieuNhapChoPheDuyet = await _context.PhieuNhaps.AsNoTracking()
                     .CountAsync(p => p.TrangThai == TrangThaiPhieuNhap.ChoDuyet);
 
-                ViewBag.PhieuXuatChoPheDuyet = await _context.PhieuXuats
+                ViewBag.PhieuXuatChoPheDuyet = await _context.PhieuXuats.AsNoTracking()
                     .CountAsync(p => p.TrangThai == TrangThaiPhieuXuat.ChoDuyet);
 
-                // 4. LẤY DỮ LIỆU TỪ SERVICE CHO DASHBOARD
-                // Danh sách thông báo chưa xem của User này
-                ViewBag.ThongBaoMoi = await _thongBaoService.LayThongBaoChuaXemAsync(taiKhoanId);
 
-                // 10 Lịch sử giao dịch/hoạt động mới nhất của toàn hệ thống
-                ViewBag.HoatDongGanDay = await _thongBaoService.LayNhatKyGiaoDichMoiNhatAsync(10);
+                var jsonOptions = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
 
-                // Danh sách vật tư đang cạn kiệt cần nhập gấp
-                ViewBag.VatTuDuoiMucToiThieu = await _context.VatTus
-                    .Where(v => v.TonKhoHienTai < v.TonToiThieu)
-                    .OrderBy(v => v.TonKhoHienTai)
-                    .Take(10)
-                    .ToListAsync();
+                // 1. Dữ liệu cảnh báo tồn kho (Dưới định mức)
+                var lowStock = await _context.VatTus.AsNoTracking()
+                    .Where(v => v.TonKhoHienTai <= (v.TonToiThieu)) // Giả sử dưới định mức min
+                    .Select(v => new { MaVatTu = v.MaVatTu, TenVatTu = v.TenVatTu, SoLuong = v.TonKhoHienTai, DinhMuc = v.TonToiThieu })
+                    .Take(5).ToListAsync();
+                ViewBag.LowStockJson = JsonSerializer.Serialize(lowStock, jsonOptions);
 
+                // 2. Dữ liệu thông báo hoạt động (Trộn Nhập & Xuất)
+                var nhaps = await _context.PhieuNhaps.AsNoTracking().OrderByDescending(p => p.NgayNhap).Take(5)
+                    .Select(p => new { ThoiGian = p.NgayNhap, Loai = "Nhập Kho", NoiDung = "Nhập hàng mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
+
+                var xuats = await _context.PhieuXuats.AsNoTracking().OrderByDescending(p => p.NgayXuat).Take(5)
+                    .Select(p => new { ThoiGian = p.NgayXuat, Loai = "Xuất Kho", NoiDung = "Xuất hàng mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
+
+                var activities = nhaps.Concat(xuats).OrderByDescending(a => a.ThoiGian).Take(5).ToList();
+                ViewBag.ActivitiesJson = JsonSerializer.Serialize(activities, jsonOptions);
+
+                // 3. Mock Data Biểu đồ (Bạn có thể tự thay bằng dữ liệu thực)
+                var labels = new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN" };
+                var nhapData = new[] { 10, 20, 15, 30, 25, 10, 5 };
+                var xuatData = new[] { 5, 15, 10, 20, 30, 5, 0 };
+
+                ViewBag.TrendLabelsJson = JsonSerializer.Serialize(labels, jsonOptions);
+                ViewBag.TrendInJson = JsonSerializer.Serialize(nhapData, jsonOptions);
+                ViewBag.TrendOutJson = JsonSerializer.Serialize(xuatData, jsonOptions);
+
+                // 4. Mock Data Bieu do san pham
+                var categoryStats = await _context.VatTus.AsNoTracking()
+                 .Include(v => v.DanhMuc) // Kết nối qua bảng Danh Mục
+                 .Where(v => v.DanhMuc != null)
+                 .GroupBy(v => v.DanhMuc.TenDanhMuc) // Nhóm theo Tên Danh Mục
+                 .Select(g => new
+                 {
+                     CategoryName = g.Key,
+                     Count = g.Count() // Đếm số lượng Vật tư trong từng danh mục
+                 })
+                 .OrderByDescending(g => g.Count) // Xếp giảm dần (Top nhiều nhất lên đầu)
+                 .Take(5) // Cắt lấy 5 danh mục nhiều nhất (tránh biểu đồ bị vụn)
+                 .ToListAsync();
+                var catLabels = categoryStats.Select(c => c.CategoryName).ToArray();
+                var catValues = categoryStats.Select(c => c.Count).ToArray();
+
+                ViewBag.CategoryLabelsJson = JsonSerializer.Serialize(catLabels, jsonOptions);
+                ViewBag.CategoryValuesJson = JsonSerializer.Serialize(catValues, jsonOptions);
                 return View();
             }
-            catch (Exception ex)
+            catch (Exception ex) // Nếu có bất kỳ lỗi gì xảy ra ở khối Try (sai kết nối, biến null...)
             {
-                // Bắt lỗi trực tiếp in ra màn hình thay vì văng ra trang Error khó hiểu
+                // Thay vì sập trang Error, sẽ in thẳng nguyên nhân lỗi ra màn hình để lập trình viên sửa
                 return Content($"LỖI TẠI HOME CONTROLLER: {ex.Message} \nChi tiết: {ex.InnerException?.Message}");
             }
         }

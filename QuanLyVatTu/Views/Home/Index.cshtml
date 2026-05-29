@@ -1,61 +1,99 @@
-﻿@{
+﻿
+@using System.Text.Json
+@{
     ViewData["Title"] = "Dashboard";
+    var statsObj = new
+    {
+        totalItems = (int?)(ViewBag.TongLoaiVatTu ?? 0) ?? 0,
+        totalValue = (decimal?)(ViewBag.TongGiaTriKho ?? 0m) ?? 0m,
+        receiptsWeek = (int?)(ViewBag.PhieuNhapChoPheDuyet ?? 0) ?? 0,
+        issuesWeek = (int?)(ViewBag.PhieuXuatChoPheDuyet ?? 0) ?? 0
+    };
+    var statsJson = JsonSerializer.Serialize(statsObj, new JsonSerializerOptions { PropertyNamingPolicy = null });
 }
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
 
-<h1 class="page-title">Bảng Điều Khiển Quản Lý Kho</h1>
+<h1 class="page-title">TỔNG QUAN</h1>
 
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon icon-orange"><i class="fa-solid fa-box-open"></i></div>
         <div class="stat-info">
-            <div class="stat-title">Tổng loại vật tư <span class="badge-percent badge-neutral">0%</span></div>
-            <div class="stat-value">0 <span style="font-size: 13px; font-weight: 500; color: #64748b;">mặt hàng</span></div>
+            <div class="stat-title">Tổng loại vật tư 
+                </div>
+            <div class="stat-value" id="totalTypesVal" style="text-align: right;">
+                @statsObj.totalItems
+                <span style="font-size: 13px; font-weight: 500; color: #64748b;">mặt hàng</span>
+            </div>
         </div>
     </div>
+
 
     <div class="stat-card">
         <div class="stat-icon icon-green"><i class="fa-solid fa-sack-dollar"></i></div>
         <div class="stat-info">
-            <div class="stat-title">Tổng giá trị Tồn kho <span class="badge-percent badge-neutral">0%</span></div>
-            <div class="stat-value">0 VNĐ</div>
+            <div class="stat-title">Tổng giá trị Tồn kho 
+                </div>
+            <div class="stat-value" id="totalValueVal" style="text-align: right;">
+                @statsObj.totalValue.ToString("N0")
+                <span style="font-size: 13px; font-weight: 500; color: #64748b;">VNĐ</span>
+            </div>
         </div>
     </div>
 
     <div class="stat-card">
         <div class="stat-icon icon-blue"><i class="fa-solid fa-truck-ramp-box"></i></div>
         <div class="stat-info">
-            <div class="stat-title">Phiếu Nhập Mới (Tuần) <span class="badge-percent badge-neutral">0%</span></div>
-            <div class="stat-value">0 <span style="font-size: 13px; font-weight: 500; color: #64748b;">phiếu</span></div>
+            <div class="stat-title">
+                Phiếu Nhập chờ duyệt
+              
+            </div>
+            <div class="stat-value" style="text-align: right;">
+                @statsObj.receiptsWeek              
+                <span style="font-size: 13px; font-weight: 500; color: #64748b;">phiếu</span>
+            </div>
         </div>
+     
     </div>
 
     <div class="stat-card">
         <div class="stat-icon icon-purple"><i class="fa-solid fa-right-from-bracket"></i></div>
         <div class="stat-info">
-            <div class="stat-title">Phiếu Xuất Mới (Tuần) <span class="badge-percent badge-neutral">0%</span></div>
-            <div class="stat-value">0 <span style="font-size: 13px; font-weight: 500; color: #64748b;">phiếu</span></div>
+            <div class="stat-title">Phiếu xuất chờ duyệt </div>
+            <div class="stat-value" style="text-align: right;">
+                @statsObj.issuesWeek
+                <span style="font-size: 13px; font-weight: 500; color: #64748b;">phiếu</span>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="charts-grid">
-    <div class="chart-card">
-        <div class="chart-header">Xu hướng Nhập/Xuất Hàng (30 ngày qua)</div>
-        <canvas id="trendChart" height="100"></canvas>
+    <div style="resize: none; overflow: auto;" class="chart-card chart-wrapper" id="trendWrapper">
+        <div class="chart-header">
+            <i class="fas fa-chart-line" style="padding-right: 5px;"></i>
+            Biểu đồ Nhập/Xuất kho
+        </div>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="trendChart"></canvas>
+        </div>
     </div>
 
-    <div class="chart-card">
-        <div class="chart-header">Cơ cấu Tồn Kho theo Danh Mục</div>
-        <canvas id="categoryChart" height="200"></canvas>
+    <div class="chart-card" style="resize: none; overflow: auto;" id="categoryWrapper">
+        <div class="chart-header">
+            <i class="fas fa-chart-pie" style="padding-right: 5px;"></i>
+            Phân bổ danh mục
+        </div>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="categoryChart"></canvas>
+        </div>
     </div>
 </div>
 
 <div class="tables-grid">
     <div class="table-card">
-        <div class="chart-header">Cảnh báo Vật Tư Sắp Hết Hàng</div>
+        <div class="chart-header"><i class="fas fa-exclamation-triangle" style="padding-right: 5px;"></i>Cảnh báo Vật Tư Sắp Hết Hàng</div>
         <table class="data-table">
             <thead>
                 <tr>
@@ -66,29 +104,44 @@
                     <th class="text-center">Trạng Thái</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="lowStockBody">
+                <!-- Dữ liệu sẽ được load qua AJAX hoặc ViewComponent sau -->
+                <tr><td colspan="3" class="text-center text-muted">Đang cập nhật...</td></tr>
             </tbody>
         </table>
     </div>
 
     <div class="table-card">
-        <div class="chart-header">Hoạt Động Kho Gần Đây</div>
+        <div class="chart-header"><i class="fas fa-history" style="padding-right: 5px;"></i>Hoạt động gần đây</div>
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Thời Gian</th>
+                    <th>Thời gian</th>
                     <th>Loại</th>
-                    <th>Số Phiếu</th>
-                    <th>Người Thực Hiện</th>
-                    <th>Nội Dung</th>
+                    <th>Nội dung</th>
+                    <th>Người thực hiện</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="recentActivityBody">
+                <!-- Dữ liệu sẽ được load qua AJAX hoặc ViewComponent sau -->
+                <tr><td colspan="3" class="text-center text-muted">Đang cập nhật...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
+<script>
+    // Ép dữ liệu từ ViewBag sang biến Javascript an toàn
+    const statsData = @Html.Raw(statsJson ?? "{}");
+    const trendLabels = @Html.Raw(ViewBag.TrendLabelsJson ?? "[]");
+    const trendIn = @Html.Raw(ViewBag.TrendInJson ?? "[]");
+    const trendOut = @Html.Raw(ViewBag.TrendOutJson ?? "[]");
+    const categoryLabels = @Html.Raw(ViewBag.CategoryLabelsJson ?? "[]");
+    const categoryValues = @Html.Raw(ViewBag.CategoryValuesJson ?? "[]");
 
+    // Dữ liệu cho 2 bảng (Cảnh báo và Thông báo)
+    const lowStockData = @Html.Raw(ViewBag.LowStockJson ?? "[]");
+    const activityData = @Html.Raw(ViewBag.ActivitiesJson ?? "[]");
+</script>
 <script src="~/js/site.js" asp-append-version="true">
     
 </script>
