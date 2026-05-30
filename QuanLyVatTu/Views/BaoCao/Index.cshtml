@@ -56,19 +56,19 @@
                 <th rowspan="2">Tên Vật Tư</th>
                 <th rowspan="2" style="width: 60px;">ĐVT</th>
                 <th colspan="2">Tồn Đầu Kỳ</th>
-                <th colspan="2">Nhập Trong Kỳ</th>
-                <th colspan="2">Xuất Trong Kỳ</th>
-                <th colspan="2">Tồn Cuối Kỳ</th>
+                <th colspan="2" style="color: green">Nhập Trong Kỳ</th>
+                <th colspan="2" style="color: red">Xuất Trong Kỳ</th>
+                <th colspan="2" style="color: blue">Tồn Cuối Kỳ</th>
             </tr>
             <tr>
                 <th style="width: 80px;">Số lượng</th>
                 <th style="width: 120px;">Giá trị</th>
-                <th style="width: 80px;">Số lượng</th>
-                <th style="width: 120px;">Giá trị</th>
-                <th style="width: 80px;">Số lượng</th>
-                <th style="width: 120px;">Giá trị</th>
-                <th style="width: 80px;">Số lượng</th>
-                <th style="width: 120px;">Giá trị</th>
+                <th style="width: 80px;color: green">Số lượng</th>
+                <th style="width: 120px;color: green">Giá trị</th>
+                <th style="width: 80px;color: red">Số lượng</th>
+                <th style="width: 120px;color: red">Giá trị</th>
+                <th style="width: 80px;color: blue">Số lượng</th>
+                <th style="width: 120px;color: blue">Giá trị</th>
             </tr>
         </thead>
 
@@ -86,20 +86,20 @@
                         <td class="text-center">@item.DonViTinh</td>
 
                         <!-- Tồn đầu -->
-                        <td class="text-end">@item.TonDauSoLuong.ToString("N0")</td>
-                        <td class="text-end">@item.TonDauGiaTri.ToString("N0")</td>
+                        <td class="text-end" style="color: green">@item.TonDauSoLuong.ToString("N0")</td>
+                        <td class="text-end" style="color: green">@item.TonDauGiaTri.ToString("N0")</td>
 
                         <!-- Nhập -->
                         <td class="text-end text-success fw-semibold">@item.NhapSoLuong.ToString("N0")</td>
                         <td class="text-end text-success">@item.NhapGiaTri.ToString("N0")</td>
 
                         <!-- Xuất -->
-                        <td class="text-end text-danger fw-semibold">@item.XuatSoLuong.ToString("N0")</td>
-                        <td class="text-end text-danger">@item.XuatGiaTri.ToString("N0")</td>
+                        <td class="text-end text-danger fw-semibold" style="color: red">@item.XuatSoLuong.ToString("N0")</td>
+                        <td class="text-end text-danger" style="color: red">@item.XuatGiaTri.ToString("N0")</td>
 
                         <!-- Tồn cuối -->
-                        <td class="text-end fw-bold text-primary">@item.TonCuoiSoLuong.ToString("N0")</td>
-                        <td class="text-end fw-bold text-primary">@item.TonCuoiGiaTri.ToString("N0")</td>
+                        <td class="text-end fw-bold text-primary" style="color: blue">@item.TonCuoiSoLuong.ToString("N0")</td>
+                        <td class="text-end fw-bold text-primary" style="color: blue">@item.TonCuoiGiaTri.ToString("N0")</td>
                     </tr>
                 }
             }
@@ -121,12 +121,12 @@
                     <td colspan="4" class="text-center text-uppercase">Tổng cộng</td>
                     <td class="text-end">@Model.TongTonDauSoLuong.ToString("N0")</td>
                     <td class="text-end">@Model.TongTonDauGiaTri.ToString("N0") VNĐ</td>
-                    <td class="text-end text-success">@Model.TongNhapSoLuong.ToString("N0")</td>
-                    <td class="text-end text-success">@Model.TongNhapGiaTri.ToString("N0") VNĐ</td>
-                    <td class="text-end text-danger">@Model.TongXuatSoLuong.ToString("N0")</td>
-                    <td class="text-end text-danger">@Model.TongXuatGiaTri.ToString("N0") VNĐ</td>
-                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiSoLuong.ToString("N0")</td>
-                    <td class="text-end text-primary fs-6">@Model.TongTonCuoiGiaTri.ToString("N0") VNĐ</td>
+                    <td class="text-end text-success" style="color: green;">@Model.TongNhapSoLuong.ToString("N0")</td>
+                    <td class="text-end text-success" style="color: green;">@Model.TongNhapGiaTri.ToString("N0") VNĐ</td>
+                    <td class="text-end text-danger" style="color: red;">@Model.TongXuatSoLuong.ToString("N0")</td>
+                    <td class="text-end text-danger" style="color:red;">@Model.TongXuatGiaTri.ToString("N0") VNĐ</td>
+                    <td class="text-end text-primary fs-6" style="color: blue;">@Model.TongTonCuoiSoLuong.ToString("N0")</td>
+                    <td class="text-end text-primary fs-6" style="color: blue;">@Model.TongTonCuoiGiaTri.ToString("N0") VNĐ</td>
                 </tr>
             </tfoot>
         }
