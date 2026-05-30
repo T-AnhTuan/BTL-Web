@@ -207,7 +207,6 @@ namespace QuanLyVatTu.Controllers
 
             var phieu = await _context.PhieuXuats
                 .Include(p => p.Kho)
-                .Include(p => p.NguoiXuat)
                 .Include(p => p.ChiTietPhieuXuats)
                     .ThenInclude(c => c.VatTu) // Nối tiếp sang bảng Vật Tư để lấy Tên Vật Tư
                 .FirstOrDefaultAsync(p => p.Id == id);

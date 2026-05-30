@@ -19,10 +19,7 @@
             <h1 class="page-title">Chi tiết phiếu xuất</h1>
         </div>
         <div style="display: flex; gap: 10px;">
-            <!-- Nút gọi chức năng in mặc định của trình duyệt -->
             <button class="btn btn-secondary" onclick="window.print();"><i class="fa-solid fa-print"></i> In phiếu</button>
-
-            @* CHỈ Hiển thị nút Duyệt / Từ chối nếu phiếu đang ở trạng thái Chờ duyệt *@
             @if (Model.TrangThai == QuanLyVatTu.Models.TrangThaiPhieuXuat.ChoDuyet)
             {
                 <!-- Form gửi lệnh Duyệt bằng phương thức POST an toàn -->
@@ -44,109 +41,184 @@
                     </button>
                 </form>
             }
+            else
+            {
+                <span class="badge bg-success" style="align-self:center">Đã duyệt</span>
+            }
         </div>
     </div>
+    <div class="section-card">
+        <div class="section-title"><i class="fa-solid fa-circle-info" style="color:#3b82f6;"></i> THÔNG TIN PHIẾU NHẬP</div>
+        <div class="input-row">
+            <!-- CÁC THẺ ẨN CHỨA DỮ LIỆU TẠM THỜI -->
+            <input type="hidden" id="hdfPhieuXuatId" value="@Model.Id" />
+            <input type="hidden" id="hdfNgayXuat" value="@Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")" />
+            <input type="hidden" id="hdfKhoId" value="@Model.KhoId" />
+            <input type="hidden" id="hdfKhachHang" value="@Model.KhachHang" />
+            <input type="hidden" id="hdfLyDoXuat" value="@Model.LyDoXuat" />
 
-    <!-- KHU VỰC THÔNG TIN CHUNG (Trình bày dưới dạng các ô input đã bị khóa) -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Thông tin chung</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="fw-bold">Mã Phiếu Xuất:</label>
-                    <input type="text" class="form-control" value="PX-@Model.Id.ToString("D5")" readonly />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="fw-bold">Ngày Lập:</label>
-                    <input type="text" class="form-control" value="@Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")" readonly />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="fw-bold">Kho Xuất:</label>
-                    <input type="text" class="form-control" value="@Model.Kho?.TenKho" readonly />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="fw-bold">Tài Khoản Lập:</label>
-                    <!-- ĐÃ SỬA: Lấy tên đăng nhập từ bảng Tài Khoản -->
-                    <input type="text" class="form-control" value="@Model.NguoiXuat" readonly />
-                </div>
-                <div class="col-md-8 mb-3">
-                    <!-- ĐÃ SỬA: Hiển thị đúng tên Lý do xuất -->
-                    <label class="fw-bold">Lý Do Xuất:</label>
-                    <input type="text" class="form-control" value="@Model.LyDoXuat" readonly />
-                </div>
+            <div class="form-group">
+                <label>Mã phiếu</label>
+                <input id="txtMaPhieu" value="@Model.MaPhieu" readonly class="form-control" style="background-color: #f8fafc;">
+            </div>
+            <div class="form-group">
+                <label>Ngày xuất</label>
+                <input value="@Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")" readonly class="form-control" style="background-color: #f8fafc;">
+            </div>
+            <div class="form-group">
+                <label>Kho xuất</label>
+                <input id="cboKhoId" value="@Model.Kho?.TenKho" readonly class="form-control" style="background-color: #f8fafc;">
+            </div>
+            <div class="form-group">
+                <label>Khách hàng</label>
+                <input id="KhachHangid" value="@Model.KhachHang" readonly class="form-control" style="background-color: #f8fafc;">
             </div>
         </div>
     </div>
 
-    <!-- BẢNG DANH SÁCH CHI TIẾT (Lặp dữ liệu từ CSDL ra) -->
-    <div class="card">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Chi tiết vật tư xuất</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-center" width="50">STT</th>
-                            <th>Mã Vật Tư</th>
-                            <th>Tên Vật Tư</th>
-                            <th class="text-center">ĐVT</th>
-                            <th class="text-end">Số Lượng Xuất</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Kiểm tra xem phiếu có chi tiết nào không -->
-                        @if (Model.ChiTietPhieuXuats != null && Model.ChiTietPhieuXuats.Any())
+    <div class="section-card" style="background-color: #f8fafc; border-style: dashed; border-color: #94a3b8;">
+        <div class="section-title"><i class="fa-solid fa-cart-plus" style="color:#10b981;"></i> THÊM VẬT TƯ VÀO PHIẾU</div>
+        <div class="input-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;">
+                <label>Chọn vật tư <span style="color:red">*</span></label>
+                <select id="cboVatTu" class="form-control">
+                    <option value="">-- Vui lòng chọn vật tư --</option>
+                    @if (ViewBag.VatTus != null)
+                    {
+                        foreach (var vt in ViewBag.VatTus)
                         {
-                            int stt = 1;
-                            <!-- Duyệt qua từng chi tiết để in ra dòng bảng -->
-                            foreach (var item in Model.ChiTietPhieuXuats)
-                            {
-                                <tr>
-                                    <td class="text-center">@stt</td>
-                                    <td>@item.VatTu?.MaVatTu</td>
-                                    <td>@item.VatTu?.TenVatTu</td>
-                                    <td class="text-center">@item.VatTu?.DonViTinh</td>
-                                    <!-- Hiển thị số lượng màu đỏ, có dấu phẩy ngăn cách hàng nghìn -->
-                                    <td class="text-end fw-bold text-danger">@item.SoLuong.ToString("N0", new CultureInfo("vi-VN"))</td>
-                                </tr>
-                                stt++;
-                            }
+                            <option value="@vt.Id" data-dvt="@vt.DonViTinh" data-code="@vt.MaVatTu">
+                                [@vt.MaVatTu] - @vt.TenVatTu
+                            </option>
                         }
-                        else
+                    }
+                </select>
+            </div>
+            <div class="form-group" style="flex: 0.5;">
+                <label>Số lượng <span style="color:red">*</span></label>
+                <input type="number" id="txtSoLuong" min="1" placeholder="Nhập số lượng...">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Đơn giá (VNĐ) <span style="color:red">*</span></label>
+                <input type="number" id="txtDonGia" min="0" placeholder="Nhập đơn giá...">
+            </div>
+            <div class="form-group" style="flex: 0;">
+                <button type="button" id="btnThemVatTu" class="btn btn-primary">
+                    <i class="fa-solid fa-arrow-down"></i> Thêm xuống lưới
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="section-card">
+        <div class="section-title"><i class="fa-solid fa-list" style="color:#64748b;"></i> DANH SÁCH MẶT HÀNG NHẬP</div>
+        <div class="table-container">
+            <table class="data-table" id="bangChiTiet">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 50px;">STT</th>
+                        <th class="text-center">Mã vật tư</th>
+                        <th class="text-center">Tên vật tư</th>
+                        <th class="text-center">ĐVT</th>
+                        <th class="text-center">Số lượng</th>
+                        <th class="text-center">Đơn giá</th>
+                        <th class="text-center">Thành tiền</th>
+                        <th class="text-center" style="width: 60px;">Xóa</th>
+                    </tr>
+                </thead>
+                <input type="hidden" id="hdfPhieuXuatId" value="@Model.Id" />
+                <tbody id="chiTietBody">
+                    @if (Model.ChiTietPhieuXuats != null && Model.ChiTietPhieuXuats.Any())
+                    {
+                        int stt = 1;
+                        foreach (var item in Model.ChiTietPhieuXuats)
                         {
-                            <!-- Nếu không có thì báo lỗi -->
                             <tr>
-                                <td colspan="5" class="text-center text-muted">Không có dữ liệu chi tiết.</td>
+                                <td class="text-center">@(stt++)</td>
+
+                                <td class="text-center td-mavat">
+                                    @item.VatTu?.MaVatTu
+                                </td>
+
+                                <td class="td-vattu" data-id="@(item.VatTuId)">
+                                    @item.VatTu?.TenVatTu
+                                </td>
+
+                                <td class="text-center">@item.VatTu?.DonViTinh</td>
+
+                                <td type="number" class="text-center num-soluong" step="any" data-value="@item.SoLuong">
+                                    @item.SoLuong.ToString("N0")
+                                </td>
+
+                                <td type="number" class="text-center num-dongia" step="any" data-value="@item.DonGiaXuat">
+                                    @item.DonGiaXuat.ToString("N0") ₫
+                                </td>
+
+                                <td class="text-center num-thanhtien" data-value="@item.ThanhTien" style="font-weight:700; color:#e11d48;">
+                                    @item.ThanhTien.ToString("N0") ₫
+                                </td>
+
+                                <td class="text-center">
+                                    <button class="btn btn-danger btn-delete-row" data-id="@item.Id" style="padding:6px 10px;">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
+
                         }
-                    </tbody>
-                </table>
+                    }
+                    else
+                    {
+                        <tr id="emptyRow">
+                            <td colspan="8" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">
+                                Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary-section">
+            <div class="summary-box">
+                <div class="summary-line">
+                    <span>Tổng số mặt hàng:</span>
+                    <span style="font-weight:600; color:#0f172a;">@(Model.ChiTietPhieuXuats?.Count() ?? 0)</span>
+                </div>
+                <div class="summary-line">
+                    <span>Tổng số lượng:</span>
+                    <span style="font-weight:600; color:#0f172a;">@(Model.ChiTietPhieuXuats?.Sum(x => x.SoLuong) ?? 0)</span>
+                </div>
+                <div class="summary-total">
+                    <span>TỔNG TIỀN:</span>
+                    <span>@((Model.ChiTietPhieuXuats?.Sum(x => x.ThanhTien) ?? 0).ToString("N0")) đ</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT CHẶN CHỈNH SỬA (Giữ nguyên các nút Submit) -->
     <script>
-            (function() {
+            (function(){
                 try {
-                    // Chỉ cho phép click vào 2 nút Duyệt hoặc Từ Chối
+                    // Tên action hoặc phần URL cần giữ enabled
                     const keepActions = ['DuyetPhieuXuat', 'TuChoiPhieuXuat'];
-                    // Lấy tất cả các thẻ có khả năng nhập liệu
+
                     document.querySelectorAll('button, input, select, textarea').forEach(function(el){
+                        // Nếu element nằm trong form
                         const form = el.closest('form');
-                        // Nếu nó nằm trong Form Duyệt/Hủy thì bỏ qua (return)
                         if (form) {
+                            // Lấy action thực tế (Razor render thành attribute "action")
                             const action = form.getAttribute('action') || '';
                             const shouldKeep = keepActions.some(k => action.includes(k));
                             if (shouldKeep) return;
+                            // Nếu form có class keep-enabled thì giữ nguyên
                             if (form.classList && form.classList.contains('keep-enabled')) return;
                         }
+
+                        // Nếu chính element có attribute data-keep-enabled thì giữ nguyên
                         if (el.hasAttribute('data-keep-enabled')) return;
-                        // Khóa toàn bộ các ô còn lại bằng thuộc tính disabled
+
+                        // Không disable các nút submit trong form có method post và action rỗng (trường hợp đặc biệt)
+                        // (bỏ qua nếu bạn muốn disable tất cả)
                         el.setAttribute('disabled', 'disabled');
                     });
                 } catch (e) {

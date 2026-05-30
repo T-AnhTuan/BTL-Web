@@ -5,7 +5,7 @@
 
     var now = DateTime.Now;
     // Giả sử Model là IEnumerable<PhieuNhap> và property trạng thái là DaDuyet (bool).
-    var giaNhapTrongKy = Model != null
+    var giaXuatTrongKy = Model != null
         ? Model.Where(m => m.TrangThai == TrangThaiPhieuXuat.DaDuyet
                            && m.NgayXuat.Month == now.Month
                            && m.NgayXuat.Year == now.Year)
@@ -31,19 +31,39 @@
     </div>
 }
 
-<div class="toolbar-section" style="display:flex; justify-content: space-between; align-items:center; margin-bottom:20px;">
-    <div class="search-box-container">
-
-        <input type="text" placeholder="Tìm kiếm nhanh (ví dụ: mã phiếu...)" style="padding:8px; border:1px solid #ccc; border-radius:4px; width:300px;">
-        <button class="btn btn-secondary" style="padding:8px 12px; margin-left:5px;">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            Tìm kiếm
-        </button>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-info">
+            <h4>Tổng phiếu Xuất</h4>
+            <div class="value">@(Model != null ? Model.Count() : 0)</div>
+        </div>
+        <div class="stat-icon icon-blue"><i class="fa-solid fa-file-lines"></i></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <h4>Giá trị nhập trong kỳ</h4>
+            <div class="value">
+                @giaXuatTrongKy.ToString("N0") VNĐ
+            </div>
+        </div>
+        <div class="stat-icon icon-green"><i class="fa-solid fa-credit-card"></i></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <h4>Phiếu chờ duyệt</h4>
+            <div class="value">@(Model != null ? Model.Count(m => m.TrangThai == TrangThaiPhieuXuat.ChoDuyet) : 0)</div>
+        </div>
+        <div class="stat-icon icon-orange"><i class="fa-regular fa-clock"></i></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <h4>Trạng thái</h4>
+            <div class="value" style="font-size: 18px; color: #64748b;">Đang hoạt động</div>
+        </div>
+        <div class="stat-icon icon-emerald"><i class="fa-solid fa-layer-group"></i></div>
     </div>
 </div>
-<div class="table-toolbar">
-    <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm phiếu xuất kho</button>
-</div>
+
 <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
     <form id="filterForm" method="get" asp-action="PhieuXuat" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
 
@@ -96,7 +116,9 @@
         </div>
     </form>
 </div>
-
+<div class="table-toolbar">
+    <button id="btnOpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm phiếu xuất kho</button>
+</div>
 <div class="table-container">
     <table class="data-table" style="width:100%; border-collapse: collapse;">
         <thead>
@@ -105,7 +127,7 @@
                 <th>Ngày xuất</th>
                 <th>Khách hàng</th>
                 <th>Kho xuất</th>
-                <th>Người xuất</th>
+                <th>Người lập</th>
                 <th class="text-right">Tổng tiền (VNĐ)</th>
                 <th class="text-center">Trạng thái</th>
                 <th class="text-center">Thao tác</th>
@@ -121,7 +143,7 @@
                         <td>@item.NgayXuat.ToString("dd/MM/yyyy")</td>
                         <td>@item.KhachHang</td>
                         <td>@(item.Kho != null ? item.Kho.TenKho : "N/A")</td>
-                        <td>@item.NguoiXuat</td>
+                        <td>@item.TaiKhoanId</td>
                         <td class="text-right" style="font-weight: 600; color: #dc2626;">@item.TongTien.ToString("N0")</td>
                         <td class="text-center">
                             @if (item.TrangThai == TrangThaiPhieuXuat.DaDuyet)
@@ -137,8 +159,14 @@
                                 <span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Từ Chối</span>
                             }
                         </td>
-                        <td class="text-center">
-                            <button class="btn btn-sm" style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" title="Chi tiết"><i class="fa-solid fa-eye"></i></button>
+                        <td class="text-center" style="display: flex; align-items: center; justify-content: center;">
+                            <form asp-controller="PhieuXuat" asp-action="XemChiTiet" asp-route-id="@item.Id" method="get" style="display: inline;">
+                                <button type="submit" class="btn btn-sm"
+                                        style="background: #eff6ff; color: #2563eb; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
+                                        title="Xem chi tiết">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </form>
 
                             @if (item.TrangThai == TrangThaiPhieuXuat.ChoDuyet)
                             {
@@ -147,6 +175,12 @@
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <button type="submit" class="btn btn-sm" style="background: #dcfce3; color: #166534; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Duyệt phiếu xuất & Trừ kho" onclick="return confirm('Bạn có chắc chắn muốn duyệt phiếu này? Hệ thống sẽ trừ kho thực tế ngay lập tức.');">
                                         <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
+                                <form asp-action="TuChoiPhieuXuat" asp-controller="PhieuXuat" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Hủy phiếu nhập" onclick="return confirm('Bạn có chắc muốn hủy phiếu nhập này?');">
+                                        <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </form>
                             }
