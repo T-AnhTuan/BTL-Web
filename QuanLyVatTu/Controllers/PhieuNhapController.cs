@@ -34,6 +34,8 @@ namespace QuanLyVatTu.Controllers
 
             var query = _context.PhieuNhaps
                 .Include(p => p.NhaCungCap)
+                .Include(p => p.ChiTietPhieuNhaps!)
+                    .ThenInclude(c => c.VatTu)
                 .Include(p => p.Kho)
                 .AsQueryable();
 
