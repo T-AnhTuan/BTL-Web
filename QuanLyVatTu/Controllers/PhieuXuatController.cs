@@ -4,11 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using static QuanLyVatTu.Controllers.PhieuNhapController;
+using System.Security.Claims;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -20,15 +16,18 @@ namespace QuanLyVatTu.Controllers
         private readonly INhapXuatService _nhapXuatService;
         private readonly ITinhGiaVonService _tinhGiaVonService;
         private readonly AppDbContext _context;
+        private readonly INhatKyService _nhatKyService;
 
         // Hàm khởi tạo (Constructor): Tự động nạp (inject) các Service và DbContext vào Controller
         public PhieuXuatController(
             INhapXuatService nhapXuatService,
             ITinhGiaVonService tinhGiaVonService,
+            INhatKyService nhatKyService,
             AppDbContext context)
         {
             _nhapXuatService = nhapXuatService;
             _tinhGiaVonService = tinhGiaVonService;
+            _nhatKyService = nhatKyService;
             _context = context;
         }
 
@@ -73,7 +72,7 @@ namespace QuanLyVatTu.Controllers
                 NgayXuat = dto.NgayXuat,
                 KhoId = dto.KhoId,
                 KhachHang = dto.KhachHang,
-                TaiKhoanId = taiKhoanId,  // ✅ GÁN TỪ User.Identity.Name (đã là string)
+                TaiKhoanId = taiKhoanId,
                 NguoiXuat = taiKhoanId,   // ✅ Cùng giá trị
                 LyDoXuat = dto.LyDoXuat,
                 TongTien = 0,
@@ -117,7 +116,14 @@ namespace QuanLyVatTu.Controllers
                 TempData["InfoMsg"] = $"Phiếu {phieu.MaPhieu} đã ở trạng thái Đã duyệt.";
                 return RedirectToAction("PhieuXuat");
             }
-
+            var entry = new NhatKyHeThong
+            {
+                TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                HanhDong = $"Duyệt phiếu xuất {phieu.MaPhieu}",
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ThoiGian = DateTime.Now
+            };
+            await _nhatKyService.GhiNhatKyAsync(entry);
             using (var tx = await _context.Database.BeginTransactionAsync())
             {
                 try
@@ -133,8 +139,6 @@ namespace QuanLyVatTu.Controllers
                             throw new InvalidOperationException($"Không tìm thấy VatTu Id={line.VatTuId}");
                         }
 
-                        // Giả sử line.SoLuong là int/decimal và TonKhoHienTai là int
-                        // Nếu cần quy đổi đơn vị, xử lý ở đây
                         var addQty = Convert.ToInt32(line.SoLuong);
 
                         vatTu.TonKhoHienTai -= addQty;
@@ -183,6 +187,14 @@ namespace QuanLyVatTu.Controllers
                 TempData["ErrorMsg"] = "Không thể từ chối phiếu đã duyệt!";
                 return RedirectToAction(nameof(PhieuXuat));
             }
+            var entry = new NhatKyHeThong
+            {
+                TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                HanhDong = $"Từ chối phiếu xuất {phieu.MaPhieu}",
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ThoiGian = DateTime.Now
+            };
+            await _nhatKyService.GhiNhatKyAsync(entry);
             try
             {
                 phieu.TrangThai = TrangThaiPhieuXuat.TuChoi;
@@ -294,7 +306,14 @@ namespace QuanLyVatTu.Controllers
 
                 phieuMoi.TongTien = tongTien;
                 await _context.SaveChangesAsync();
-
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Tạo phiếu xuất mới {phieuMoi.MaPhieu}",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 return Json(new
                 {
                     success = true,
@@ -310,25 +329,6 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
-        // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
-        private async Task LogActionAsync(int taiKhoanId, string action)
-        {
-            try
-            {
-                var log = new NhatKyHeThong
-                {
-                    TaiKhoanId = taiKhoanId,
-                    HanhDong = action,
-                    ThoiGian = DateTime.Now,
-                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
-                };
-                _context.NhatKyHeThongs.Add(log);
-                await _context.SaveChangesAsync();
-            }
-            catch
-            {
-            }
-        }
         public class PhieuXuatTaoMoiDto
         {
             public DateTime NgayXuat { get; set; }

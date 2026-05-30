@@ -31,7 +31,7 @@ function resetForm() {
     document.getElementById('inputTenVatTu').value = ''; // Làm rỗng tên
     document.getElementById('inputDonViTinh').value = ''; // Làm rỗng đơn vị tính
     document.getElementById('inputTonKhoHienTai').value = '0'; // Trả về 0
-    document.getElementById('inputGiaVonBinhQuan').value = '0'; // Trả về 0
+    document.getElementById('inputTonToiThieu').value = '0'; // Trả về 0
     const danhMucSelect = document.getElementById('inputDanhMucId');
     if (danhMucSelect.options.length > 0) {
         danhMucSelect.selectedIndex = 0;
@@ -49,7 +49,7 @@ btnSave.addEventListener('click', async function () {
     const danhMucId = parseInt(document.getElementById('inputDanhMucId').value, 10);
     const donViTinh = document.getElementById('inputDonViTinh').value.trim();
     const tonKhoHienTai = parseInt(document.getElementById('inputTonKhoHienTai').value || '0', 10);
-    const giaVonBinhQuan = parseFloat(document.getElementById('inputGiaVonBinhQuan').value || '0');
+    const tonToiThieu = parseFloat(document.getElementById('inputTonToiThieu').value || '0');
 
     // Kiểm tra tính hợp lệ cơ bản
     if (!maVatTu || !tenVatTu) {
@@ -67,8 +67,8 @@ btnSave.addEventListener('click', async function () {
         return;
     }
 
-    if (Number.isNaN(giaVonBinhQuan) || giaVonBinhQuan < 0) {
-        alert("Giá vốn bình quân phải là số không âm!");
+    if (Number.isNaN(tonToiThieu) || tonToiThieu < 0) {
+        alert("Định mức tổng kho phải là số không âm!");
         return;
     }
 
@@ -80,31 +80,29 @@ btnSave.addEventListener('click', async function () {
         DanhMucId: danhMucId,
         DonViTinh: donViTinh,
         TonKhoHienTai: tonKhoHienTai,
-        GiaVonBinhQuan: giaVonBinhQuan
+        tonToiThieu: tonToiThieu
     };
 
-    // Xác định Đường dẫn (URL) gọi về Controller C#
-    // Nếu ID là 0 thì gọi hàm Create, ngược lại gọi hàm Edit
     const url = id === '0' ? '/VatTu/Create' : '/VatTu/Edit';
 
     try {
-        // Gửi yêu cầu (Request) lên Server bằng Fetch API
+
         const response = await fetch(url, {
-            method: 'POST', // Phương thức POST để gửi dữ liệu
+            method: 'POST', 
             headers: {
-                'Content-Type': 'application/json', // Báo cho Server biết dữ liệu gửi lên là định dạng JSON
+                'Content-Type': 'application/json', 
             },
-            body: JSON.stringify(vatTuData) // Biến Object JS thành chuỗi JSON để gửi
+            body: JSON.stringify(vatTuData) 
         });
 
-        const result = await response.json(); // Đọc kết quả Server trả về
+        const result = await response.json();
 
         if (result.success) {
             alert(id === '0' ? "Thêm vật tư thành công!" : "Cập nhật thành công!");
-            closeModal(); // Đóng form
-            window.location.reload(); // Tải lại trang để bảng hiển thị dữ liệu mới nhất từ Database
+            closeModal(); 
+            window.location.reload();
         } else {
-            alert("Lỗi: " + result.message); // Hiển thị thông báo lỗi từ Server
+            alert("Lỗi: " + result.message);
         }
     } catch (error) {
         alert("Lỗi kết nối đến máy chủ: " + error.message);
@@ -113,14 +111,13 @@ btnSave.addEventListener('click', async function () {
 
 // ================================================================
 // 2. XỬ LÝ NÚT SỬA VÀ XÓA (READ & DELETE)
-// ================================================================
-// Gắn sự kiện click cho toàn bộ tài liệu (Event Delegation) để bắt được nút của các dòng mới thêm
+
 document.addEventListener('click', async function (e) {
 
     // NẾU BẤM VÀO NÚT SỬA (Chứa class btn-edit)
     if (e.target.closest('.btn-edit')) {
         const btn = e.target.closest('.btn-edit');
-        const id = btn.getAttribute('data-id'); // Lấy ID vật tư được gắn ở thẻ HTML
+        const id = btn.getAttribute('data-id'); 
 
         try {
             // Gửi yêu cầu lên Server lấy chi tiết vật tư theo ID
@@ -136,7 +133,7 @@ document.addEventListener('click', async function (e) {
                 document.getElementById('inputDanhMucId').value = data.danhMucId;
                 document.getElementById('inputDonViTinh').value = data.donViTinh || '';
                 document.getElementById('inputTonKhoHienTai').value = data.tonKhoHienTai ?? 0;
-                document.getElementById('inputGiaVonBinhQuan').value = data.giaVonBinhQuan ?? 0;
+                document.getElementById('inputTonToiThieu').value = data.tonToiThieu?? 0;
 
                 // Đổi tiêu đề Modal
                 document.querySelector('.modal-header h3').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:#1a2d42; margin-right:8px;"></i> CẬP NHẬT VẬT TƯ';

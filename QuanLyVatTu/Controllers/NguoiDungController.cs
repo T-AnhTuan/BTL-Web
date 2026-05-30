@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
+using QuanLyVatTu.Services;
 using QuanLyVatTu.ViewModels;
 using System.Security.Claims;
 
@@ -14,10 +15,11 @@ namespace QuanLyVatTu.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
-
-        public NguoiDungController(AppDbContext context, IWebHostEnvironment webHostEnvironment)
+        private readonly INhatKyService _nhatKyService;
+        public NguoiDungController(AppDbContext context, IWebHostEnvironment webHostEnvironment, INhatKyService nhatKyService)
         {
             _context = context;
+            _nhatKyService = nhatKyService;
             _webHostEnvironment = webHostEnvironment;
         }
 
@@ -108,8 +110,16 @@ namespace QuanLyVatTu.Controllers
                     authProperties);
 
                 // 5. Ghi log hệ thống
-                await LogActionAsync(account.Id, "Đăng nhập hệ thống thành công");
+              //  await LogActionAsync(account.Id, "Đăng nhập hệ thống thành công");
 
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = account.NhanVien?.HoTen != null ? account.NhanVien.Id : account.Id,
+                    HanhDong = $"{username} đã đăng nhập hệ thống",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 // 6. Ép về thẳng Trang chủ
                 return RedirectToAction("Index", "Home");
             }
@@ -192,6 +202,7 @@ namespace QuanLyVatTu.Controllers
                 }
 
                 taiKhoan.NhanVien.AvatarUrl = "/uploads/avatars/" + uniqueFileName;
+
             }
             // 3. XỬ LÝ ĐỔI MẬT KHẨU (NẾU CÓ NHẬP)
             if (!string.IsNullOrEmpty(model.MatKhauMoi))
@@ -206,7 +217,14 @@ namespace QuanLyVatTu.Controllers
                 // Nếu đúng, tiến hành băm (hash) mật khẩu mới và lưu
                 taiKhoan.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
             }
-
+            var entry = new NhatKyHeThong
+            {
+                TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                HanhDong = $"{model.TenDangNhap} đã thay đổi thông tin tài khoản",
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ThoiGian = DateTime.Now
+            };
+            await _nhatKyService.GhiNhatKyAsync(entry);
             // Lưu tất cả thay đổi xuống Database
             _context.Update(taiKhoan);
             await _context.SaveChangesAsync();
@@ -223,11 +241,23 @@ namespace QuanLyVatTu.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DangXuat()
         {
-            // Lấy thông tin user để ghi log trước khi xóa phiên
+            var tenDangNhap = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                      ?? User.FindFirst("TenDangNhap")?.Value
+                      ?? User.Identity?.Name
+                      ?? "Unknown";
+
             var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdString, out int userId))
             {
-                await LogActionAsync(userId, "Đăng xuất khỏi hệ thống");
+
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = userId,
+                    HanhDong = $"{tenDangNhap} đã đăng xuất khỏi hệ thống",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -245,25 +275,6 @@ namespace QuanLyVatTu.Controllers
             public string? HoTen { get; set; }
             public int VaiTroId { get; set; }
             public TrangThaiTaiKhoan TrangThai { get; set; } = TrangThaiTaiKhoan.Active;
-        }
-
-        private async Task LogActionAsync(int taiKhoanId, string action)
-        {
-            try
-            {
-                var log = new NhatKyHeThong
-                {
-                    TaiKhoanId = taiKhoanId,
-                    HanhDong = action,
-                    ThoiGian = DateTime.Now,
-                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
-                };
-                _context.NhatKyHeThongs.Add(log);
-                await _context.SaveChangesAsync();
-            }
-            catch
-            {
-            }
         }
     }
 }

@@ -1,69 +1,49 @@
-﻿// Khai báo sử dụng thư viện System
-using System;
-// Khai báo sử dụng LINQ để duyệt mảng
-using System.Linq;
-// Khai báo sử dụng bất đồng bộ Task
-using System.Threading.Tasks;
-// Khai báo thư viện tương tác CSDL Entity Framework Core
+﻿
 using Microsoft.EntityFrameworkCore;
-// Khai báo namespace chứa file cấu hình Database
 using QuanLyVatTu.Data;
-// Khai báo namespace chứa các Class cấu trúc dữ liệu
 using QuanLyVatTu.Models;
 
-// Bắt đầu không gian tên của Services
 namespace QuanLyVatTu.Services
 {
-    // Tạo Interface (hợp đồng) chứa hàm Tính giá vốn
+
     public interface ITinhGiaVonService
     {
-        // Định nghĩa hàm Tính giá vốn nhận vào 2 tham số: Mã phiếu nhập và Mã người thực hiện
+
         Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId);
     }
 
-    // Class thực thi logic tính toán giá vốn
     public class TinhGiaVonService : ITinhGiaVonService
     {
-        // Biến toàn cục chứa kết nối DB
         private readonly AppDbContext _context;
-
-        // Constructor tiêm (inject) database vào
         public TinhGiaVonService(AppDbContext context)
-        {
-            // Gán kết nối DB vào biến toàn cục
+        { 
             _context = context;
         }
 
-        // Bắt đầu viết logic tính giá vốn sau khi nhập
         public async Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId)
         {
-            try // Bọc trong khối try-catch để bắt lỗi nếu có sự cố tính toán
+            try 
             {
-                // Tìm phiếu nhập gốc dựa vào ID truyền vào
-                // Kéo theo (Include) danh sách chi tiết vật tư của phiếu đó
+
                 var phieuNhap = await _context.PhieuNhaps
                     .Include(p => p.ChiTietPhieuNhaps)
                     .FirstOrDefaultAsync(p => p.Id == phieuNhapId);
 
-                // Kiểm tra an toàn: Bỏ qua nếu phiếu không tồn tại hoặc chưa được duyệt
-                // SỬA LỖI: Dùng TrangThaiPhieu.DaDuyet thay cho TrangThaiPhieuNhap
                 if (phieuNhap == null || phieuNhap.TrangThai != TrangThaiPhieuNhap.DaDuyet)
                 {
-                    // Trả về false vì không đủ điều kiện tính toán
+
                     return false;
                 }
 
                 // Vòng lặp duyệt qua từng món hàng (chi tiết) có trong phiếu nhập
                 foreach (var chiTiet in phieuNhap.ChiTietPhieuNhaps)
                 {
-                    // Tìm món vật tư tương ứng trong DB bằng ID
+
                     var vatTu = await _context.VatTus.FindAsync(chiTiet.VatTuId);
 
-                    // Nếu vật tư tồn tại
                     if (vatTu != null)
                     {
-                        // BƯỚC 1: TÍNH TỔNG GIÁ TRỊ TỒN KHO CŨ
-                        // Số lượng đang có nhân với Giá vốn hiện tại (Nếu rỗng thì tính là 0)
+
                         decimal tongGiaTriTonCu = (decimal)vatTu.TonKhoHienTai * vatTu.GiaVonBinhQuan;
 
                         // BƯỚC 2: TÍNH TỔNG GIÁ TRỊ LÔ HÀNG VỪA NHẬP

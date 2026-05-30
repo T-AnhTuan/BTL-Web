@@ -15,8 +15,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IThongBaoService, ThongBaoService>();
 builder.Services.AddScoped<INhapXuatService, NhapXuatService>();
 builder.Services.AddScoped<IBaoCaoService, BaoCaoService>();
+builder.Services.AddScoped<INhatKyService, NhatKyService>();
 builder.Services.AddScoped<ITinhGiaVonService, TinhGiaVonService>();
-
+builder.Services.Configure<NhatKyOptions>(builder.Configuration.GetSection("NhatKyOptions"));
+builder.Services.AddHttpClient("NhatKyClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 // Đăng ký dịch vụ xác thực bằng Cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

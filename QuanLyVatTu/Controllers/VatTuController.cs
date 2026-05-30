@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
+using QuanLyVatTu.Services;
+using QuanLyVatTu.ViewModels;
 using System.Security.Claims;
 
 namespace QuanLyVatTu.Controllers
@@ -11,10 +13,13 @@ namespace QuanLyVatTu.Controllers
     public class VatTuController : Controller
     {
         private readonly AppDbContext _context;
-
-        public VatTuController(AppDbContext context)
+        private readonly INhatKyService _nhatKyService;
+        private readonly ITinhGiaVonService _tinhGiaVonService;
+        public VatTuController(AppDbContext context, INhatKyService nhatKyService, ITinhGiaVonService tinhGiaVonService)
         {
             _context = context;
+            _nhatKyService = nhatKyService;
+            _tinhGiaVonService = tinhGiaVonService;
         }
 
         [HttpGet]
@@ -106,9 +111,15 @@ namespace QuanLyVatTu.Controllers
                 }
 
                 _context.VatTus.Add(model);
-                AddLog($"Thêm mới vật tư: {model.TenVatTu} (Mã: {model.MaVatTu})");
                 await _context.SaveChangesAsync();
-
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Thêm vật tư mới {model.TenVatTu} (Mã: {model.MaVatTu})",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -147,8 +158,16 @@ namespace QuanLyVatTu.Controllers
                 existingVatTu.DonViTinh = model.DonViTinh;
                 existingVatTu.TonKhoHienTai = model.TonKhoHienTai;
                 existingVatTu.GiaVonBinhQuan = model.GiaVonBinhQuan;
+                existingVatTu.TonToiThieu = model.TonToiThieu;
 
-                AddLog($"Cập nhật vật tư: {model.TenVatTu} (Mã: {model.MaVatTu})");
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Cập nhật vật tư {model.TenVatTu} (Mã: {model.MaVatTu})",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true });
@@ -178,7 +197,14 @@ namespace QuanLyVatTu.Controllers
                     return Json(new { success = false, message = "Không thể xóa vật tư đã có phát sinh giao dịch!" });
                 }
 
-                AddLog($"Xóa vật tư: {vatTu.TenVatTu} (Mã: {vatTu.MaVatTu})");
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Xóa vật tư {vatTu.TenVatTu} (Mã: {vatTu.MaVatTu})",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 _context.VatTus.Remove(vatTu);
                 await _context.SaveChangesAsync();
 
@@ -232,23 +258,6 @@ namespace QuanLyVatTu.Controllers
             }
 
             return null;
-        }
-
-        private void AddLog(string action)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var taiKhoanId))
-            {
-                return;
-            }
-
-            _context.NhatKyHeThongs.Add(new NhatKyHeThong
-            {
-                TaiKhoanId = taiKhoanId,
-                HanhDong = action,
-                ThoiGian = DateTime.Now,
-                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
-            });
         }
     }
 }

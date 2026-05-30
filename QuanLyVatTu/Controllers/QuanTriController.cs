@@ -3,19 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
+using QuanLyVatTu.Services;
 using QuanLyVatTu.ViewModels;
+using System.Security.Claims;
 
 namespace QuanLyVatTu.Controllers
 {
-    // Cấp quyền Admin cho toàn bộ Controller này
     [Authorize(Roles = "Admin, Quản trị viên")]
     public class QuanTriController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly INhatKyService _nhatKyService;
 
-        public QuanTriController(AppDbContext context)
+        public QuanTriController(AppDbContext context, INhatKyService nhatKyService)
         {
             _context = context;
+            _nhatKyService = nhatKyService;
         }
 
         // ==========================================
@@ -70,9 +73,10 @@ namespace QuanLyVatTu.Controllers
         [HttpPost]
         public async Task<IActionResult> LuuTaiKhoan([FromBody] TaiKhoanCrudDto model)
         {
+            
             try
             {
-                if (model.Id == 0) // THÊM MỚI
+                if (model.Id == 0) 
                 {
                     bool isExist = await _context.TaiKhoans.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
                     if (isExist) return Json(new { success = false, message = "Tên đăng nhập đã tồn tại!" });
@@ -94,27 +98,40 @@ namespace QuanLyVatTu.Controllers
                         NhanVienId = newNhanVien.Id
                     };
                     _context.TaiKhoans.Add(newTaiKhoan);
+                    var entry = new NhatKyHeThong
+                    {
+                        TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                        HanhDong = $"Cấp tài khoản cho {model.HoTen}",
+                        DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        ThoiGian = DateTime.Now
+                    };
+                    await _nhatKyService.GhiNhatKyAsync(entry);
                 }
-                else // CẬP NHẬT
+                else
                 {
                     var taiKhoan = await _context.TaiKhoans.Include(t => t.NhanVien).FirstOrDefaultAsync(t => t.Id == model.Id);
                     if (taiKhoan == null) return Json(new { success = false, message = "Tài khoản không tồn tại." });
 
-                    // Cập nhật thông tin nhân viên
                     if (taiKhoan.NhanVien != null)
                     {
                         taiKhoan.NhanVien.HoTen = model.HoTen;
                     }
 
-                    // Cập nhật tài khoản
+
                     taiKhoan.VaiTroId = model.VaiTroId;
                     taiKhoan.TrangThai = (TrangThaiTaiKhoan)model.TrangThai;
-
-                    // Nếu có nhập pass mới thì mới đổi
                     if (!string.IsNullOrEmpty(model.MatKhau))
                     {
                         taiKhoan.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhau);
                     }
+                    var entry = new NhatKyHeThong
+                    {
+                        TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                        HanhDong = $"Thay đổi thông tin tài khoản của {model.HoTen} ",
+                        DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        ThoiGian = DateTime.Now
+                    };
+                    await _nhatKyService.GhiNhatKyAsync(entry);
                 }
 
                 await _context.SaveChangesAsync();
@@ -148,7 +165,14 @@ namespace QuanLyVatTu.Controllers
 
             if (tk.TenDangNhap.ToLower() == "admin")
                 return Json(new { success = false, message = "Không được phép xóa tài khoản Admin quản trị cao nhất!" });
-
+            var entry = new NhatKyHeThong
+            {
+                TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                HanhDong = $"Xóa tài khoản của {tk.NhanVien.HoTen}",
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ThoiGian = DateTime.Now
+            };
+            await _nhatKyService.GhiNhatKyAsync(entry);
             try
             {
                 _context.TaiKhoans.Remove(tk);
@@ -223,56 +247,62 @@ namespace QuanLyVatTu.Controllers
                 DanhSachVaiTro = danhSachVaiTro,
                 VaiTroDangChon = vaiTroDangChon
             };
-
+          
             return View(model);
         }
         // PHÂN QUYỀN - POST (Lưu dữ liệu cấu hình)
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyenUpdateDto> dsQuyen) // Hàm nhận vào ID Vai Trò và Danh sách các quyền được tích từ HTML
+        public async Task<IActionResult> LuuPhanQuyen(int VaiTroId, List<PhanQuyenUpdateDto> dsQuyen)
         {
             try // Bắt đầu khối lệnh thử nghiệm để bắt lỗi hệ thống nếu có
             {
                 // 1. Kiểm tra vai trò
-                var vaiTro = await _context.VaiTros.FindAsync(VaiTroId); // Tìm Vai Trò trong Database dựa theo VaiTroId gửi lên
-                if (vaiTro == null) // Nếu Vai Trò không tồn tại trong Database
+                var vaiTro = await _context.VaiTros.FindAsync(VaiTroId); 
+                if (vaiTro == null) 
                 {
-                    TempData["ErrorMessage"] = "Lỗi: Không tìm thấy vai trò cần cập nhật!"; // Ghi lại câu thông báo lỗi
-                    return RedirectToAction(nameof(PhanQuyen)); // Load lại trang phân quyền
+                    TempData["ErrorMessage"] = "Lỗi: Không tìm thấy vai trò cần cập nhật!"; 
+                    return RedirectToAction(nameof(PhanQuyen)); 
                 }
 
                 // 2. Kiểm tra dữ liệu danh sách quyền gửi lên
-                if (dsQuyen == null || dsQuyen.Count == 0) // Nếu danh sách quyền bị rỗng (HTML không gửi lên được do sai tên biến)
+                if (dsQuyen == null || dsQuyen.Count == 0) 
                 {
-                    TempData["ErrorMessage"] = "Lỗi: Không nhận được dữ liệu phân quyền từ giao diện!"; // Ghi lại thông báo lỗi
-                    return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Load lại trang phân quyền của vai trò đó
+                    TempData["ErrorMessage"] = "Lỗi: Không nhận được dữ liệu phân quyền từ giao diện!";
+                    return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); 
                 }
 
-                // 3. Cập nhật từng dòng quyền vào cơ sở dữ liệu
-                foreach (var quyenMoi in dsQuyen) // Dùng vòng lặp chạy qua từng dòng quyền mà giao diện vừa gửi lên
+                foreach (var quyenMoi in dsQuyen)
                 {
-                    var quyenCu = await _context.PhanQuyens.FindAsync(quyenMoi.Id); // Tìm dòng phân quyền tương ứng ở trong Database bằng ID
+                    var quyenCu = await _context.PhanQuyens.FindAsync(quyenMoi.Id); 
 
-                    if (quyenCu != null) // Nếu dòng phân quyền này có tồn tại trong Database
+                    if (quyenCu != null) 
                     {
-                        quyenCu.CoQuyenXem = quyenMoi.CoQuyenXem;   // Cập nhật quyền Xem: Nếu giao diện gửi lên true thì gán true, không gửi thì mặc định là false
-                        quyenCu.CoQuyenThem = quyenMoi.CoQuyenThem; // Cập nhật quyền Thêm: Ghi đè giá trị từ giao diện vào CSDL
-                        quyenCu.CoQuyenSua = quyenMoi.CoQuyenSua;   // Cập nhật quyền Sửa: Ghi đè giá trị từ giao diện vào CSDL
-                        quyenCu.CoQuyenXoa = quyenMoi.CoQuyenXoa;   // Cập nhật quyền Xóa: Ghi đè giá trị từ giao diện vào CSDL
+                        quyenCu.CoQuyenXem = quyenMoi.CoQuyenXem;  
+                        quyenCu.CoQuyenThem = quyenMoi.CoQuyenThem; 
+                        quyenCu.CoQuyenSua = quyenMoi.CoQuyenSua;   
+                        quyenCu.CoQuyenXoa = quyenMoi.CoQuyenXoa;   
                     }
                 }
 
                 // 4. Lưu xuống CSDL và thông báo
-                await _context.SaveChangesAsync(); // Chạy lệnh lưu tất cả các thay đổi vừa làm ở trên xuống CSDL thật
-                TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!"; // Tạo ra câu thông báo thành công màu xanh
-
-                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Điều hướng load lại trang phân quyền của đúng vai trò đó
+                await _context.SaveChangesAsync(); 
+                TempData["SuccessMessage"] = $"Lưu cấu hình phân quyền cho [{vaiTro.TenVaiTro}] thành công!"; 
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Cấp quyền {vaiTro.TenVaiTro} cho tài khoản {User.Identity.Name}",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); 
             }
-            catch (Exception ex) // Nếu có bất kỳ lỗi nào xảy ra trong quá trình chạy (ví dụ: đứt kết nối CSDL)
+            catch (Exception ex) 
             {
-                TempData["ErrorMessage"] = "Lỗi hệ thống khi lưu cấu hình: " + ex.Message; // Bắt lấy lỗi đó và ghi vào thông báo
-                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); // Load lại trang và hiển thị lỗi ra
+                TempData["ErrorMessage"] = "Lỗi hệ thống khi lưu cấu hình: " + ex.Message; 
+                return RedirectToAction(nameof(PhanQuyen), new { vaiTroId = VaiTroId }); 
             }
         }
 
@@ -296,10 +326,9 @@ namespace QuanLyVatTu.Controllers
                     MoTa = model.MoTa
                 };
                 _context.VaiTros.Add(vaiTroMoi);
-                await _context.SaveChangesAsync(); // Lưu để lấy ID mới
+                await _context.SaveChangesAsync(); 
 
                 // 2. KHỞI TẠO MA TRẬN QUYỀN MẶC ĐỊNH (Tất cả = false)
-                // Lấy danh sách các chức năng hiện có trong hệ thống (từ một vai trò mẫu, ví dụ Admin)
                 var danhSachChucNang = await _context.PhanQuyens
                     .Select(p => p.TenChucNang)
                     .Distinct()

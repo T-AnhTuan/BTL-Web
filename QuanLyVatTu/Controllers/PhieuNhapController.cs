@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using QuanLyVatTu.Services;
+using System.Security.Claims;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -13,16 +14,19 @@ namespace QuanLyVatTu.Controllers
     {
         private readonly INhapXuatService _nhapXuatService;
         private readonly ITinhGiaVonService _tinhGiaVonService;
+        private readonly INhatKyService _nhatKyService;
         private readonly AppDbContext _context;
         public PhieuNhapController(
             INhapXuatService nhapXuatService,
             ITinhGiaVonService tinhGiaVonService,
-            AppDbContext context
+            AppDbContext context,
+            INhatKyService nhatKyService
             )
         {
             _nhapXuatService = nhapXuatService;
             _tinhGiaVonService = tinhGiaVonService;
             _context = context;
+            _nhatKyService = nhatKyService;
         }
 
         // === 1. GET: DANH SÁCH ===
@@ -124,43 +128,39 @@ namespace QuanLyVatTu.Controllers
             {
                 try
                 {
-                    // Cập nhật tồn cho từng dòng
                     foreach (var line in phieu.ChiTietPhieuNhaps)
                     {
-                        // Nếu ChiTietPhieuNhaps có navigation VatTu thì dùng line.VatTu
-                        //var vatTu = line.VatTu;
-
-                        // Nếu không có navigation, lấy bằng VatTuId (bỏ comment và dùng)
                          var vatTu = await _context.VatTus.FirstOrDefaultAsync(v => v.Id == line.VatTuId);
 
                         if (vatTu == null)
                         {
-                            // Nếu không tìm thấy vật tư, rollback và báo lỗi
                             throw new InvalidOperationException($"Không tìm thấy VatTu Id={line.VatTuId}");
                         }
 
-                        // Giả sử line.SoLuong là int/decimal và TonKhoHienTai là int
-                        // Nếu cần quy đổi đơn vị, xử lý ở đây
                         var addQty = Convert.ToInt32(line.SoLuong);
-
                         // Cộng tồn
                         vatTu.TonKhoHienTai += addQty;
 
                         _context.VatTus.Update(vatTu);
                     }
 
-                    // Lưu thay đổi tồn
+                    var entry = new NhatKyHeThong
+                    {
+                        TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                        HanhDong = $"Duyệt phiếu nhập {phieu.MaPhieu}",
+                        DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        ThoiGian = DateTime.Now
+                    };
+                    await _nhatKyService.GhiNhatKyAsync(entry);
                     await _context.SaveChangesAsync();
-
-                    // Sau khi cập nhật tồn thành công, set trạng thái phiếu
                     phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
                     _context.PhieuNhaps.Update(phieu);
                     await _context.SaveChangesAsync();
 
                     await tx.CommitAsync();
-
                     TempData["SuccessMsg"] = $"Đã duyệt phiếu {phieu.MaPhieu} và cập nhật tồn kho.";
                     return RedirectToAction("PhieuNhap");
+                    
                 }
                 catch (Exception ex)
                 {
@@ -210,7 +210,14 @@ namespace QuanLyVatTu.Controllers
                 TempData["ErrorMsg"] = "Không thể từ chối phiếu đã duyệt!";
                 return RedirectToAction(nameof(PhieuNhap));
             }
-
+            var entry = new NhatKyHeThong
+            {
+                TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                HanhDong = $"Từ chối phiếu nhập {phieu.MaPhieu}",
+                DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ThoiGian = DateTime.Now
+            };
+            await _nhatKyService.GhiNhatKyAsync(entry);
             try
             {
                 phieu.TrangThai = TrangThaiPhieuNhap.TuChoi;
@@ -280,7 +287,14 @@ namespace QuanLyVatTu.Controllers
 
                 phieuMoi.TongGiaTri = tongTien;
                 await _context.SaveChangesAsync();
-
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                    HanhDong = $"Tạo phiếu nhập {phieuMoi.MaPhieu}",
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 return Json(new
                 {
                     success = true,

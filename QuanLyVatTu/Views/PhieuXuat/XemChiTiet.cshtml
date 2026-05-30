@@ -28,7 +28,7 @@
                     <input type="hidden" name="id" value="@Model.Id" />
                     <!-- Hiển thị bảng Alert hỏi lại người dùng cho chắc chắn -->
                     <button type="submit" class="btn btn-success" onclick="return confirm('Bạn có chắc chắn muốn DUYỆT phiếu xuất này? Hệ thống sẽ trừ tồn kho.');">
-                        <i class="fa-solid fa-check"></i> Duyệt Phiếu
+                        <i class="fa-solid fa-check"></i> Duyệt 
                     </button>
                 </form>
 
@@ -37,7 +37,7 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
                     <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI phiếu xuất này?');">
-                        <i class="fa-solid fa-xmark"></i> Từ Chối
+                        <i class="fa-solid fa-xmark"></i> Từ chối
                     </button>
                 </form>
             }

@@ -6,6 +6,7 @@ using QuanLyVatTu.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Net;
+using QuanLyVatTu.Services;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -13,10 +14,11 @@ namespace QuanLyVatTu.Controllers
     public class DanhMucController : Controller
     {
         private readonly AppDbContext _context;
-
-        public DanhMucController(AppDbContext context)
+        private readonly ITinhGiaVonService _tinhGiaVonService;
+        public DanhMucController(AppDbContext context, ITinhGiaVonService tinhGiaVonService)
         {
             _context = context;
+            _tinhGiaVonService = tinhGiaVonService;
         }
 
         [HttpGet]

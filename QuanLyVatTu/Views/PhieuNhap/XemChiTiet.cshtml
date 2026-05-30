@@ -25,14 +25,14 @@
                 <form asp-action="DuyetPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
-                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Hoàn tất phiếu</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Duyệt </button>
                 </form>
 
                 <form asp-action="TuChoiPhieuNhap" asp-controller="PhieuNhap" method="post" style="display:inline; margin-left:8px" onsubmit="return confirm('Bạn có chắc muốn từ chối phiếu này?');">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
                     <input type="hidden" name="lyDo" value="Từ chối bởi người dùng" />
-                    <button type="submit" class="btn btn-warning"><i class="fa-solid fa-ban"></i> Từ chối phiếu</button>
+                    <button type="submit" class="btn btn-warning"><i class="fa-solid fa-ban"></i> Từ chối </button>
                 </form>
             }
             else

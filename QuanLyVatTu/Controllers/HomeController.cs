@@ -34,7 +34,7 @@ namespace QuanLyVatTu.Controllers
                 // Thống kê cơ bản
                 ViewBag.TongLoaiVatTu = await _context.VatTus
            .AsNoTracking()
-           .Select(v => v.MaVatTu)        // đổi thành trường mã thực tế của bạn
+           .Select(v => v.MaVatTu)       
            .Where(m => !string.IsNullOrEmpty(m))
            .Distinct()
            .CountAsync();
