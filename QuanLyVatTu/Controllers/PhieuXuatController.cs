@@ -331,7 +331,6 @@ namespace QuanLyVatTu.Controllers
                 return Json(new { success = false, message = $"Lỗi hệ thống C#: {errInfo}" });
             }
         }
-
         public class PhieuXuatTaoMoiDto
         {
             public DateTime NgayXuat { get; set; }

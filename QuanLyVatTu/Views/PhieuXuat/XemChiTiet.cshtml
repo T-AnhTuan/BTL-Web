@@ -59,56 +59,32 @@
 
             <div class="form-group">
                 <label>Mã phiếu</label>
-                <input id="txtMaPhieu" value="@Model.MaPhieu" readonly class="form-control" style="background-color: #f8fafc;">
+                <div class="form-control" style="background-color: #f8fafc; border: 1px solid #e5e7eb; padding: 8px;">
+                    <strong>@Model.MaPhieu</strong>
+                </div>
             </div>
             <div class="form-group">
                 <label>Ngày xuất</label>
-                <input value="@Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")" readonly class="form-control" style="background-color: #f8fafc;">
+                <div class="form-control" style="background-color: #f8fafc; border: 1px solid #e5e7eb; padding: 8px;">
+                    @Model.NgayXuat.ToString("dd/MM/yyyy HH:mm")
+                </div>
             </div>
             <div class="form-group">
                 <label>Kho xuất</label>
-                <input id="cboKhoId" value="@Model.Kho?.TenKho" readonly class="form-control" style="background-color: #f8fafc;">
+                <div class="form-control" style="background-color: #f8fafc; border: 1px solid #e5e7eb; padding: 8px;">
+                    @Model.Kho?.TenKho
+                </div>
             </div>
             <div class="form-group">
                 <label>Khách hàng</label>
-                <input id="KhachHangid" value="@Model.KhachHang" readonly class="form-control" style="background-color: #f8fafc;">
+                <div class="form-control" style="background-color: #f8fafc; border: 1px solid #e5e7eb; padding: 8px;">
+                    @Model.KhachHang
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="section-card" style="background-color: #f8fafc; border-style: dashed; border-color: #94a3b8;">
-        <div class="section-title"><i class="fa-solid fa-cart-plus" style="color:#10b981;"></i> THÊM VẬT TƯ VÀO PHIẾU</div>
-        <div class="input-row" style="align-items: flex-end;">
-            <div class="form-group" style="flex: 2;">
-                <label>Chọn vật tư <span style="color:red">*</span></label>
-                <select id="cboVatTu" class="form-control">
-                    <option value="">-- Vui lòng chọn vật tư --</option>
-                    @if (ViewBag.VatTus != null)
-                    {
-                        foreach (var vt in ViewBag.VatTus)
-                        {
-                            <option value="@vt.Id" data-dvt="@vt.DonViTinh" data-code="@vt.MaVatTu">
-                                [@vt.MaVatTu] - @vt.TenVatTu
-                            </option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="form-group" style="flex: 0.5;">
-                <label>Số lượng <span style="color:red">*</span></label>
-                <input type="number" id="txtSoLuong" min="1" placeholder="Nhập số lượng...">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Đơn giá (VNĐ) <span style="color:red">*</span></label>
-                <input type="number" id="txtDonGia" min="0" placeholder="Nhập đơn giá...">
-            </div>
-            <div class="form-group" style="flex: 0;">
-                <button type="button" id="btnThemVatTu" class="btn btn-primary">
-                    <i class="fa-solid fa-arrow-down"></i> Thêm xuống lưới
-                </button>
-            </div>
-        </div>
-    </div>
+   
     <div class="section-card">
         <div class="section-title"><i class="fa-solid fa-list" style="color:#64748b;"></i> DANH SÁCH MẶT HÀNG NHẬP</div>
         <div class="table-container">

@@ -113,15 +113,13 @@ function hoanTatPhieu() {
     const ghiChu = document.getElementById('hdfLyDoXuat')?.value || "";
 
     if (!khoId || !kh || !ngayXuat) {
-        showToast('Lỗi: Không tìm thấy thông tin Header (Kho, NCC, Ngày)!', 'error');
+        showToast('Lỗi: Không tìm thấy thông tin Header (Kho, Khách hàng, Ngày)!', 'error');
         return;
     }
 
     // --- FIX LỖI "One or more validation errors" ---
-    // Đảm bảo định dạng ngày gửi lên C# BẮT BUỘC phải là yyyy-MM-dd
-    let datePart = ngayXuat.split(' ')[0]; // Cắt bỏ phần giờ (nếu có)
+    let datePart = ngayXuat.split(' ')[0];
     if (datePart.includes('/')) {
-        // Nếu là dd/MM/yyyy thì lật ngược lại thành yyyy-MM-dd
         const parts = datePart.split('/');
         if (parts.length === 3) {
             ngayXuat = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -166,8 +164,8 @@ function hoanTatPhieu() {
         if (vatTuId && sl > 0 && gia >= 0) {
             chiTiets.push({
                 VatTuId: parseInt(vatTuId),
-                SoLuong: Math.round(sl), // Ép tròn thành int cho C#
-                DonGia: gia // Decimal
+                SoLuong: Math.round(sl),
+                DonGia: gia
             });
         } else {
             hasError = true;
@@ -187,7 +185,7 @@ function hoanTatPhieu() {
     const payload = {
         KhoId: parseInt(khoId),
         KhachHang: kh,
-        NgayXuat: ngayXuat, // Đã được ép chuẩn yyyy-MM-dd
+        NgayXuat: ngayXuat,
         LyDoXuat: ghiChu,
         ChiTiets: chiTiets
     };
@@ -209,7 +207,6 @@ function hoanTatPhieu() {
             }
 
             if (!response.ok) {
-                // Bóc tách chi tiết lỗi Validation từ ASP.NET Core để in ra màn hình
                 let errMsg = data.message || data.title || 'Lỗi dữ liệu từ Server!';
                 if (data.errors) {
                     const validationErrors = Object.values(data.errors).flat().join('; ');
@@ -232,7 +229,7 @@ function hoanTatPhieu() {
         })
         .catch(err => {
             console.error('Lỗi Fetch:', err);
-            showToast(err.message, 'error'); // Hiện rõ chi tiết lỗi lên Toast đỏ
+            showToast(err.message, 'error');
         });
 }
 
@@ -246,40 +243,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     tinhTongTien();
 
+    const cboVatTu = document.getElementById('cboVatTu');
+    const txtGia = document.getElementById('txtDonGia'); // Ô nhập đơn giá
+    const txtSL = document.getElementById('txtSoLuong'); // Ô nhập số lượng
     const btnThemVatTu = document.getElementById('btnThemVatTu');
+    const tbody = document.getElementById('chiTietBody');
+
+    // --- TÍNH NĂNG ĐƯỢC CHÈN VÀO: TỰ ĐỘNG LẤY GIÁ VỐN KHI CHỌN VẬT TƯ ---
+    if (cboVatTu && txtGia) {
+        cboVatTu.addEventListener('change', function () {
+            const vatTuId = this.value;
+
+            if (!vatTuId) {
+                txtGia.value = '';
+                txtGia.placeholder = "Tự lấy giá vốn...";
+                return;
+            }
+
+            // Đổi placeholder báo hiệu đang tải
+            txtGia.value = '';
+            txtGia.placeholder = "Đang tải giá...";
+
+            // Gọi API lên C# để lấy giá vốn
+            fetch(`/VatTu/GetGiaVon?id=${vatTuId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        txtGia.value = data.giaVon.toLocaleString('vi-VN')+ ' VND'; // Gắn số tiền vào ô Đơn giá
+                    } else {
+                        txtGia.value = '0';
+                        showToast(data.message || 'Không lấy được giá vốn', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi lấy giá:", err);
+                    txtGia.value = '0';
+                    showToast('Lỗi kết nối khi lấy giá vốn!', 'error');
+                });
+        });
+    }
+    // ------------------------------------------------------------------
 
     if (btnThemVatTu) {
         // Lắng nghe sự kiện click vào nút Thêm Vật Tư
         btnThemVatTu.addEventListener('click', function (e) {
-            // Ngăn chặn form tự động tải lại trang khi bấm nút
             e.preventDefault();
-
-            // Lấy các thẻ HTML trên giao diện form nhỏ
-            const cbo = document.getElementById('cboVatTu'); // Dropdown chọn vật tư
-            const txtSL = document.getElementById('txtSoLuong'); // Ô nhập số lượng
-            const txtGia = document.getElementById('txtDonGia'); // Ô nhập đơn giá
-            const tbody = document.getElementById('chiTietBody'); // Phần thân của bảng chi tiết
 
             // Cắt bỏ khoảng trắng dư thừa ở 2 đầu chữ
             const sl = txtSL.value.trim();
             const gia = txtGia.value.trim();
 
             // Kiểm tra: Nếu chưa chọn vật tư hoặc chưa nhập đủ số liệu thì cảnh báo và dừng lại
-            if (!cbo.value || sl === '' || gia === '') {
-                alert("Vui lòng chọn vật tư, nhập đủ số lượng và đơn giá!");
+            if (!cboVatTu.value || sl === '' || gia === '') {
+                showToast("Vui lòng chọn vật tư, nhập đủ số lượng và chờ lấy đơn giá!", 'error');
                 return;
             }
 
             // ĐỌC DỮ LIỆU TỪ DROPDOWN VẬT TƯ
-            const selectedOption = cbo.options[cbo.selectedIndex]; // Lấy dòng đang được chọn trong Dropdown
-            const vatTuId = cbo.value; // Lấy ID vật tư (giá trị value của option)
-            const maVatTu = selectedOption.getAttribute('data-code') || "---"; // Lấy mã vật tư
-            const donViTinh = selectedOption.getAttribute('data-dvt') || "---"; // Lấy đơn vị tính
-            const tenVatTu = selectedOption.text; // Lấy tên vật tư
+            const selectedOption = cboVatTu.options[cboVatTu.selectedIndex];
+            const vatTuId = cboVatTu.value;
+            const maVatTu = selectedOption.getAttribute('data-code') || "---";
+            const donViTinh = selectedOption.getAttribute('data-dvt') || "---";
+            const tenVatTu = selectedOption.text;
 
+            const cleanSoLuong = sl.replace(/\./g, '').replace(',', '.').replace(/[^0-9]/g, '');
+            const cleanGia = gia.replace(/\./g, '').replace(',', '.').replace(/[^0-9]/g, '');
             // Ép kiểu chữ thành số nguyên (Số lượng) và số thực (Đơn giá)
-            const soLuong = parseInt(sl);
-            const donGia = parseFloat(gia);
+            const soLuong = parseInt(cleanSoLuong)||0;
+            const donGia = parseFloat(cleanGia)||0;
             // Tính thành tiền
             const thanhTien = soLuong * donGia;
 
@@ -292,28 +323,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Tạo ra một thẻ <tr> (dòng) mới
             const tr = document.createElement('tr');
-
-            // SỬA LỖI 1: Gắn trực tiếp data-id chứa ID Vật tư vào thẻ tr để hàm Lưu Phiếu nhận diện được
             tr.setAttribute('data-id', vatTuId);
 
-            // SỬA LỖI 2: Tạo HTML cho dòng. Thêm các thẻ <input type="hidden"> vào cột Số lượng và Đơn giá.
-            // Điều này giúp trên màn hình vẫn hiển thị chữ đẹp (có dấu phẩy), 
-            // nhưng bên dưới có thẻ input ngầm (class so-luong, don-gia) để JS móc dữ liệu gửi lên Server.
             tr.innerHTML = `              
                 <td class="text-center">${stt}</td>              
                 <td>${maVatTu}</td>              
                 <td class="td-vattu">${tenVatTu}</td>              
                 <td class="text-center">${donViTinh}</td>              
                 <td class="text-center num-soluong">
-                    ${soLuong.toLocaleString()}
+                    ${soLuong.toLocaleString('vi-VN')}
                     <input type="hidden" class="so-luong" value="${soLuong}" />
                 </td>              
                 <td class="text-center num-dongia">
-                    ${donGia.toLocaleString()} ₫
+                    ${donGia.toLocaleString('vi-VN')} ₫
                     <input type="hidden" class="don-gia" value="${donGia}" />
                 </td>              
                 <td class="text-center num-thanhtien" style="font-weight: 700; color: #e11d48;">
-                    ${thanhTien.toLocaleString()} ₫
+                    ${thanhTien.toLocaleString('vi-VN')} ₫
                 </td>              
                 <td class="text-center">                  
                     <button type="button" class="btn btn-danger btn-sm btn-delete-row" style="padding: 6px 10px;">                      
@@ -325,21 +351,22 @@ document.addEventListener('DOMContentLoaded', function () {
             // Đẩy dòng <tr> vừa tạo xong vào trong bảng hiển thị
             tbody.appendChild(tr);
 
-            // Gắn sự kiện Xóa cho cái nút thùng rác màu đỏ vừa được sinh ra ở trên
+            // Gắn sự kiện Xóa cho cái nút thùng rác
             tr.querySelector('.btn-delete-row').addEventListener('click', function () {
-                tr.remove(); // Xóa dòng này khỏi màn hình
-                tinhTongTien(); // Gọi hàm tính lại tổng tiền
-                // Nếu xóa xong mà bảng trống trơn, thì in lại dòng thông báo "Chưa có vật tư"
+                tr.remove();
+                tinhTongTien();
                 if (tbody.querySelectorAll('tr').length === 0) {
                     tbody.innerHTML = `<tr id="emptyRow"><td colspan="8" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!</td></tr>`;
                 }
             });
 
-            // Sau khi thêm xong, làm trống 2 ô nhập liệu để người dùng nhập tiếp vật tư khác
+            // Sau khi thêm xong, làm trống 2 ô nhập liệu
             txtSL.value = '';
             txtGia.value = '';
 
-            // Gọi hàm tính lại tổng tiền ở góc dưới cùng màn hình
+            // Focus lại cbo để người dùng dễ nhập tiếp
+            cboVatTu.value = '';
+
             tinhTongTien();
         });
     }

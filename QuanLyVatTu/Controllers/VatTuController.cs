@@ -218,6 +218,20 @@ namespace QuanLyVatTu.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetGiaVon(int id)
+        {
+            // Tìm vật tư trong Database theo ID
+            var vatTu = await _context.VatTus.FindAsync(id);
+
+            if (vatTu != null)
+            {
+                // Trả về số tiền dưới dạng JSON (Lưu ý: Thay GiaVonBinhQuan bằng đúng tên cột của bạn)
+                return Json(new { success = true, giaVon = vatTu.GiaVonBinhQuan });
+            }
+
+            return Json(new { success = false, message = "Không tìm thấy vật tư" });
+        }
         private async Task<string?> ValidateVatTuAsync(VatTu? model)
         {
             if (model == null)
