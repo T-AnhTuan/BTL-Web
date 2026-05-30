@@ -1,4 +1,10 @@
-﻿// 1. Script mở Menu Thông Báo
+﻿if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // Chỉ chuyển hướng nếu chưa ở trang bảo trì
+    if (window.location.pathname !== '/Home/BaoTri') {
+        window.location.href = '/Home/BaoTri';
+    }
+}
+// 1. Script mở Menu Thông Báo
 function toggleNoti(event) {
     event.stopPropagation(); // Không cho click văng ra ngoài
     var notiMenu = document.getElementById("notiMenu");

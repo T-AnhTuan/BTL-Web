@@ -75,12 +75,15 @@ namespace QuanLyVatTu.Controllers
 
                 // 2. Dữ liệu thông báo hoạt động (Trộn Nhập & Xuất)
                 var nhaps = await _context.PhieuNhaps.AsNoTracking().OrderByDescending(p => p.NgayNhap).Take(5)
-                    .Select(p => new { ThoiGian = p.NgayNhap, Loai = "Nhập Kho", NoiDung = "Nhập hàng mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
+                    .Select(p => new { 
+                        ThoiGian = p.NgayNhap,
+                        Loai = "Nhập Kho", 
+                        NoiDung = "Tạo phiếu nhập mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
 
                 var xuats = await _context.PhieuXuats.AsNoTracking().OrderByDescending(p => p.NgayXuat).Take(5)
-                    .Select(p => new { ThoiGian = p.NgayXuat, Loai = "Xuất Kho", NoiDung = "Xuất hàng mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
+                    .Select(p => new { ThoiGian = p.NgayXuat, Loai = "Xuất Kho", NoiDung = "Tạo phiếu xuất mã " + p.MaPhieu, NguoiThucHien = p.NguoiXuat??"Admin" }).ToListAsync();
 
-                var activities = nhaps.Concat(xuats).OrderByDescending(a => a.ThoiGian).Take(5).ToList();
+                var activities = nhaps.Concat(xuats).OrderByDescending(a => a.ThoiGian).Take(10).ToList();
                 ViewBag.ActivitiesJson = JsonSerializer.Serialize(activities, jsonOptions);
 
                 // 3. Mock Data Biểu đồ (Bạn có thể tự thay bằng dữ liệu thực)
