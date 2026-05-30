@@ -88,18 +88,18 @@ btnSave.addEventListener('click', async function () {
     try {
 
         const response = await fetch(url, {
-            method: 'POST', 
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json', 
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(vatTuData) 
+            body: JSON.stringify(vatTuData)
         });
 
         const result = await response.json();
 
         if (result.success) {
             alert(id === '0' ? "Thêm vật tư thành công!" : "Cập nhật thành công!");
-            closeModal(); 
+            closeModal();
             window.location.reload();
         } else {
             alert("Lỗi: " + result.message);
@@ -117,7 +117,7 @@ document.addEventListener('click', async function (e) {
     // NẾU BẤM VÀO NÚT SỬA (Chứa class btn-edit)
     if (e.target.closest('.btn-edit')) {
         const btn = e.target.closest('.btn-edit');
-        const id = btn.getAttribute('data-id'); 
+        const id = btn.getAttribute('data-id');
 
         try {
             // Gửi yêu cầu lên Server lấy chi tiết vật tư theo ID
@@ -133,7 +133,7 @@ document.addEventListener('click', async function (e) {
                 document.getElementById('inputDanhMucId').value = data.danhMucId;
                 document.getElementById('inputDonViTinh').value = data.donViTinh || '';
                 document.getElementById('inputTonKhoHienTai').value = data.tonKhoHienTai ?? 0;
-                document.getElementById('inputTonToiThieu').value = data.tonToiThieu?? 0;
+                document.getElementById('inputTonToiThieu').value = data.tonToiThieu ?? 0;
 
                 // Đổi tiêu đề Modal
                 document.querySelector('.modal-header h3').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:#1a2d42; margin-right:8px;"></i> CẬP NHẬT VẬT TƯ';

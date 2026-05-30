@@ -64,7 +64,7 @@
                         <td>@(item.DanhMuc != null ? item.DanhMuc.TenDanhMuc : "Không xác định")</td>
                         <td style="text-align: center;">@item.DonViTinh</td>
                         <td style="text-align: center;">@item.TonKhoHienTai</td>
-                        <td style="text-align: center;">@item.GiaVonBinhQuan.ToString("N0") VNĐ</td>
+                        <td style="text-align: center;">@item.GiaVonBinhQuan.ToString("N2") VNĐ</td>
                         <td class="text-center" style="justify-content: center; gap: 10px; display: flex;">
                             <button class="btn btn-sm btn-primary btn-edit" data-id="@item.Id" style="background: green;"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
                             <button class="btn btn-sm btn-danger btn-delete" data-id="@item.Id" style="background: red;"><i class="fa-solid fa-trash"></i> Xóa</button>

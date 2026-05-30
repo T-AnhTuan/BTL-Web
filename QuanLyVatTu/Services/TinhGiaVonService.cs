@@ -1,28 +1,29 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 
 namespace QuanLyVatTu.Services
 {
-
     public interface ITinhGiaVonService
     {
-
         Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId);
     }
 
     public class TinhGiaVonService : ITinhGiaVonService
     {
         private readonly AppDbContext _context;
-        public TinhGiaVonService(AppDbContext context)
-        { 
+        private readonly INhatKyService _nhatKyService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public TinhGiaVonService(IHttpContextAccessor httpContextAccessor,AppDbContext context, INhatKyService nhatKyService)
+        {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
+            _nhatKyService = nhatKyService;
         }
 
         public async Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId)
         {
-            try 
+            try
             {
 
                 var phieuNhap = await _context.PhieuNhaps
@@ -31,7 +32,6 @@ namespace QuanLyVatTu.Services
 
                 if (phieuNhap == null || phieuNhap.TrangThai != TrangThaiPhieuNhap.DaDuyet)
                 {
-
                     return false;
                 }
 
@@ -39,49 +39,55 @@ namespace QuanLyVatTu.Services
                 foreach (var chiTiet in phieuNhap.ChiTietPhieuNhaps)
                 {
 
-                    var vatTu = await _context.VatTus.FindAsync(chiTiet.VatTuId);
-
-                    if (vatTu != null)
+                    var vatTu = await _context.VatTus
+                        .FindAsync(chiTiet.VatTuId);
+                    if (vatTu == null)
                     {
-
+                        if (!CheckOverflowRisk(vatTu.TonKhoHienTai, vatTu.GiaVonBinhQuan))
+                        {
+                            throw new InvalidOperationException(
+                                $"Dữ liệu quá lớn - Vật tư {vatTu.MaVatTu}: " +
+                                $"Tồn kho ({vatTu.TonKhoHienTai}) × Giá ({vatTu.GiaVonBinhQuan}) vượt quá giới hạn");
+                        }
                         decimal tongGiaTriTonCu = (decimal)vatTu.TonKhoHienTai * vatTu.GiaVonBinhQuan;
-
+                        if (!CheckOverflowRisk(chiTiet.SoLuong, chiTiet.DonGia))
+                        {
+                            throw new InvalidOperationException(
+                                $"Dữ liệu quá lớn - Chi tiết: Số lượng ({chiTiet.SoLuong}) × Đơn giá ({chiTiet.DonGia}) vượt quá giới hạn");
+                        }
                         // BƯỚC 2: TÍNH TỔNG GIÁ TRỊ LÔ HÀNG VỪA NHẬP
-                        // Lấy Số lượng nhập nhân với Đơn giá nhập của dòng chi tiết đó
                         decimal tongGiaTriNhapMoi = (decimal)chiTiet.SoLuong * chiTiet.DonGia;
 
                         // BƯỚC 3: CỘNG DỒN SỐ LƯỢNG TỒN KHO (Nhập vào thì tăng số lượng)
                         vatTu.TonKhoHienTai += chiTiet.SoLuong;
 
-                        // BƯỚC 4: TÍNH LẠI GIÁ VỐN MỚI (BÌNH QUÂN GIA QUYỀN)
-                        // Công thức = (Tổng tiền cũ + Tổng tiền mới) / Tổng số lượng sau khi nhập
-                        // Kiểm tra nếu Tồn kho > 0 để tránh lỗi chia cho số 0 (DivideByZeroException)
+                        // BƯỚC 4: TÍNH GIÁ VÓN BÍNH QUẢN
                         if (vatTu.TonKhoHienTai > 0)
                         {
-                            // Thực hiện phép chia để ra Giá vốn mới nhất
                             vatTu.GiaVonBinhQuan = (tongGiaTriTonCu + tongGiaTriNhapMoi) / (decimal)vatTu.TonKhoHienTai;
+                            if (vatTu.GiaVonBinhQuan < 0)
+                            {
+                                throw new InvalidOperationException(
+                                    $"Giá vốn bình quân âm (không hợp lệ) cho vật tư {vatTu.MaVatTu}: {vatTu.GiaVonBinhQuan}");
+                            }
+                        }
+                        else
+                        {
+                            vatTu.GiaVonBinhQuan = 0;
                         }
 
                         // Đánh dấu vật tư này đã bị thay đổi để EF Core lưu lại
                         _context.VatTus.Update(vatTu);
                     }
                 }
-
-                // TẠO NHẬT KÝ HỆ THỐNG để lưu lại lịch sử tính toán
-                var nhatKy = new NhatKyHeThong
+                var entry = new NhatKyHeThong
                 {
-                    // Lưu ID tài khoản thực hiện
                     TaiKhoanId = taiKhoanId,
-                    // Lưu chuỗi mô tả thao tác, SỬA LỖI: Dùng phieuNhap.Id thay vì MaPhieu
                     HanhDong = $"Hệ thống tự động cập nhật Giá Vốn Bình Quân sau khi nhập phiếu PN-{phieuNhap.Id.ToString("D5")}",
-                    // Ghi lại mốc thời gian
-                    ThoiGian = DateTime.Now,
-                    // Địa chỉ IP mặc định
-                    DiaChiIP = "0.0.0.0"
+                    DiaChiIP = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
                 };
-                // Thêm dòng nhật ký vào Database
-                _context.NhatKyHeThongs.Add(nhatKy);
-
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 // Cuối cùng, thực thi lệnh lưu toàn bộ quá trình tính toán và nhật ký xuống SQL
                 await _context.SaveChangesAsync();
 
@@ -91,21 +97,36 @@ namespace QuanLyVatTu.Services
             // Khối Catch sẽ bắt mọi lỗi xảy ra trong khối Try ở trên
             catch (Exception ex)
             {
-                // Nếu bị lỗi tính toán, hệ thống sẽ tự động ghi 1 dòng LOG LỖI vào Database để Dev kiểm tra
-                var logLoi = new NhatKyHeThong
+                var entry = new NhatKyHeThong
                 {
                     TaiKhoanId = taiKhoanId,
-                    // In ra nội dung lỗi cụ thể (ex.Message)
                     HanhDong = $"[LỖI] Tính giá vốn thất bại cho phiếu {phieuNhapId}: {ex.Message}",
-                    ThoiGian = DateTime.Now,
-                    DiaChiIP = "0.0.0.0"
+                    DiaChiIP = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ThoiGian = DateTime.Now
                 };
-                // Đẩy log lỗi vào DB
-                _context.NhatKyHeThongs.Add(logLoi);
+                await _nhatKyService.GhiNhatKyAsync(entry);
                 // Lưu log lỗi xuống SQL
                 await _context.SaveChangesAsync();
 
                 // Báo cáo hàm chạy thất bại
+                return false;
+            }
+        }
+        private bool CheckOverflowRisk(long quantity, decimal price)
+        {
+            try
+            {
+                // Tính toán với kiểm tra overflow
+                // Nếu quantity hoặc price quá lớn, sẽ ném ra OverflowException
+                checked
+                {
+                    var result = (decimal)quantity * price;
+                }
+                return true;
+            }
+            catch (OverflowException)
+            {
+                // Nếu có overflow, trả về false
                 return false;
             }
         }

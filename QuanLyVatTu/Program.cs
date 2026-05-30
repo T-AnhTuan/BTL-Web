@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,7 @@ builder.Services.AddControllersWithViews();
 // Register AppDbContext với connection string
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=tcp:tattech.database.windows.net,1433;Initial Catalog=ExWeb;Persist Security Info=False;User ID=ASPNet_App;Password=Admin@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"));
+builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 builder.Services.AddScoped<IThongBaoService, ThongBaoService>();
 builder.Services.AddScoped<INhapXuatService, NhapXuatService>();

@@ -15,6 +15,8 @@ namespace QuanLyVatTu.Controllers
         private readonly AppDbContext _context;
         private readonly INhatKyService _nhatKyService;
         private readonly ITinhGiaVonService _tinhGiaVonService;
+        private const decimal MAX_GIA_VON = 999999999M;
+        private const long MAX_TON_KHO = 999999999;
         public VatTuController(AppDbContext context, INhatKyService nhatKyService, ITinhGiaVonService tinhGiaVonService)
         {
             _context = context;
@@ -246,17 +248,26 @@ namespace QuanLyVatTu.Controllers
             {
                 return "Tồn kho hiện tại không được nhỏ hơn 0.";
             }
-
+            if (model.TonKhoHienTai > MAX_TON_KHO)
+            {
+                return $"Tồn kho hiện tại không được vượt quá {MAX_TON_KHO:N0}.";
+            }
             if (model.TonToiThieu < 0)
             {
                 return "Tồn tối thiểu không được nhỏ hơn 0.";
             }
-
+            if (model.TonToiThieu > MAX_TON_KHO)
+            {
+                return $"Tồn kho tối thiểu không được vượt quá {MAX_TON_KHO:N0}.";
+            }
             if (model.GiaVonBinhQuan < 0)
             {
                 return "Giá vốn bình quân không được nhỏ hơn 0.";
             }
-
+            if (model.GiaVonBinhQuan > MAX_GIA_VON)
+            {
+                return $"Giá vốn bình quân không được vượt quá {MAX_GIA_VON:N0} VNĐ.";
+            }
             return null;
         }
     }
