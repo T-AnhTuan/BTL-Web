@@ -1,31 +1,28 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
     try {
-        // LƯU Ý: Không được chứa bất kỳ chữ @Html.Raw nào ở file này!
-        // Các biến trendLabels, trendIn, lowStockData... đã được khai báo ở Index.cshtml
-
         // ==========================================
         // 1. VẼ BIỂU ĐỒ ĐƯỜNG (Chart.js)
         // ==========================================
         const canvasTrend = document.getElementById('trendChart');
         if (canvasTrend && typeof trendLabels !== 'undefined' && trendLabels.length > 0) {
             new Chart(canvasTrend.getContext('2d'), {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: trendLabels,
                     datasets: [
                         {
-                            label: 'Nhập Kho',
+                            label: 'Nhập kho',
                             data: trendIn,
-                            borderColor: '#28a745',
-                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                          //  borderColor: '#28a745',
+                            backgroundColor: '#28a745',
                             fill: true,
                             tension: 0.3
                         },
                         {
-                            label: 'Xuất Kho',
+                            label: 'Xuất kho',
                             data: trendOut,
-                            borderColor: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            //borderColor: '#fd7e14',
+                            backgroundColor: '#fd7e14',
                             fill: true,
                             tension: 0.3
                         }
@@ -38,6 +35,7 @@
                 }
             });
         }
+
         // ==========================================
         // 2. VẼ BIỂU ĐỒ TRÒN (Phân bổ danh mục) - THÊM MỚI
         // ==========================================

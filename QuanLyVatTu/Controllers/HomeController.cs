@@ -74,22 +74,57 @@ namespace QuanLyVatTu.Controllers
                 ViewBag.LowStockJson = JsonSerializer.Serialize(lowStock, jsonOptions);
 
                 // 2. Dữ liệu thông báo hoạt động (Trộn Nhập & Xuất)
-                var nhaps = await _context.PhieuNhaps.AsNoTracking().OrderByDescending(p => p.NgayNhap).Take(5)
+                var nhaps = await _context.PhieuNhaps
+                    .AsNoTracking()
+                    .OrderByDescending(p => p.NgayNhap).Take(10)
                     .Select(p => new { 
                         ThoiGian = p.NgayNhap,
                         Loai = "Nhập Kho", 
-                        NoiDung = "Tạo phiếu nhập mã " + p.MaPhieu, NguoiThucHien = "Admin" }).ToListAsync();
+                        NoiDung = "Tạo phiếu nhập mã " + p.MaPhieu, 
+                        NguoiThucHien = "Admin" })
+                    .ToListAsync();
 
-                var xuats = await _context.PhieuXuats.AsNoTracking().OrderByDescending(p => p.NgayXuat).Take(5)
-                    .Select(p => new { ThoiGian = p.NgayXuat, Loai = "Xuất Kho", NoiDung = "Tạo phiếu xuất mã " + p.MaPhieu, NguoiThucHien = p.NguoiXuat??"Admin" }).ToListAsync();
+                var xuats = await _context.PhieuXuats
+                    .AsNoTracking()
+                    .OrderByDescending(p => p.NgayXuat).Take(10)
+                    .Select(p => new { 
+                        ThoiGian = p.NgayXuat,
+                        Loai = "Xuất Kho",
+                        NoiDung = "Tạo phiếu xuất mã " + p.MaPhieu, 
+                        NguoiThucHien = p.NguoiXuat??"Admin" })
+                    .ToListAsync();
 
                 var activities = nhaps.Concat(xuats).OrderByDescending(a => a.ThoiGian).Take(10).ToList();
                 ViewBag.ActivitiesJson = JsonSerializer.Serialize(activities, jsonOptions);
 
                 // 3. Mock Data Biểu đồ (Bạn có thể tự thay bằng dữ liệu thực)
-                var labels = new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN" };
-                var nhapData = new[] { 10, 20, 15, 30, 25, 10, 5 };
-                var xuatData = new[] { 5, 15, 10, 20, 30, 5, 0 };
+                var labels = new List<string>();
+                var nhapData = new List<int>();
+                var xuatData = new List<int>();
+
+                // Tìm ngày Thứ 2 đầu tuần (trong trường hợp hôm nay là Chủ nhật thì DayOfWeek là 0, cần xử lý)
+                DateTime today = DateTime.Today;
+                int diff = (7 + (int)today.DayOfWeek - 1) % 7;
+                DateTime startOfWeek = today.AddDays(-1 * diff);
+
+                for (int i = 0; i < 7; i++)
+                {
+                    DateTime date = startOfWeek.AddDays(i);
+                    labels.Add($"{GetDayName(date.DayOfWeek)} ({date:dd/MM})");
+
+                    // Đếm/Tổng hợp dữ liệu theo ngày thực tế
+                    int slNhap = _context.PhieuNhaps
+                        .Where(p => p.NgayNhap.Date == date.Date && p.TrangThai == TrangThaiPhieuNhap.DaDuyet)
+                        .Sum(p => p.ChiTietPhieuNhaps.Sum(ct => ct.SoLuong));
+
+                    int slXuat = _context.PhieuXuats
+                        .Where(p => p.NgayXuat.Date == date.Date && p.TrangThai == TrangThaiPhieuXuat.DaDuyet)
+                        .Sum(p => p.ChiTietPhieuXuats.Sum(ct => ct.SoLuong));
+
+                    nhapData.Add(slNhap);
+                    xuatData.Add(slXuat);
+                }
+
 
                 ViewBag.TrendLabelsJson = JsonSerializer.Serialize(labels, jsonOptions);
                 ViewBag.TrendInJson = JsonSerializer.Serialize(nhapData, jsonOptions);
@@ -126,6 +161,19 @@ namespace QuanLyVatTu.Controllers
         public IActionResult BaoTri()
         {
             return View();
+        }
+        private string GetDayName(DayOfWeek day)
+        {
+            return day switch
+            {
+                DayOfWeek.Monday => "Thứ 2",
+                DayOfWeek.Tuesday => "Thứ 3",
+                DayOfWeek.Wednesday => "Thứ 4",
+                DayOfWeek.Thursday => "Thứ 5",
+                DayOfWeek.Friday => "Thứ 6",
+                DayOfWeek.Saturday => "Thứ 7",
+                _ => "CN"
+            };
         }
     }
 }
