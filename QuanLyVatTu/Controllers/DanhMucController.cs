@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyVatTu.Data;
 using QuanLyVatTu.Models;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using System.Net;
 
 namespace QuanLyVatTu.Controllers
 {
@@ -71,6 +73,7 @@ namespace QuanLyVatTu.Controllers
                     model.NgayTao = DateTime.Now;
                     model.NguoiTao = User?.Identity?.Name ?? "System";
                     _context.DanhMucVatTus.Add(model);
+                    AddLog($"Thêm danh mục vật tư: Mã = {model.MaDanhMuc}; Ten={model.TenDanhMuc}");
                 }
                 else
                 {
@@ -79,11 +82,17 @@ namespace QuanLyVatTu.Controllers
                     {
                         return Json(new { success = false, message = "Không tìm thấy danh mục cần cập nhật." });
                     }
+                    var oldMa = existing.MaDanhMuc;
+                    var oldTen = existing.TenDanhMuc;
+                    var oldMoTa = existing.MoTa;
+                    var oldTrangThai = existing.TrangThai;
 
                     existing.MaDanhMuc = model.MaDanhMuc;
                     existing.TenDanhMuc = model.TenDanhMuc;
                     existing.MoTa = model.MoTa;
                     existing.TrangThai = model.TrangThai;
+                    var details = $"Cập nhật danh mục vật tư: Id={existing.Id}; Ma: {oldMa} => {existing.MaDanhMuc}; Ten: {oldTen} => {existing.TenDanhMuc}; TrangThai: {oldTrangThai} => {existing.TrangThai}";
+                    AddLog(details);
                 }
 
                 await _context.SaveChangesAsync();
@@ -136,6 +145,7 @@ namespace QuanLyVatTu.Controllers
                 {
                     return Json(new { success = false, message = "Không thể xóa danh mục đang có vật tư sử dụng." });
                 }
+                AddLog($"Xóa danh mục vật tư: Id={item.Id}; Ma={item.MaDanhMuc}; Ten={item.TenDanhMuc}");
 
                 _context.DanhMucVatTus.Remove(item);
                 await _context.SaveChangesAsync();
@@ -206,6 +216,7 @@ namespace QuanLyVatTu.Controllers
                 if (model.Id == 0)
                 {
                     _context.NhaCungCaps.Add(model);
+                    AddLog($"Thêm nhà cung cấp: MaNCC={model.MaNCC}; Ten={model.TenNhaCungCap}");
                 }
                 else
                 {
@@ -215,12 +226,22 @@ namespace QuanLyVatTu.Controllers
                         return Json(new { success = false, message = "Không tìm thấy nhà cung cấp cần cập nhật." });
                     }
 
+                    var oldMa = existing.MaNCC;
+                    var oldTen = existing.TenNhaCungCap;
+                    var oldDiaChi = existing.DiaChi;
+                    var oldSDT = existing.SoDienThoai;
+                    var oldEmail = existing.Email;
+                    var oldTrangThai = existing.TrangThai;
+
                     existing.MaNCC = model.MaNCC;
                     existing.TenNhaCungCap = model.TenNhaCungCap;
                     existing.DiaChi = model.DiaChi;
                     existing.SoDienThoai = model.SoDienThoai;
                     existing.Email = model.Email;
                     existing.TrangThai = model.TrangThai;
+
+                    var details = $"Cập nhật Nhà cung cấp Id={existing.Id}; Ma: {oldMa} => {existing.MaNCC}; Ten: {oldTen} => {existing.TenNhaCungCap}; DiaChi: {oldDiaChi} => {existing.DiaChi}; SDT: {oldSDT} => {existing.SoDienThoai}; Email: {oldEmail} => {existing.Email}; TrangThai: {oldTrangThai} => {existing.TrangThai}";
+                    AddLog(details);
                 }
 
                 await _context.SaveChangesAsync();
@@ -252,6 +273,8 @@ namespace QuanLyVatTu.Controllers
             if (ncc == null) return Json(new { success = false, message = "Dữ liệu không tồn tại!" });
 
             // Cảnh báo: Nếu Nhà Cung Cấp này đã có Phiếu Nhập, bạn không nên xóa mà chỉ nên đổi Trạng thái về 0
+            AddLog($"Xóa nhà cung cấp Id={ncc.Id}; MaNCC={ncc.MaNCC}; Ten={ncc.TenNhaCungCap}");
+
             _context.NhaCungCaps.Remove(ncc);
             await _context.SaveChangesAsync();
 
@@ -262,6 +285,54 @@ namespace QuanLyVatTu.Controllers
         {
             var trimmed = value?.Trim();
             return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
+        private int GetCurrentTaiKhoanId()
+        {
+            try
+            {
+                // ưu tiên claim "TaiKhoanId", fallback NameIdentifier
+                var claim = User?.FindFirst("TaiKhoanId") ?? User?.FindFirst(ClaimTypes.NameIdentifier);
+                if (claim != null && int.TryParse(claim.Value, out var id))
+                {
+                    return id;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+            return 0;
+        }
+
+        // Helper: lấy IP client
+        private string GetClientIp()
+        {
+            try
+            {
+                var ip = HttpContext?.Connection?.RemoteIpAddress;
+                if (ip == null) return string.Empty;
+
+                // nếu là IPv6 loopback mapped to IPv4, convert
+                if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+                return ip.ToString();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        // Helper: thêm log vào context (chưa SaveChanges)
+        private void AddLog(string hanhDong)
+        {
+            var log = new NhatKyHeThong
+            {
+                TaiKhoanId = GetCurrentTaiKhoanId(),
+                HanhDong = hanhDong,
+                ThoiGian = DateTime.Now,
+                DiaChiIP = GetClientIp()
+            };
+            _context.NhatKyHeThongs.Add(log);
         }
     }
 }

@@ -215,10 +215,6 @@ namespace QuanLyVatTu.Controllers
             {
                 phieu.TrangThai = TrangThaiPhieuNhap.TuChoi;
 
-                // Nếu model có trường lưu lý do từ chối, gán vào đây
-                // Ví dụ: phieu.LyDoTuChoi = lyDo;
-                // Nếu không có, bỏ hoặc thêm migration tương ứng
-
                 _context.PhieuNhaps.Update(phieu);
                 await _context.SaveChangesAsync();
 
@@ -236,6 +232,11 @@ namespace QuanLyVatTu.Controllers
         [HttpPost]
         public async Task<IActionResult> LuuToanBoPhieu([FromBody] PhieuNhapToanBoDto model)
         {
+            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdString, out int userId))
+            {
+                await LogActionAsync(userId, "Vừa tạp phiếu nhập " + model.MaPhieu);
+            }
             try
             {
                 // BƯỚC CHẶN 1: Bắt lỗi nếu JS gửi dữ liệu sai định dạng (Ví dụ chữ gửi vào số)
@@ -286,16 +287,34 @@ namespace QuanLyVatTu.Controllers
                     message = "Lưu phiếu thành công!",
                     redirectUrl = $"/PhieuNhap/XemChiTiet/{phieuMoi.Id}" // Trả về đường dẫn để JS tự nhảy trang
                 });
+
             }
             catch (Exception ex)
             {
                 string errInfo = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                // BƯỚC CHẶN 2: Luôn trả về Json dù lỗi nặng thế nào đi nữa
                 return Json(new { success = false, message = $"Lỗi hệ thống C#: {errInfo}" });
             }
         }
 
         // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
+        private async Task LogActionAsync(int taiKhoanId, string action)
+        {
+            try
+            {
+                var log = new NhatKyHeThong
+                {
+                    TaiKhoanId = taiKhoanId,
+                    HanhDong = action,
+                    ThoiGian = DateTime.Now,
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
+                };
+                _context.NhatKyHeThongs.Add(log);
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+            }
+        }
         public class PhieuNhapTaoMoiDto
         {
             public DateTime NgayNhap { get; set; }

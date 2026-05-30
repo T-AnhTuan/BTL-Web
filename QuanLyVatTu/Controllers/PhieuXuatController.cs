@@ -311,6 +311,24 @@ namespace QuanLyVatTu.Controllers
         }
 
         // --- CÁC LỚP DTO HỨNG DỮ LIỆU ---
+        private async Task LogActionAsync(int taiKhoanId, string action)
+        {
+            try
+            {
+                var log = new NhatKyHeThong
+                {
+                    TaiKhoanId = taiKhoanId,
+                    HanhDong = action,
+                    ThoiGian = DateTime.Now,
+                    DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0"
+                };
+                _context.NhatKyHeThongs.Add(log);
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+            }
+        }
         public class PhieuXuatTaoMoiDto
         {
             public DateTime NgayXuat { get; set; }

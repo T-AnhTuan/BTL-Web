@@ -1,122 +1,347 @@
-@model QuanLyVatTu.Models.PhieuXuat
-@{
-    ViewData["Title"] = "Chi Tiết Phiếu Xuất Kho";
-}
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QuanLyVatTu.Data;
+using QuanLyVatTu.Models;
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using System.Net;
 
-<link rel="stylesheet" href="~/css/ctNhap.css" asp-append-version="true" />
+namespace QuanLyVatTu.Controllers
+{
+    [Authorize]
+    public class DanhMucController : Controller
+    {
+        private readonly AppDbContext _context;
 
-<div class="page-header">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <a asp-controller="PhieuXuat" asp-action="PhieuXuat" class="btn btn-secondary" title="Quay lại"><i class="fa-solid fa-arrow-left"></i></a>
-        <h1 class="page-title">Chi tiết phiếu xuất: @Model.MaPhieu</h1>
-    </div>
-    <div style="display: flex; gap: 10px;">
-        <button class="btn btn-success" onclick="hoanTatPhieu()"><i class="fa-solid fa-check"></i> Hoàn tất phiếu</button>
-    </div>
-</div>
+        public DanhMucController(AppDbContext context)
+        {
+            _context = context;
+        }
 
-<div class="section-card">
-    <div class="section-title"><i class="fa-solid fa-circle-info" style="color:#3b82f6;"></i> THÔNG TIN PHIẾU XUẤT</div>
-    <div class="input-row">
-        <!-- NẾU TRUYỀN ĐÚNG 1 OBJECT, ĐOẠN NÀY SẼ KHÔNG BỊ LỖI NỮA -->
-        <input type="hidden" id="hdfPhieuXuatId" value="@Model.Id" />
-        
-        <div class="form-group">
-            <label>Khách hàng / Công trình</label>
-            <input type="text" class="form-control" value="@Model.KhachHang" readonly style="background-color: #f8fafc;" />
-        </div>
-        <div class="form-group">
-            <label>Kho xuất</label>
-            <input type="text" class="form-control" value="@Model.Kho?.TenKho" readonly style="background-color: #f8fafc;" />
-        </div>
-        <div class="form-group">
-            <label>Ngày xuất</label>
-            <input type="datetime-local" class="form-control" value="@Model.NgayXuat.ToString("yyyy-MM-ddTHH:mm")" readonly style="background-color: #f8fafc;" />
-        </div>
-    </div>
-</div>
-
-<div class="section-card">
-    <div class="section-title"><i class="fa-solid fa-box-open" style="color:#10b981;"></i> THÊM VẬT TƯ XUẤT KHO</div>
-    <div class="input-row" style="align-items: flex-end;">
-        <div class="form-group" style="flex: 2;">
-            <label>Chọn Vật Tư</label>
-            <select id="ddlVatTu" class="form-control">
-                <option value="">-- Chọn vật tư --</option>
-                @if (ViewBag.VatTus != null)
+        // Helper: lấy TaiKhoanId từ claim (nếu không có trả về 0 - có thể coi là System)
+        private int GetCurrentTaiKhoanId()
+        {
+            try
+            {
+                // ưu tiên claim "TaiKhoanId", fallback NameIdentifier
+                var claim = User?.FindFirst("TaiKhoanId") ?? User?.FindFirst(ClaimTypes.NameIdentifier);
+                if (claim != null && int.TryParse(claim.Value, out var id))
                 {
-                    foreach (var vt in ViewBag.VatTus)
-                    {
-                        <option value="@vt.Id" data-ten="@vt.TenVatTu" data-gia="@vt.GiaNhapTB">@vt.TenVatTu</option>
-                    }
+                    return id;
                 }
-            </select>
-        </div>
-        <div class="form-group" style="flex: 1;">
-            <label>Số Lượng Xuất</label>
-            <input type="number" id="txtSoLuong" class="form-control" min="1" value="1" />
-        </div>
-        <div class="form-group" style="flex: 1;">
-            <label>Đơn Giá (Tạm tính)</label>
-            <input type="number" id="txtDonGia" class="form-control" min="0" />
-        </div>
-        <div class="form-group" style="flex: 0.5;">
-            <button class="btn btn-primary" style="width: 100%; height: 40px;" onclick="themVatTuVaoLuoi()">Thêm</button>
-        </div>
-    </div>
-</div>
+            }
+            catch
+            {
+                // ignore
+            }
+            return 0;
+        }
 
-<div class="section-card">
-    <div class="table-container">
-        <table class="table" id="tblChiTiet">
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Mã VT (ID)</th>
-                    <th>Tên Vật Tư</th>
-                    <th>Số Lượng</th>
-                    <th>Đơn Giá</th>
-                    <th>Thành Tiền</th>
-                    <th>Thao Tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.ChiTietPhieuXuats != null && Model.ChiTietPhieuXuats.Any())
+        // Helper: lấy IP client
+        private string GetClientIp()
+        {
+            try
+            {
+                var ip = HttpContext?.Connection?.RemoteIpAddress;
+                if (ip == null) return string.Empty;
+
+                // nếu là IPv6 loopback mapped to IPv4, convert
+                if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+                return ip.ToString();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        // Helper: thêm log vào context (chưa SaveChanges)
+        private void AddLog(string hanhDong)
+        {
+            var log = new NhatKyHeThong
+            {
+                TaiKhoanId = GetCurrentTaiKhoanId(),
+                HanhDong = hanhDong,
+                ThoiGian = DateTime.Now,
+                DiaChiIP = GetClientIp()
+            };
+            _context.NhatKyHeThongs.Add(log);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> VatTu()
+        {
+            try
+            {
+                var data = await _context.DanhMucVatTus
+                    .AsNoTracking()
+                    .OrderBy(x => x.TenDanhMuc)
+                    .ToListAsync();
+                return View(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi load danh mục: " + ex.Message);
+                return View(new List<DanhMucVatTu>());
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LuuDanhMuc([FromBody] DanhMucVatTu model)
+        {
+            try
+            {
+                if (model == null)
                 {
-                    int stt = 1;
-                    foreach (var item in Model.ChiTietPhieuXuats)
-                    {
-                        <tr data-vattu-id="@item.VatTuId">
-                            <td>@(stt++)</td>
-                            <td>@item.VatTuId</td>
-                            <td>@item.VatTu?.TenVatTu</td>
-                            <td class="so-luong">@item.SoLuong</td>
-                            <td class="don-gia">@item.DonGiaXuat</td>
-                            <td class="thanh-tien">@( (decimal)item.SoLuong * item.DonGiaXuat )</td>
-                            <td>
-                                <button class="btn btn-danger btn-delete-row" onclick="xoaDong(this)"><i class="fa fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    }
+                    return Json(new { success = false, message = "Dữ liệu gửi lên không hợp lệ." });
+                }
+
+                model.MaDanhMuc = model.MaDanhMuc?.Trim() ?? string.Empty;
+                model.TenDanhMuc = model.TenDanhMuc?.Trim() ?? string.Empty;
+                model.MoTa = model.MoTa?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(model.MaDanhMuc))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập mã danh mục." });
+                }
+
+                if (string.IsNullOrWhiteSpace(model.TenDanhMuc))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập tên danh mục." });
+                }
+
+                var isDuplicateCode = await _context.DanhMucVatTus
+                    .AnyAsync(x => x.Id != model.Id && x.MaDanhMuc == model.MaDanhMuc);
+                if (isDuplicateCode)
+                {
+                    return Json(new { success = false, message = "Mã danh mục đã tồn tại." });
+                }
+
+                if (model.Id == 0)
+                {
+                    model.NgayTao = DateTime.Now;
+                    model.NguoiTao = User?.Identity?.Name ?? "System";
+                    _context.DanhMucVatTus.Add(model);
+
+                    // Log tạo mới (mô tả chứa mã và tên)
+                    AddLog($"Tạo DanhMuc: Ma={model.MaDanhMuc}; Ten={model.TenDanhMuc}");
                 }
                 else
                 {
-                    <tr id="emptyRow">
-                        <td colspan="7" class="text-center" style="color: #94a3b8; font-style: italic; padding: 30px;">
-                            Chưa có vật tư nào trong phiếu. Vui lòng chọn vật tư và thêm xuống lưới!
-                        </td>
-                    </tr>
+                    var existing = await _context.DanhMucVatTus.FindAsync(model.Id);
+                    if (existing == null)
+                    {
+                        return Json(new { success = false, message = "Không tìm thấy danh mục cần cập nhật." });
+                    }
+
+                    var oldMa = existing.MaDanhMuc;
+                    var oldTen = existing.TenDanhMuc;
+                    var oldMoTa = existing.MoTa;
+                    var oldTrangThai = existing.TrangThai;
+
+                    existing.MaDanhMuc = model.MaDanhMuc;
+                    existing.TenDanhMuc = model.TenDanhMuc;
+                    existing.MoTa = model.MoTa;
+                    existing.TrangThai = model.TrangThai;
+
+                    var details = $"Cập nhật DanhMuc Id={existing.Id}; Ma: {oldMa} => {existing.MaDanhMuc}; Ten: {oldTen} => {existing.TenDanhMuc}; TrangThai: {oldTrangThai} => {existing.TrangThai}";
+                    AddLog(details);
                 }
-            </tbody>
-        </table>
-    </div>
 
-    <div class="summary-section" style="margin-top: 20px; text-align: right;">
-        <div class="summary-total" style="font-size: 1.2rem;">
-            <span>TỔNG TIỀN PHIẾU XUẤT: </span>
-            <span id="lblTongTien" style="color: red; font-weight: bold;">0 đ</span>
-        </div>
-    </div>
-</div>
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
 
-<script src="~/js/ctXuat.js" asp-append-version="true"></script>
+        [HttpGet]
+        public async Task<IActionResult> GetDanhMucById(int id)
+        {
+            var item = await _context.DanhMucVatTus
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (item == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy danh mục." });
+            }
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    id = item.Id,
+                    maDanhMuc = item.MaDanhMuc,
+                    tenDanhMuc = item.TenDanhMuc,
+                    moTa = item.MoTa,
+                    trangThai = (int)item.TrangThai
+                }
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> XoaDanhMuc(int id)
+        {
+            try
+            {
+                var item = await _context.DanhMucVatTus.FindAsync(id);
+                if (item == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy danh mục cần xóa." });
+                }
+
+                var hasVatTu = await _context.VatTus.AnyAsync(x => x.DanhMucId == id);
+                if (hasVatTu)
+                {
+                    return Json(new { success = false, message = "Không thể xóa danh mục đang có vật tư sử dụng." });
+                }
+
+                // Thêm log xóa
+                AddLog($"Xóa DanhMuc Id={item.Id}; Ma={item.MaDanhMuc}; Ten={item.TenDanhMuc}");
+
+                _context.DanhMucVatTus.Remove(item);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống khi xóa: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> NhaCungCap()
+        {
+            try
+            {
+                var data = await _context.NhaCungCaps
+                    .AsNoTracking()
+                    .OrderBy(x => x.TenNhaCungCap)
+                    .ToListAsync();
+                return View(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi load nhà cung cấp: " + ex.Message);
+                return View(new List<NhaCungCap>());
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LuuNhaCungCap([FromBody] NhaCungCap model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    return Json(new { success = false, message = "Dữ liệu gửi lên không hợp lệ." });
+                }
+
+                model.MaNCC = model.MaNCC?.Trim() ?? string.Empty;
+                model.TenNhaCungCap = model.TenNhaCungCap?.Trim() ?? string.Empty;
+                model.DiaChi = NormalizeOptional(model.DiaChi);
+                model.SoDienThoai = NormalizeOptional(model.SoDienThoai);
+                model.Email = NormalizeOptional(model.Email);
+
+                if (string.IsNullOrWhiteSpace(model.MaNCC))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập mã nhà cung cấp." });
+                }
+
+                if (string.IsNullOrWhiteSpace(model.TenNhaCungCap))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập tên nhà cung cấp." });
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.Email) && !new EmailAddressAttribute().IsValid(model.Email))
+                {
+                    return Json(new { success = false, message = "Email nhà cung cấp không hợp lệ." });
+                }
+
+                var isDuplicateCode = await _context.NhaCungCaps
+                    .AnyAsync(x => x.Id != model.Id && x.MaNCC == model.MaNCC);
+                if (isDuplicateCode)
+                {
+                    return Json(new { success = false, message = "Mã nhà cung cấp đã tồn tại." });
+                }
+
+                if (model.Id == 0)
+                {
+                    _context.NhaCungCaps.Add(model);
+
+                    // Log tạo mới NCC
+                    AddLog($"Tạo NCC: MaNCC={model.MaNCC}; Ten={model.TenNhaCungCap}");
+                }
+                else
+                {
+                    var existing = await _context.NhaCungCaps.FindAsync(model.Id);
+                    if (existing == null)
+                    {
+                        return Json(new { success = false, message = "Không tìm thấy nhà cung cấp cần cập nhật." });
+                    }
+
+                    var oldMa = existing.MaNCC;
+                    var oldTen = existing.TenNhaCungCap;
+                    var oldDiaChi = existing.DiaChi;
+                    var oldSDT = existing.SoDienThoai;
+                    var oldEmail = existing.Email;
+                    var oldTrangThai = existing.TrangThai;
+
+                    existing.MaNCC = model.MaNCC;
+                    existing.TenNhaCungCap = model.TenNhaCungCap;
+                    existing.DiaChi = model.DiaChi;
+                    existing.SoDienThoai = model.SoDienThoai;
+                    existing.Email = model.Email;
+                    existing.TrangThai = model.TrangThai;
+
+                    var details = $"Cập nhật NCC Id={existing.Id}; Ma: {oldMa} => {existing.MaNCC}; Ten: {oldTen} => {existing.TenNhaCungCap}; DiaChi: {oldDiaChi} => {existing.DiaChi}; SDT: {oldSDT} => {existing.SoDienThoai}; Email: {oldEmail} => {existing.Email}; TrangThai: {oldTrangThai} => {existing.TrangThai}";
+                    AddLog(details);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetNhaCungCap(int id)
+        {
+            var ncc = await _context.NhaCungCaps.FindAsync(id);
+            if (ncc == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy nhà cung cấp này!" });
+            }
+
+            return Json(new { success = true, data = ncc });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> XoaNhaCungCap(int id)
+        {
+            var ncc = await _context.NhaCungCaps.FindAsync(id);
+            if (ncc == null) return Json(new { success = false, message = "Dữ liệu không tồn tại!" });
+
+            // Thêm log xóa NCC
+            AddLog($"Xóa NCC Id={ncc.Id}; MaNCC={ncc.MaNCC}; Ten={ncc.TenNhaCungCap}");
+
+            _context.NhaCungCaps.Remove(ncc);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        private static string? NormalizeOptional(string? value)
+        {
+            var trimmed = value?.Trim();
+            return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
+    }
+}
