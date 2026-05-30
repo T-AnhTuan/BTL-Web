@@ -6,6 +6,7 @@ namespace QuanLyVatTu.Services
 {
     public interface ITinhGiaVonService
     {
+        Task<bool> TruTonKhoSauKhiXuatAsync(int phieuXuatId, int taiKhoanId);
         Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId);
     }
 
@@ -23,6 +24,7 @@ namespace QuanLyVatTu.Services
 
         public async Task<bool> TinhGiaVonBinhQuanSauKhiNhapAsync(int phieuNhapId, int taiKhoanId)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
 
@@ -32,6 +34,7 @@ namespace QuanLyVatTu.Services
 
                 if (phieuNhap == null || phieuNhap.TrangThai != TrangThaiPhieuNhap.DaDuyet)
                 {
+                    await transaction.RollbackAsync();
                     return false;
                 }
 
@@ -41,7 +44,7 @@ namespace QuanLyVatTu.Services
 
                     var vatTu = await _context.VatTus
                         .FindAsync(chiTiet.VatTuId);
-                    if (vatTu == null)
+                    if (vatTu != null)
                     {
                         if (!CheckOverflowRisk(vatTu.TonKhoHienTai, vatTu.GiaVonBinhQuan))
                         {
@@ -49,54 +52,54 @@ namespace QuanLyVatTu.Services
                                 $"Dữ liệu quá lớn - Vật tư {vatTu.MaVatTu}: " +
                                 $"Tồn kho ({vatTu.TonKhoHienTai}) × Giá ({vatTu.GiaVonBinhQuan}) vượt quá giới hạn");
                         }
-                        decimal tongGiaTriTonCu = (decimal)vatTu.TonKhoHienTai * vatTu.GiaVonBinhQuan;
+                       
                         if (!CheckOverflowRisk(chiTiet.SoLuong, chiTiet.DonGia))
                         {
                             throw new InvalidOperationException(
                                 $"Dữ liệu quá lớn - Chi tiết: Số lượng ({chiTiet.SoLuong}) × Đơn giá ({chiTiet.DonGia}) vượt quá giới hạn");
                         }
                         // BƯỚC 2: TÍNH TỔNG GIÁ TRỊ LÔ HÀNG VỪA NHẬP
-                        decimal tongGiaTriNhapMoi = (decimal)chiTiet.SoLuong * chiTiet.DonGia;
+                        decimal currentQty = vatTu.TonKhoHienTai;
+                        decimal incomingQty = chiTiet.SoLuong;
+                        decimal previousQty = currentQty - incomingQty;
+                        if (previousQty < 0) previousQty = 0m;
+
+                        decimal tongGiaTriTonCu = vatTu.TonKhoHienTai * vatTu.GiaVonBinhQuan;
+                        decimal tongGiaTriNhapMoi = chiTiet.SoLuong * chiTiet.DonGia;
 
                         // BƯỚC 3: CỘNG DỒN SỐ LƯỢNG TỒN KHO (Nhập vào thì tăng số lượng)
-                        vatTu.TonKhoHienTai += chiTiet.SoLuong;
+                        int tonKhoMoi = vatTu.TonKhoHienTai + chiTiet.SoLuong;
 
                         // BƯỚC 4: TÍNH GIÁ VÓN BÍNH QUẢN
-                        if (vatTu.TonKhoHienTai > 0)
+                        if (tonKhoMoi > 0)
                         {
-                            vatTu.GiaVonBinhQuan = (tongGiaTriTonCu + tongGiaTriNhapMoi) / (decimal)vatTu.TonKhoHienTai;
+                            vatTu.GiaVonBinhQuan = (tongGiaTriTonCu + tongGiaTriNhapMoi) / tonKhoMoi;
                             if (vatTu.GiaVonBinhQuan < 0)
                             {
                                 throw new InvalidOperationException(
                                     $"Giá vốn bình quân âm (không hợp lệ) cho vật tư {vatTu.MaVatTu}: {vatTu.GiaVonBinhQuan}");
                             }
+                            vatTu.TonKhoHienTai = tonKhoMoi; 
+                            _context.VatTus.Update(vatTu);
                         }
-                        else
+                        var entry = new NhatKyHeThong
                         {
-                            vatTu.GiaVonBinhQuan = 0;
-                        }
-
-                        // Đánh dấu vật tư này đã bị thay đổi để EF Core lưu lại
-                        _context.VatTus.Update(vatTu);
+                            TaiKhoanId = taiKhoanId,
+                            HanhDong = $"Hệ thống tự động cập nhật Giá Vốn Bình Quân sau khi nhập phiếu PN-{phieuNhap.Id.ToString("D5")}",
+                            DiaChiIP = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                            ThoiGian = DateTime.Now
+                        };
+                        await _nhatKyService.GhiNhatKyAsync(entry);
+                       
                     }
                 }
-                var entry = new NhatKyHeThong
-                {
-                    TaiKhoanId = taiKhoanId,
-                    HanhDong = $"Hệ thống tự động cập nhật Giá Vốn Bình Quân sau khi nhập phiếu PN-{phieuNhap.Id.ToString("D5")}",
-                    DiaChiIP = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    ThoiGian = DateTime.Now
-                };
-                await _nhatKyService.GhiNhatKyAsync(entry);
-                // Cuối cùng, thực thi lệnh lưu toàn bộ quá trình tính toán và nhật ký xuống SQL
                 await _context.SaveChangesAsync();
-
-                // Báo cáo hàm chạy thành công 100%
+                await transaction.CommitAsync();
                 return true;
             }
-            // Khối Catch sẽ bắt mọi lỗi xảy ra trong khối Try ở trên
             catch (Exception ex)
             {
+                try { await transaction.RollbackAsync(); } catch { /* ignore */ }
                 var entry = new NhatKyHeThong
                 {
                     TaiKhoanId = taiKhoanId,
@@ -105,10 +108,65 @@ namespace QuanLyVatTu.Services
                     ThoiGian = DateTime.Now
                 };
                 await _nhatKyService.GhiNhatKyAsync(entry);
-                // Lưu log lỗi xuống SQL
                 await _context.SaveChangesAsync();
+                return false;
+            }
+        }
+        public async Task<bool> TruTonKhoSauKhiXuatAsync(int phieuXuatId, int taiKhoanId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var phieuXuat = await _context.PhieuXuats
+                    .Include(p => p.ChiTietPhieuXuats)
+                    .FirstOrDefaultAsync(p => p.Id == phieuXuatId);
 
-                // Báo cáo hàm chạy thất bại
+                if (phieuXuat == null || phieuXuat.TrangThai != TrangThaiPhieuXuat.DaDuyet)
+                {
+                    return false;
+                }
+
+                foreach (var chiTiet in phieuXuat.ChiTietPhieuXuats)
+                {
+                    var vatTu = await _context.VatTus.FirstOrDefaultAsync(v => v.Id == chiTiet.VatTuId);
+
+                    if (vatTu != null)
+                    {
+                        chiTiet.DonGiaXuat = vatTu.GiaVonBinhQuan; 
+                        // TRỪ TỒN KHO (Khi xuất hàng ra)
+                        vatTu.TonKhoHienTai -= chiTiet.SoLuong;
+
+                        // Đảm bảo tồn kho không bị âm vô lý
+                        if (vatTu.TonKhoHienTai < 0)
+                            vatTu.TonKhoHienTai = 0;
+
+                        _context.VatTus.Update(vatTu);
+                        _context.ChiTietPhieuXuats.Update(chiTiet);
+                    }
+                }
+
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = taiKhoanId,
+                    HanhDong = $"Hệ thống tự động trừ tôn kho sau khi xuat phiếu PX-{phieuXuat.Id.ToString("D5")}",
+                    ThoiGian = DateTime.Now
+                };
+                await _nhatKyService.GhiNhatKyAsync(entry);
+                await transaction.CommitAsync();
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var entry = new NhatKyHeThong
+                {
+                    TaiKhoanId = taiKhoanId,
+                    HanhDong = $"[LỖI] Trừ tồn kho thất bại cho phiếu xuất {phieuXuatId}: {ex.Message}",
+                    ThoiGian = DateTime.Now
+                };
+               try { await transaction.RollbackAsync(); } catch { /* ignore */ }
+                await _nhatKyService.GhiNhatKyAsync(entry);
+                await _context.SaveChangesAsync();
                 return false;
             }
         }

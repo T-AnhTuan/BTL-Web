@@ -128,37 +128,42 @@ namespace QuanLyVatTu.Controllers
             {
                 try
                 {
+                    phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
                     foreach (var line in phieu.ChiTietPhieuNhaps)
                     {
-                         var vatTu = await _context.VatTus.FirstOrDefaultAsync(v => v.Id == line.VatTuId);
+                         var vatTu = await _context.VatTus
+                            .FirstOrDefaultAsync(v => v.Id == line.VatTuId);
 
-                        if (vatTu == null)
+                        if (vatTu != null)
                         {
-                            throw new InvalidOperationException($"Không tìm thấy VatTu Id={line.VatTuId}");
+                            decimal tongGiaTriTonCu=vatTu.TonKhoHienTai * vatTu.GiaVonBinhQuan;
+                            decimal tongGiaTriNhapMoi = line.SoLuong * line.DonGia;
+                            int tonKhoMoi = vatTu.TonKhoHienTai + line.SoLuong;
+                            if (tonKhoMoi > 0)
+                            {
+                                vatTu.GiaVonBinhQuan = (tongGiaTriTonCu + tongGiaTriNhapMoi) / tonKhoMoi;
+                            }
+                            vatTu.TonKhoHienTai = tonKhoMoi;
+                            _context.VatTus.Update(vatTu);
                         }
+                        else throw new InvalidOperationException($"Không tìm thấy VatTu Id={line.VatTuId}");
+                      var entry = new NhatKyHeThong
+                      {
+                          TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                          HanhDong = $"Duyệt phiếu nhập {phieu.MaPhieu}",
+                          DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                          ThoiGian = DateTime.Now
+                      };
+                        await _nhatKyService.GhiNhatKyAsync(entry);
 
-                        var addQty = Convert.ToInt32(line.SoLuong);
-                        // Cộng tồn
-                        vatTu.TonKhoHienTai += addQty;
-
-                        _context.VatTus.Update(vatTu);
                     }
-
-                    var entry = new NhatKyHeThong
-                    {
-                        TaiKhoanId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
-                        HanhDong = $"Duyệt phiếu nhập {phieu.MaPhieu}",
-                        DiaChiIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                        ThoiGian = DateTime.Now
-                    };
-                    await _nhatKyService.GhiNhatKyAsync(entry);
                     await _context.SaveChangesAsync();
-                    phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
-                    _context.PhieuNhaps.Update(phieu);
-                    await _context.SaveChangesAsync();
-
                     await tx.CommitAsync();
                     TempData["SuccessMsg"] = $"Đã duyệt phiếu {phieu.MaPhieu} và cập nhật tồn kho.";
+                    phieu.TrangThai = TrangThaiPhieuNhap.DaDuyet;
+
+                    _context.PhieuNhaps.Update(phieu);
+                    
                     return RedirectToAction("PhieuNhap");
                     
                 }

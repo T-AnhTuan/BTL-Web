@@ -6,7 +6,9 @@ const btnCancel = document.getElementById('btnCancel');
 const btnSave = document.getElementById('btnSave');
 const tableBody = document.getElementById('vattuTableBody');
 const inputId = document.getElementById('inputId'); // Trường ẩn lưu ID (0: Thêm mới, >0: Sửa)
-
+// Nơi gán dữ liệu vào form sửa
+//document.getElementById('TonKhoHienTai_Edit').value = result.data.tonKhoHienTai;
+//document.getElementById('GiaVonBinhQuan_Edit').value = result.data.giaVonBinhQuan;
 // Hàm Mở Modal
 btnOpen.addEventListener('click', () => {
     resetForm(); // Gọi hàm xóa sạch dữ liệu cũ trên form trước khi mở

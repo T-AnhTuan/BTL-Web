@@ -107,7 +107,7 @@ namespace QuanLyVatTu.Controllers
             if (phieu.ChiTietPhieuXuats == null || !phieu.ChiTietPhieuXuats.Any())
             {
                 TempData["ErrorMsg"] = "Lỗi: Phiếu trống chưa có vật tư, không thể duyệt!";
-                return RedirectToAction("PhieuNhap");
+                return RedirectToAction("PhieuXuat");
             }
 
             // Nếu phiếu đã ở trạng thái ĐãDuyet thì không làm lại
@@ -140,7 +140,10 @@ namespace QuanLyVatTu.Controllers
                         }
 
                         var addQty = Convert.ToInt32(line.SoLuong);
-
+                        if (vatTu.TonKhoHienTai < addQty)
+                        {
+                            throw new InvalidOperationException($"Vật tư [{vatTu.TenVatTu}] không đủ tồn kho! Tồn hiện tại: {vatTu.TonKhoHienTai}, Yêu cầu xuất: {addQty}");
+                        }
                         vatTu.TonKhoHienTai -= addQty;
                         _context.VatTus.Update(vatTu);
                     }
