@@ -111,7 +111,8 @@ namespace QuanLyVatTu.Controllers
                 {
                     return Json(new { success = false, message = "Mã vật tư này đã tồn tại trong hệ thống!" });
                 }
-
+                model.GiaVonBinhQuan = 0;
+                model.TonKhoHienTai = 0;
                 _context.VatTus.Add(model);
                 await _context.SaveChangesAsync();
                 var entry = new NhatKyHeThong
@@ -158,8 +159,6 @@ namespace QuanLyVatTu.Controllers
                 existingVatTu.TenVatTu = model.TenVatTu;
                 existingVatTu.DanhMucId = model.DanhMucId;
                 existingVatTu.DonViTinh = model.DonViTinh;
-                existingVatTu.TonKhoHienTai = model.TonKhoHienTai;
-                existingVatTu.GiaVonBinhQuan = model.GiaVonBinhQuan;
                 existingVatTu.TonToiThieu = model.TonToiThieu;
 
                 var entry = new NhatKyHeThong
