@@ -96,7 +96,7 @@
         if (tbodyActivity && typeof activityData !== 'undefined') {
             if (activityData.length > 0) {
                 tbodyActivity.innerHTML = activityData.map(item => {
-                    const timeStr = new Date(item.ThoiGian).toLocaleString('vi-VN');
+                    const timeStr = formatNgayGio(item.ThoiGian);
                     const badgeColor = item.Loai === "Nhập Kho" ? "#198754" : (item.Loai === "Xuất Kho" ? "#dc3545" : "#0dcaf0");
 
                     return `
@@ -114,5 +114,16 @@
 
     } catch (error) {
         console.error("Lỗi khi load dữ liệu Dashboard:", error);
+    }
+    function formatNgayGio(timeString) {
+        if (!timeString) return '';
+        let rawDate = timeString.replace('Z', '');
+        const d = new Date(rawDate);
+
+        // Thêm số 0 đằng trước nếu nhỏ hơn 10 (vd: 9 -> 09)
+        const pad = (num) => num.toString().padStart(2, '0');
+
+        // Kết quả: 30/05/2026 13:24
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 });

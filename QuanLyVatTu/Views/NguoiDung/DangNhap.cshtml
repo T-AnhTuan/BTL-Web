@@ -9,10 +9,135 @@
     <title>Đăng nhập Hệ thống</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+    <style>
+            .pccv {
+                width: 350px;
+                margin: 20px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 24px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                z-index: 2;
+            }
+
+            .pccv-card {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .name-card {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 0;
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .name-info {
+                display: flex;
+                flex-direction: column;
+                p {
+                    font-size: 13px;
+                    color: #727785;
+                    margin: 0;
+                    font: 300px;
+                }
+            }
+            .hoten{
+                font-size: 16px;
+                font-weight: 600;
+                color: #191c23;
+                margin: 0;
+            }
+            h2{
+                font-size: 14px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #005bbf;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-top: 0;
+            }
+            .tk-demo{
+                margin: 30px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 24px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                z-index: 2;
+            }
+            .tk-card{
+                background: #f8fafc;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 12px;
+                border-left: 4px solid #1a73e8;
+            }
+            .tk-role{
+                font-size: 15px;
+                font-weight: 700;
+                color: #515f74;
+                text-transform: uppercase;
+                margin-bottom: 4px;
+            }
+    </style>
 </head>
 <body>
-
+   
     <div class="background-wrapper">
+        <aside class="pccv">
+            <h2>
+                Phân công nhiệm vụ
+            </h2>
+            <div class="pccv-card">
+                <div class="name-card">
+                    <div class="name-info">
+                        <h4 class="hoten">Trần Anh Tuấn
+                            <span style="font-size: 15px; font-style:italic"> (STT: 26) </span>
+                        </h4>
+                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Trưởng nhóm, Back-End</p>
+                    </div>
+                </div>
+                <div class="name-card">
+
+                    <div class="name-info">
+                        <h4 class="hoten">Nguyễn Trần Hải Duyên
+                            <span style="font-size: 15px; font-style:italic"> (STT: 2) </span>
+                        </h4>
+                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Front-End</p>
+                    </div>
+                </div>
+                <div class="name-card">
+
+                    <div class="name-info">
+                        <h4 class="hoten">Nguyễn Thu Huyền
+                            <span style="font-size: 15px; font-style:italic"> (STT: 14) </span>
+                        </h4>
+                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Thiết kế Database, kiểm thử</p>
+                    </div>
+                </div>
+                <div class="name-card" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: none;">
+
+                    <div class="name-info">
+                        <h4 class="hoten">Nguyễn Hà Phương Anh
+                            <span style="font-size: 15px; font-style:italic"> (STT: 6) </span>
+                        </h4>
+                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Kiểm thử, hỗ trợ thiết kế giao diện</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
         <div class="login-box">
             <div class="title">HỆ THỐNG QUẢN LÝ VẬT TƯ<br>& HÀNG TỒN KHO</div>
             <div class="subtitle">ĐĂNG NHẬP HỆ THỐNG</div>
@@ -36,7 +161,7 @@
                     <i class="fa-solid fa-eye-slash right-icon" id="togglePassword" style="cursor: pointer;" title="Hiển thị mật khẩu"></i>
                 </div>
 
-                <div class="options">
+                <div class="options" >
                     <label>
                         <input type="checkbox"> Ghi nhớ đăng nhập
                     </label>
@@ -46,7 +171,39 @@
                 <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
             </form>
         </div>
+        <aside class="tk-demo">
+            <h2>
+                Tài khoản dùng thử
+            </h2>
+            <div style="display: flex; flex-direction: column;">
+                <div class="tk-card">
+                    <div class="tk-role">Quản trị viên</div>
+                    <div style="font-family: monospace; font-size: 13px; color: #191c23; display: flex; flex-direction: column; gap: 2px;">
+                        <span style="display: block;">Tên đăng nhập: <strong style="color: #005bbf;">admin</strong></span>
+                        <span style="display: block;">Mật khẩu: <strong style="color: #005bbf;">Admin@123</strong></span>
+                    </div>
+                </div>
+                <div class="tk-card">
+                    <div class="tk-role">Quản lý</div>
+                    <div style="font-family: monospace; font-size: 13px; color: #191c23; display: flex; flex-direction: column; gap: 2px;">
+                        <span style="display: block;">Tên đăng nhập: <strong style="color: #005bbf;">huyen</strong></span>
+                        <span style="display: block;">Mật khẩu: <strong style="color: #005bbf;">huyen123</strong></span>
+                    </div>
+                </div>
+                <div class="tk-card" style="opacity: 0.8;">
+                    <div class="tk-role">Nhân viên</div>
+                    <div style="font-family: monospace; font-size: 13px; color: #191c23; display: flex; flex-direction: column; gap: 2px;">
+                        <span style="display: block;">Tên đăng nhập: <strong style="color: #005bbf;">anh</strong></span>
+                        <span style="display: block;">Mật khẩu: <strong style="color: #005bbf;">anh123</strong></span>
+                    </div>
+                </div>
+            </div>
+            <p style="font-size: 11px; color: #727785; margin-top: 16px; font-style: italic; margin-bottom: 0;">
+                * Vui lòng không thay đổi mật khẩu tài khoản demo.
+            </p>
+        </aside>
     </div>
+    
     <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const togglePassword = document.getElementById('togglePassword');

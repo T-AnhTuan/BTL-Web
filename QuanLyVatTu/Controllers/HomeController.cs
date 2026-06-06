@@ -150,10 +150,11 @@ namespace QuanLyVatTu.Controllers
                 ViewBag.CategoryValuesJson = JsonSerializer.Serialize(catValues, jsonOptions);
                 return View();
             }
-            catch (Exception ex) // Nếu có bất kỳ lỗi gì xảy ra ở khối Try (sai kết nối, biến null...)
+            catch (Exception ex) 
             {
-                // Thay vì sập trang Error, sẽ in thẳng nguyên nhân lỗi ra màn hình để lập trình viên sửa
-                return Content($"LỖI TẠI HOME CONTROLLER: {ex.Message} \nChi tiết: {ex.InnerException?.Message}");
+              
+                //return Content($"LỖI TẠI HOME CONTROLLER: {ex.Message} \nChi tiết: {ex.InnerException?.Message}");
+                return RedirectToAction("BaoTri");
             }
         }
 
