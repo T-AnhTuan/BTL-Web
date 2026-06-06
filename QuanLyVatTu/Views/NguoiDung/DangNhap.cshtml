@@ -9,88 +9,10 @@
     <title>Đăng nhập Hệ thống</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
-    <style>
-            .pccv {
-                width: 350px;
-                margin: 20px;
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 24px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-                z-index: 2;
-            }
 
-            .pccv-card {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .name-card {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 0;
-                border-bottom: 1px solid #f1f5f9;
-            }
-
-            .name-info {
-                display: flex;
-                flex-direction: column;
-                p {
-                    font-size: 13px;
-                    color: #727785;
-                    margin: 0;
-                    font: 300px;
-                }
-            }
-            .hoten{
-                font-size: 16px;
-                font-weight: 600;
-                color: #191c23;
-                margin: 0;
-            }
-            h2{
-                font-size: 14px;
-                font-weight: 700;
-                color: #1e293b;
-                margin-bottom: 20px;
-                padding-bottom: 12px;
-                border-bottom: 2px solid #005bbf;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                margin-top: 0;
-            }
-            .tk-demo{
-                margin: 30px;
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 24px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-                z-index: 2;
-            }
-            .tk-card{
-                background: #f8fafc;
-                border-radius: 6px;
-                padding: 12px;
-                margin-bottom: 12px;
-                border-left: 4px solid #1a73e8;
-            }
-            .tk-role{
-                font-size: 15px;
-                font-weight: 700;
-                color: #515f74;
-                text-transform: uppercase;
-                margin-bottom: 4px;
-            }
-    </style>
 </head>
 <body>
-   
+
     <div class="background-wrapper">
         <aside class="pccv">
             <h2>
@@ -102,8 +24,8 @@
                         <h4 class="hoten">Trần Anh Tuấn
                             <span style="font-size: 15px; font-style:italic"> (STT: 26) </span>
                         </h4>
-                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
-                        <p>Trưởng nhóm, Back-End</p>
+                        <span style="font-weight: 470; margin-top: 7px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Trưởng nhóm, Back-End, phụ trách Controllers, Services</p>
                     </div>
                 </div>
                 <div class="name-card">
@@ -112,8 +34,8 @@
                         <h4 class="hoten">Nguyễn Trần Hải Duyên
                             <span style="font-size: 15px; font-style:italic"> (STT: 2) </span>
                         </h4>
-                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
-                        <p>Front-End</p>
+                        <span style="font-weight: 470; margin-top: 7px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Front-End, phụ trách Views</p>
                     </div>
                 </div>
                 <div class="name-card">
@@ -122,8 +44,8 @@
                         <h4 class="hoten">Nguyễn Thu Huyền
                             <span style="font-size: 15px; font-style:italic"> (STT: 14) </span>
                         </h4>
-                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
-                        <p>Thiết kế Database, kiểm thử</p>
+                        <span style="font-weight: 470; margin-top: 7px; font-size: 15px;">Nhiệm vụ: </span>
+                        <p>Thiết kế Database, Models, kiểm thử</p>
                     </div>
                 </div>
                 <div class="name-card" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: none;">
@@ -132,14 +54,14 @@
                         <h4 class="hoten">Nguyễn Hà Phương Anh
                             <span style="font-size: 15px; font-style:italic"> (STT: 6) </span>
                         </h4>
-                        <span style="font-weight: 470; margin-top: 10px; font-size: 15px;">Nhiệm vụ: </span>
+                        <span style="font-weight: 470; margin-top: 7px; font-size: 15px;">Nhiệm vụ: </span>
                         <p>Kiểm thử, hỗ trợ thiết kế giao diện</p>
                     </div>
                 </div>
             </div>
         </aside>
         <div class="login-box">
-            <div class="title">HỆ THỐNG QUẢN LÝ VẬT TƯ<br>& HÀNG TỒN KHO</div>
+            <h1 class="title"> HỆ THỐNG QUẢN LÝ KHO VẬT TƯ</h1>
             <div class="subtitle">ĐĂNG NHẬP HỆ THỐNG</div>
 
             <div class="warehouse-icon">
@@ -165,7 +87,7 @@
                     <label>
                         <input type="checkbox"> Ghi nhớ đăng nhập
                     </label>
-                    <a href="/Home/Baotri" target="_blank">Quên mật khẩu?</a>
+                   <!--<a href="/Home/Baotri" target="_blank">Quên mật khẩu?</a>-->
                 </div>
 
                 <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
